@@ -40,12 +40,6 @@ function Tape<C>(blank: C, input: ?Array<C>) {
   this.toString = this.tape.toString;
 }
 
-var testTape : Tape<string> = new Tape(' ', 'hello world'.split(''));
-// testTape.write('h')
-// testTape.headRight()
-// testTape.write('e')
-
-
 type MoveDir = bool;
 type Transition<S,C> = (state: S, symbol: C) => [S, C, MoveDir];
 
@@ -110,42 +104,6 @@ function throwExpr<A>(e): A {
   throw e;
 }
 
-// var testFromMaybe: number = fromMaybe(throwExpr(new Error("expected non-null value")), null);
-
-// function makeTransition(obj): Transition {
-//   return function(s, sym) {
-//     var statetable = obj[s];
-//     if (symlookup == undefined) {
-//       throw new Error("missing case for transition from state " + s.toString());
-//     }
-//     var action = symlookup[sym];
-//     action = (action == undefined) ? symlookup['_'] : action;
-
-//     action = obj[s][sym](s, sym);
-
-//   }
-//   function lookupSymbol(obj, sym) {
-//     var res = obj[sym];
-//     if (res == undefined) {
-//       throw new Error("")
-//     }
-//   }
-
-//   return function(s, sym) { return obj[s][sym]; };
-// }
-
-// function makeTransition(obj): Transition {
-//   function nonnull(x)
-//   function lookupSymbol(table, sym) {
-//     return (table[sym] == undefined) ?
-//       throw new Error('for state' + s + ', symbol not found: '+ sym.toString())
-//       : table[sym];
-//   }
-//   return function(s, sym) {
-//     // return fromMaybe(throwExpr(new Error("state not found" + s), obj[s][sym]; };
-//     lookupSymbol(nonnull(obj[s]), sym);
-// }
-
 // FIXME: handle terminal states, as a list? sum type that also accepts a function?
 // TODO: monadic bind to simplify
 // TODO: fix type for obj? did not prevent return res; bug.
@@ -163,12 +121,6 @@ function makeTransition(obj): Transition {
     return res(s, sym);
   }
 }
-
-// state, sym -> state, sym, move
-// wrapTransition(delta)
-
-// var next = transition(state, sym)
-// next.state, next.symbol, next.move
 
 // eventually: animate symbol match, then writing symbol, then moving, then new state
 // first: rudimentary TM, with manual stepping and only state highlighting. no tape display yet?
@@ -190,27 +142,6 @@ TuringMachine.prototype.step = function() {
   console.log(this.tape.toString());
 }
 
-var m2delta : Transition = function (s, sym) {
-  switch (s) {
-    case 'q1':
-      switch (sym) {
-        case '0': return ['q2', ' ', true];
-        default: return ['reject', sym, true];
-      }
-    case 'q2':
-      switch (sym) {
-        case '0': return ['q3', 'x', true];
-        case ' ': return ['accept', sym, true];
-        case 'x': return ['q2', sym, true];
-      }
-      break;
-  }
-  throw new Error("unhandled transition case: " + s + ' ' + sym);
-};
-
-// var m2 = new TuringMachine(m2delta, 'q1', ' ', '00'.split(''));
 var m2input = '0000';
 var m2 = new TuringMachine(makeTransition(m2lookup), 'q1', ' ', m2input.split(''));
-
-
 
