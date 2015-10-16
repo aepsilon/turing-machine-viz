@@ -25,14 +25,15 @@ text {
 <body>
 
 <script type="text/javascript">
-
-var w = 1000;
-var h = 70;
-
 var cellWidth = 50;
 var cellHeight = 50;
 
+var offset = 0;
+
 var message = 'Hello World!';
+
+var w = 1000;
+var h = cellHeight+20;
 
 var svg = d3.select('body').append('svg').attr({'width': w, 'height': h});
 
@@ -54,6 +55,21 @@ var cellBoxes = cells.append('rect')
 var cellLabels = cells.append('text')
     .text(function(d) { return d; })
     .attr({'x': cellWidth/2, 'y': cellHeight/2 + 8})
+
+// internal function
+function moveOffset(n) {
+  offset += n;
+  wrapper.transition()
+    .attr('transform', 'translate(' + (offset * -cellWidth) + ')');
+}
+
+function moveRight() {
+  moveOffset(1);
+}
+
+function moveLeft() {
+  moveOffset(-1);
+}
 
 </script>
 
