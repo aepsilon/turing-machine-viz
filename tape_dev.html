@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Infinite tape</title>
+
+<!-- <script src="build/turingmachine.js" type="text/javascript"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
+<style>
+.tape-cell rect {
+  fill: white;
+  stroke: gray;
+}
+
+text {
+  stroke: black;
+  pointer-events: none;
+  text-anchor: middle;
+  font-family: "Source Code Pro", "Courier", monospace;
+  font-size: 25px;
+}
+</style>
+
+</head>
+<body>
+
+<script type="text/javascript">
+
+var w = 1000;
+var h = 70;
+
+var cellWidth = 50;
+var cellHeight = 50;
+
+var message = 'Hello World!';
+
+var svg = d3.select('body').append('svg').attr({'width': w, 'height': h});
+
+// enable translations
+var wrapper = svg.append('g');
+
+var cells = wrapper.selectAll('.tape-cell')
+    .data(message.split(''))
+    .enter()
+    .append('g')
+    .attr({'class': 'tape-cell',
+           'transform': function(d, i) { return 'translate(' + (10 + cellWidth*i) + ' 10)'; }
+         });
+
+var cellBoxes = cells.append('rect')
+    .attr({'width': cellWidth,
+           'height': cellHeight});
+
+var cellLabels = cells.append('text')
+    .text(function(d) { return d; })
+    .attr({'x': cellWidth/2, 'y': cellHeight/2 + 8})
+
+</script>
+
+</body>
+</html>
