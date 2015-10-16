@@ -12,6 +12,11 @@
   stroke: gray;
 }
 
+#tape-head {
+  fill: none;
+  stroke: gold;
+}
+
 text {
   stroke: black;
   pointer-events: none;
@@ -39,6 +44,14 @@ var svg = d3.select('body').append('svg').attr({'width': w, 'height': h});
 
 // enable translations
 var wrapper = svg.append('g');
+
+var tapeHead = svg.append('rect')
+    .attr({'id': 'tape-head',
+           'width': cellWidth+10,
+           'height': cellHeight+10,
+           'x': 10/2 + cellWidth*5,
+           'y': 10/2
+         });
 
 var cells = wrapper.selectAll('.tape-cell')
     .data(message.split(''))
