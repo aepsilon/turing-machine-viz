@@ -28,8 +28,81 @@ text {
 
 </head>
 <body>
-
 <script type="text/javascript">
+'use strict';
+function Tape   (blank   , input           ) {
+  this.__defineGetter__("blank", function() { return blank; });
+  // INVARIANTS: tape.before can be empty, tape.after must be nonempty.
+  // before: cells before the head (in order).
+  // after:  cells after and including the head (in reverse order).
+  var tape =
+    { before: [],
+      after: (input == undefined) ? [blank] : input.slice().reverse(),
+      toString: function() {
+        return tape.before.join('')+'🔎'+tape.after.slice().reverse().join('');
+      }
+    };
+  this.tape = tape;
+  this.read = function()    {
+    return tape.after[tape.after.length-1];
+  };
+  this.write = function(x   )       {
+    tape.after[tape.after.length-1] = x;
+  };
+
+  this.headRight = function()       {
+    tape.before.push(tape.after.pop());
+    if (isEmpty(tape.after)) { tape.after.push(blank); }
+  };
+  this.headLeft = function()       {
+    if (isEmpty(tape.before)) { tape.before.push(blank); }
+    tape.after.push(tape.before.pop());
+  };
+  this.toString = this.tape.toString;
+
+  // for tape visualization. not part of TM definition.
+  // Read an offset from the tape head. 0 is the tape head. + is to the right, - to the left.
+  this.readOffset = function(i) {
+    if (i >= 0) {
+      // right side: offset [0..length-1] ↦ index [length-1..0]
+      return (i <= tape.after.length-1) ? tape.after[tape.after.length-1-i] : blank;
+    } else {
+      // left side: offset [-1..-length] ↦ index [0..length-1]
+      return (-i <= tape.before.length) ? tape.before[-1-i] : blank;
+    }
+  }
+}
+
+// n lookaround.
+// ABANDONED. reason: O(k) push/pop from both ends of array, for k cells of lookaround.
+// function TapeLookaround(n, blank, input) {
+//   input = (input == undefined) ? Array(0) : input;
+
+//   this.__defineGetter__("blank", function() { return blank; });
+//   this.__defineGetter__("lookaround", function() { return n; });
+//   // INVARIANTS: tape.before always has at least n elements. tape.after, at least n+1.
+//   var tape =
+//     { before: Array(n).fill(blank),
+//       after: input.concat(
+//         (n+1 <= input.length) ? [] : Array(n+1 - input.length).fill(blank)
+//         ).reverse()
+//     };
+//   this.tape = tape;
+//   this.read = function() {
+//     return tape.after[tape.after.length-1];
+//   }
+//   this.write = function(x) {
+//     tape.after[tape.after.length-1] = x;
+//   }
+//   this.headRight = function() {
+//     tape.before.push(tape.after.pop());
+//     if (tape.after.length < n+1) { tape.after.push(blank); }
+//   }
+// }
+
+</script>
+<script type="text/javascript">
+'use strict';
 var cellWidth = 50;
 var cellHeight = 50;
 
@@ -42,7 +115,6 @@ var h = cellHeight+20;
 
 var svg = d3.select('body').append('svg').attr({'width': w, 'height': h});
 
-// enable translations
 var wrapper = svg.append('g');
 
 var tapeHead = svg.append('rect')
@@ -69,20 +141,101 @@ var cellLabels = cells.append('text')
     .text(function(d) { return d; })
     .attr({'x': cellWidth/2, 'y': cellHeight/2 + 8})
 
-// internal function
-function moveOffset(n) {
-  offset += n;
-  wrapper.transition()
-    .attr('transform', 'translate(' + (offset * -cellWidth) + ')');
+// function TapeViz(blank, input, svg, cellMargin) {
+//   Tape.call(this, blank, input);
+
+//   this.svg = svg;
+//   // allow translating the whole tape view
+//   var wrapper = svg.append('g');
+
+//   var tapeHead = svg.append('rect')
+//       .attr({'id': 'tape-head',
+//              'width': cellWidth+10,
+//              'height': cellHeight+10,
+//              'x': 10/2 + cellWidth*5,
+//              'y': 10/2
+//            });
+
+//   var cells = wrapper.selectAll('.tape-cell')
+//       .data(message.split(''))
+//       .enter()
+//       .append('g')
+//       .attr({'class': 'tape-cell',
+//              'transform': function(d, i) { return 'translate(' + (10 + cellWidth*i) + ' 10)'; }
+//            });
+
+//   var cellBoxes = cells.append('rect')
+//       .attr({'width': cellWidth,
+//              'height': cellHeight});
+
+//   var cellLabels = cells.append('text')
+//       .text(function(d) { return d; })
+//       .attr({'x': cellWidth/2, 'y': cellHeight/2 + 8})
+
+//   this.read = this.prototype.
+// }
+
+// TapeViz.prototype = Object.create(Tape.prototype);
+// TapeViz.prototype.constructor = TapeViz;
+
+// TapeViz.prototype.write = function(symbol) {
+
+// }
+
+// TapeViz.prototype.moveRight = function() {
+
+// }
+
+var testTape = new Tape(' ', 'Hello World!'.split(''));
+
+function appendBox(sel) {
+  sel.append('rect')
+    .attr({'width': cellWidth,
+           'height': cellHeight});
 }
 
 function moveRight() {
-  moveOffset(1);
-}
+  // add to right end
+  var tapeView = svg.select('svg > g').append('g')
+    .attr({'class': 'tape-cell'})
+    .call(appendBox)
+    .append('text')
+    .text('x')
+    .attr({'x': cellWidth/2, 'y': cellHeight/2 + 8});
 
-function moveLeft() {
-  moveOffset(-1);
+  // shift all cells leftwards, but translate wrapper rightwards to compensate
+  svg.selectAll('.tape-cell')
+    .attr('transform', function(d, i) {
+            return 'translate(' + (10+cellWidth*(i-1)).toString() + ' 10)';
+          });
+  wrapper
+      .attr('transform', 'translate(' + cellWidth.toString() + ')')
+    .transition()
+      .duration(400)
+      .attr('transform', 'translate(0)')
+    .each('end', function() {
+         // remove from left end (off-screen)
+         wrapper.select('.tape-cell').remove()
+      })
+    .transition()
+      .attr('transform', null);
 }
+// internal function
+// function moveOffset(n) {
+//   offset += n;
+//   wrapper.transition()
+//     .attr('transform', 'translate(' + (offset * -cellWidth) + ')');
+// }
+
+// function moveRight() {
+//   moveOffset(1);
+// }
+
+// function moveLeft() {
+//   moveOffset(-1);
+// }
+
+
 
 </script>
 
