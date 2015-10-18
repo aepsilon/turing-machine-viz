@@ -30,75 +30,61 @@ text {
 <body>
 <script type="text/javascript">
 'use strict';
+
+function last(array) {
+  return array[array.length - 1];
+}
+
+function isEmpty(array) {
+  return array.length === 0;
+}
+
 function Tape   (blank   , input           ) {
   this.__defineGetter__("blank", function() { return blank; });
   // INVARIANTS: tape.before can be empty, tape.after must be nonempty.
   // before: cells before the head (in order).
   // after:  cells after and including the head (in reverse order).
-  var tape =
+  this.tape =
     { before: [],
       after: (input == undefined) ? [blank] : input.slice().reverse(),
       toString: function() {
-        return tape.before.join('')+'🔎'+tape.after.slice().reverse().join('');
+        return this.before.join('')+'🔎'+this.after.slice().reverse().join('');
       }
     };
-  this.tape = tape;
-  this.read = function()    {
-    return tape.after[tape.after.length-1];
-  };
-  this.write = function(x   )       {
-    tape.after[tape.after.length-1] = x;
-  };
-
-  this.headRight = function()       {
-    tape.before.push(tape.after.pop());
-    if (isEmpty(tape.after)) { tape.after.push(blank); }
-  };
-  this.headLeft = function()       {
-    if (isEmpty(tape.before)) { tape.before.push(blank); }
-    tape.after.push(tape.before.pop());
-  };
-  this.toString = this.tape.toString;
-
-  // for tape visualization. not part of TM definition.
-  // Read an offset from the tape head. 0 is the tape head. + is to the right, - to the left.
-  this.readOffset = function(i) {
-    if (i >= 0) {
-      // right side: offset [0..length-1] ↦ index [length-1..0]
-      return (i <= tape.after.length-1) ? tape.after[tape.after.length-1-i] : blank;
-    } else {
-      // left side: offset [-1..-length] ↦ index [0..length-1]
-      return (-i <= tape.before.length) ? tape.before[-1-i] : blank;
-    }
-  }
 }
 
-// n lookaround.
-// ABANDONED. reason: O(k) push/pop from both ends of array, for k cells of lookaround.
-// function TapeLookaround(n, blank, input) {
-//   input = (input == undefined) ? Array(0) : input;
+Tape.prototype.read = function() {
+  return this.tape.after[this.tape.after.length-1];
+};
+Tape.prototype.write = function(symbol) {
+  this.tape.after[this.tape.after.length-1] = symbol;
+};
 
-//   this.__defineGetter__("blank", function() { return blank; });
-//   this.__defineGetter__("lookaround", function() { return n; });
-//   // INVARIANTS: tape.before always has at least n elements. tape.after, at least n+1.
-//   var tape =
-//     { before: Array(n).fill(blank),
-//       after: input.concat(
-//         (n+1 <= input.length) ? [] : Array(n+1 - input.length).fill(blank)
-//         ).reverse()
-//     };
-//   this.tape = tape;
-//   this.read = function() {
-//     return tape.after[tape.after.length-1];
-//   }
-//   this.write = function(x) {
-//     tape.after[tape.after.length-1] = x;
-//   }
-//   this.headRight = function() {
-//     tape.before.push(tape.after.pop());
-//     if (tape.after.length < n+1) { tape.after.push(blank); }
-//   }
-// }
+Tape.prototype.headRight = function() {
+  var before = this.tape.before, after = this.tape.after;
+  before.push(after.pop());
+  if (isEmpty(after)) { after.push(this.blank); }
+};
+Tape.prototype.headLeft = function() {
+  var before = this.tape.before, after = this.tape.after;
+  if (isEmpty(before)) { before.push(this.blank); }
+  after.push(before.pop());
+};
+
+Tape.prototype.toString = function() { return this.tape.toString(); };
+
+// for tape visualization. not part of TM definition.
+// Read an offset from the tape head. 0 is the tape head. + is to the right, - to the left.
+Tape.prototype.readOffset = function(i) {
+  var tape = this.tape;
+  if (i >= 0) {
+    // right side: offset [0..length-1] ↦ index [length-1..0]
+    return (i <= tape.after.length-1) ? tape.after[tape.after.length-1-i] : this.blank;
+  } else {
+    // left side: offset [-1..-length] ↦ index [length-1..0]
+    return (-i <= tape.before.length) ? tape.before[tape.before.length+i] : this.blank;
+  }
+};
 
 </script>
 <script type="text/javascript">
