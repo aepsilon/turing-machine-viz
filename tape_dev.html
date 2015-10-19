@@ -24,6 +24,11 @@ text {
   font-family: "Source Code Pro", "Courier", monospace;
   font-size: 25px;
 }
+
+#run-step {
+  padding: 4px 12px 6px 12px;
+  /*border-radius: 4px */ 
+}
 </style>
 
 </head>
@@ -111,10 +116,13 @@ function appendCellContents(selection) {
     .attr({'x': cellWidth/2, 'y': cellHeight/2 + 8});
 }
 
-function TapeViz(svg, blank, input, lookaround) {
+function TapeViz(svg, lookaround, blank, input) {
   Tape.call(this, blank, input);
 
-  lookaround = (lookaround == undefined) ? 11 : lookaround;
+  // width is before + head + after, trimming 2 off to show cut-off tape ends
+  svg.attr({'width': cellWidth * (lookaround+1+lookaround-2) + 20,
+            'height': cellHeight+20});
+
   this.__defineGetter__('lookaround', function() { return lookaround; });
 
   this.wrapper = svg.append('g');
@@ -215,17 +223,106 @@ TapeViz.prototype.headLeft = function() {
         .remove()
   ;
 }
+</script>
+<script type='text/javascript'>
+'use strict';
+function makeTransition(obj) {
+  return function(s, sym) {
+    var sym2res = obj[s];
+    if (sym2res == undefined) {
+      throw new Error('no transitions are defined from state: ' + s.toString());
+    }
+    var res = sym2res[sym];
+    res = (res == undefined) ? sym2res['_'] : res;
+    if (res == undefined) {
+      throw new Error('no transition is defined from state ' + s.toString() + ' for symbol '+ sym.toString());
+    }
+    return res(s, sym);
+  }
+}
 
-var lookaround = 5;
+// TODO: include state in TM.toString()
+function TuringMachine(transition, initialState, tape) {
+  this.transition = transition;
+  this.state = initialState;
+  this.tape = tape;
+}
 
-// width for before + head + after, trimming 2 off to show cut-off tape ends
-var w = cellWidth * (lookaround+1+lookaround-2) + 20;
-var h = cellHeight+20;
+TuringMachine.prototype.step = function() {
+  var result = this.transition(this.state, this.tape.read());
+  this.state = result[0];
+  this.tape.write(result[1]);
+  if (result[2]) { this.tape.headRight(); } else { this.tape.headLeft(); }
+  // debug:
+  console.log(this.state);
+  console.log(this.tape.toString());
+}
+</script>
+<script type='text/javascript'>
+function write(sym, dir, state) {
+  return function () {
+    return [state, sym, dir];
+  };
+}
 
-var svg = d3.select('body').append('svg').attr({'width': w, 'height': h});
+function move(dir, state) {
+  return function(_, sym) {
+    return [state, sym, dir];
+  };
+}
 
-var t1 = new TapeViz(svg, ' ', 'Hello World'.split(''), lookaround);
+function skip(dir) {
+  return function(state, sym) {
+    return [state, sym, dir];
+  }
+}
 
+var R = true;
+var L = false;
+
+var accept = move(R, 'accept');
+var reject = move(R, 'reject');
+
+// TODO: check if assigning x and _ cause problems
+var m2lookup =
+  { q1: {
+      '0': write(' ', R, 'q2'),
+      '_': reject
+    },
+    q2: {
+      '0': write('x', R, 'q3'),
+      ' ': accept,
+      'x': skip(R)
+    },
+    q3: {
+      '0': move(R, 'q4'),
+      ' ': move(L, 'q5'),
+      'x': skip(R)
+    },
+    q4: {
+      '0': write('x', R, 'q3'),
+      ' ': reject,
+      'x': skip(R)
+    },
+    q5: {
+      ' ': move(R, 'q2'),
+      '_': skip(L)
+    }
+  };
+
+var svg = d3.select('body').append('svg')
+var m2input = '0000';
+var m2tape = new TapeViz(svg, 5, ' ', m2input.split(''));
+var m2 = new TuringMachine(makeTransition(m2lookup), 'q1', m2tape);
+</script>
+<div>
+  <button id='run-step'>Step</button>
+  <noscript><strong>Tip: to enable this visualization, enable JavaScript.</strong></noscript>
+</div>
+
+<script type='text/javascript'>
+document.getElementById('run-step').addEventListener('click',
+  function() { m2.step(); });
 </script>
 
 </body>
