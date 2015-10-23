@@ -1,248 +1,24 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang='en'>
 <head>
-<meta charset="utf-8">
+<meta charset='utf-8'>
 <title>Infinite tape</title>
 
-<!-- <script src="build/turingmachine.js" type="text/javascript"></script> -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js" charset="utf-8"></script>
+<link href='tape/tape.css' rel='stylesheet' />
 <style>
-.tape-cell rect {
-  fill: white;
-  stroke: gray;
-}
-
-#tape-head {
-  fill: none;
-  stroke: gold;
-}
-
-text {
-  stroke: black;
-  pointer-events: none;
-  text-anchor: middle;
-  font-family: "Source Code Pro", "Courier", monospace;
-  font-size: 25px;
-}
-
 #run-step {
   padding: 4px 12px 6px 12px;
-  /*border-radius: 4px */ 
 }
 </style>
-
+<script src='https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js' charset='utf-8'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js' charset='utf-8'></script>
 </head>
+
 <body>
-<script type="text/javascript">
-'use strict';
 
-function last(array) {
-  return array[array.length - 1];
-}
+<script src='tape/Tape.js' type='text/javascript'></script>
+<script src='tape/TapeViz.js' type='text/javascript'></script>
 
-function isEmpty(array) {
-  return array.length === 0;
-}
-
-function Tape   (blank   , input           ) {
-  this.__defineGetter__("blank", function() { return blank; });
-  // INVARIANTS: tape.before can be empty, tape.after must be nonempty.
-  // before: cells before the head (in order).
-  // after:  cells after and including the head (in reverse order).
-  this.tape =
-    { before: [],
-      after: (input == undefined) ? [blank] : input.slice().reverse(),
-      toString: function() {
-        return this.before.join('')+'🔎'+this.after.slice().reverse().join('');
-      }
-    };
-}
-
-Tape.prototype.read = function() {
-  return this.tape.after[this.tape.after.length-1];
-};
-Tape.prototype.write = function(symbol) {
-  this.tape.after[this.tape.after.length-1] = symbol;
-};
-
-Tape.prototype.headRight = function() {
-  var before = this.tape.before, after = this.tape.after;
-  before.push(after.pop());
-  if (isEmpty(after)) { after.push(this.blank); }
-};
-Tape.prototype.headLeft = function() {
-  var before = this.tape.before, after = this.tape.after;
-  if (isEmpty(before)) { before.push(this.blank); }
-  after.push(before.pop());
-};
-
-Tape.prototype.toString = function() { return this.tape.toString(); };
-
-// for tape visualization. not part of TM definition.
-// Read an offset from the tape head. 0 is the tape head. + is to the right, - to the left.
-Tape.prototype.readOffset = function(i) {
-  var tape = this.tape;
-  if (i >= 0) {
-    // right side: offset [0..length-1] ↦ index [length-1..0]
-    return (i <= tape.after.length-1) ? tape.after[tape.after.length-1-i] : this.blank;
-  } else {
-    // left side: offset [-1..-length] ↦ index [length-1..0]
-    return (-i <= tape.before.length) ? tape.before[tape.before.length+i] : this.blank;
-  }
-};
-
-// range, inclusive.
-Tape.prototype.readRange = function(start, end) {
-  // TODO: replace with more efficent version
-  return d3.range(start, end+1).map(function(i) { return this.readOffset(i); }, this);
-};
-
-</script>
-
-<script type="text/javascript">
-'use strict';
-
-var cellWidth = 50;
-var cellHeight = 50;
-
-function appendCellContents(selection) {
-  selection.append('rect')
-    // remove data binding since the outline is purely visual
-    .datum(null)
-    .attr({'width': cellWidth, 
-           'height': cellHeight});
-  selection.append('text')
-    .text(function(d) { return d; })
-    .attr({'x': cellWidth/2, 'y': cellHeight/2 + 8});
-}
-
-function TapeViz(svg, lookaround, blank, input) {
-  Tape.call(this, blank, input);
-
-  // width is before + head + after, trimming 2 off to show cut-off tape ends
-  svg.attr({'width': cellWidth * (lookaround+1+lookaround-2) + 20,
-            'height': cellHeight+20});
-
-  this.__defineGetter__('lookaround', function() { return lookaround; });
-
-  this.wrapper = svg.append('g').attr('class', 'wrapper');
-
-  var tapeHead = svg.append('rect')
-      .attr({'id': 'tape-head',
-             'width': cellWidth+10,
-             'height': cellHeight+10,
-             'x': 10/2 + cellWidth*(lookaround-1),
-             'y': 10/2
-           });
-
-  var cells = this.wrapper.selectAll('.tape-cell')
-      .data(this.readRange(-lookaround, lookaround))
-      .enter()
-      .append('g')
-      .attr({'class': 'tape-cell',
-             'transform': function(d, i) { return 'translate(' + (-50+10 + cellWidth*i) + ' 10)'; }
-           });
-
-  appendCellContents(cells);
-}
-
-TapeViz.prototype = Object.create(Tape.prototype);
-TapeViz.prototype.constructor = TapeViz;
-
-// TODO: concurrently fade out old value and fade in new value
-// TODO: chain headLeft/Right to wait for write()?
-TapeViz.prototype.write = function(symbol) {
-  // don't animate if symbol stays the same
-  if (Tape.prototype.read.call(this) === symbol) {
-    return;
-  }
-  Tape.prototype.write.call(this, symbol);
-
-  // remove leftover .exiting in case animation was interrupted
-  this.wrapper.selectAll('.exiting').remove();
-
-  // TODO: replace with .selectAll('.tape-cell:not(.exiting)'),
-  // to avoid need to remove .exiting ?
-  d3.select(this.wrapper[0][0].childNodes[this.lookaround])
-    .datum(symbol)
-    .select('text')
-    .attr('fill-opacity', '1')
-    .attr('stroke-opacity', '1')
-    .transition()
-      .attr('fill-opacity', '0.4')
-      .attr('stroke-opacity', '0.1')
-    .transition()
-      .text(function(d) { return d; })
-      .attr('fill-opacity', '1')
-      .attr('stroke-opacity', '1')
-    .transition()
-      .duration(0)
-      .attr('fill-opacity', null)
-      .attr('stroke-opacity', null)
-    ;
-}
-
-TapeViz.prototype.headRight = function() {
-  Tape.prototype.headRight.call(this);
-  // remove leftover .exiting in case animation was interrupted
-  this.wrapper.selectAll('.exiting').remove();
-
-  // add to right end
-  var tapeView = this.wrapper.append('g')
-    .datum(this.readOffset(this.lookaround))
-    .attr({'class': 'tape-cell'})
-    .call(appendCellContents);
-
-  // remove from left end
-  this.wrapper.select('.tape-cell').classed('exiting', true);
-
-  // shift all cells leftwards, but translate wrapper rightwards to compensate
-  this.wrapper.selectAll('.tape-cell')
-    .attr('transform', function(d, i) {
-            return 'translate(' + (-50+10+cellWidth*(i-1)).toString() + ' 10)';
-          });
-  this.wrapper
-      .attr('transform', 'translate(' + cellWidth.toString() + ')')
-    .transition()
-      .attr('transform', 'translate(0)')
-    .transition()
-      .duration(0)
-      .attr('transform', null)
-      .select('.exiting')
-        .remove();
-}
-
-TapeViz.prototype.headLeft = function() {
-  Tape.prototype.headLeft.call(this);
-  // remove leftover .exiting in case animation was interrupted
-  this.wrapper.selectAll('.exiting').remove();
-
-  // add to left end
-  var tapeView = this.wrapper.insert('g', ':first-child')
-    .datum(this.readOffset(-this.lookaround))
-    .attr({'class': 'tape-cell'})
-    .call(appendCellContents);
-
-  // remove from right end
-  this.wrapper.select('.wrapper > .tape-cell:last-of-type').classed('exiting', true);
-
-  // translate cells rightward, and wrapper leftward. animate wrapper going right.
-  this.wrapper.selectAll('.tape-cell')
-    .attr('transform', function(d, i) {
-            return 'translate(' + (-50+10+cellWidth*i).toString() + ' 10)';
-          });
-  this.wrapper
-      .attr('transform', 'translate(' + (-cellWidth).toString() + ')')
-    .transition()
-      .attr('transform', 'translate(0)')
-    .transition()
-      .duration(0)
-      .attr('transform', null)
-      .select('.exiting')
-        .remove();
-  ;
-}
-</script>
 <script type='text/javascript'>
 'use strict';
 function makeTransition(obj) {
@@ -323,7 +99,9 @@ var m2lookup =
     q5: {
       ' ': move(R, 'q2'),
       '_': skip(L)
-    }
+    },
+    'accept': null,
+    'reject': null
   };
 
 var svg = d3.select('body').append('svg')
@@ -331,14 +109,16 @@ var m2input = '0000';
 var m2tape = new TapeViz(svg, 5, ' ', m2input.split(''));
 var m2 = new TuringMachine(makeTransition(m2lookup), 'q1', m2tape);
 </script>
+
 <div>
   <button id='run-step'>Step</button>
   <noscript><strong>Tip: to enable this visualization, enable JavaScript.</strong></noscript>
 </div>
 
 <script type='text/javascript'>
-document.getElementById('run-step').addEventListener('click',
-  function() { m2.step(); });
+document.getElementById('run-step').addEventListener('click', function() {
+  m2.step();
+});
 </script>
 
 </body>
