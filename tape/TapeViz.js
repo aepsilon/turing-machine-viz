@@ -4,15 +4,17 @@
 var cellWidth = 50;
 var cellHeight = 50;
 
-function appendCellContents(selection) {
+function initTapeCells(selection) {
+  selection.attr('class', 'tape-cell');
   selection.append('rect')
-    // the cell outline is purely visual, so remove the data binding
-    .datum(null)
-    .attr({'width': cellWidth,
-           'height': cellHeight});
+      // the box outline is purely visual, so remove its data binding
+      .datum(null)
+      .attr({'width': cellWidth,
+             'height': cellHeight});
   selection.append('text')
-    .text(function(d) { return d; })
-    .attr({'x': cellWidth/2, 'y': cellHeight/2 + 8});
+      .text(function(d) { return d; })
+      .attr({'x': cellWidth/2, 'y': cellHeight/2 + 8});
+  return selection;
 }
 
 // Tape visualization centered around the tape head.
@@ -37,13 +39,11 @@ function TapeViz(svg, lookaround, blank, input) {
 
   var cells = this.wrapper.selectAll('.tape-cell')
       .data(this.readRange(-lookaround, lookaround))
-      .enter()
-      .append('g')
-      .attr({'class': 'tape-cell',
-             'transform': function(d, i) { return 'translate(' + (-50+10 + cellWidth*i) + ' 10)'; }
-           });
-
-  appendCellContents(cells);
+    .enter()
+    .append('g')
+      .attr('transform', function(d, i) { return 'translate(' + (-50+10 + cellWidth*i) + ' 10)'; })
+      .call(initTapeCells)
+  ;
 }
 
 TapeViz.prototype = Object.create(Tape.prototype);
@@ -64,10 +64,10 @@ TapeViz.prototype.write = function(symbol) {
   // TODO: replace with .selectAll('.tape-cell:not(.exiting)'),
   // to avoid need to remove .exiting ?
   d3.select(this.wrapper[0][0].childNodes[this.lookaround])
-    .datum(symbol)
+      .datum(symbol)
     .select('text')
-    .attr('fill-opacity', '1')
-    .attr('stroke-opacity', '1')
+      .attr('fill-opacity', '1')
+      .attr('stroke-opacity', '1')
     .transition()
       .attr('fill-opacity', '0.4')
       .attr('stroke-opacity', '0.1')
@@ -89,18 +89,18 @@ TapeViz.prototype.headRight = function() {
 
   // add to right end
   var tapeView = this.wrapper.append('g')
-    .datum(this.readOffset(this.lookaround))
-    .attr({'class': 'tape-cell'})
-    .call(appendCellContents);
+      .datum(this.readOffset(this.lookaround))
+      .call(initTapeCells);
 
   // remove from left end
-  this.wrapper.select('.tape-cell').classed('exiting', true);
+  this.wrapper.select('.tape-cell')
+      .classed('exiting', true);
 
   // shift all cells leftwards, but translate wrapper rightwards to compensate
   this.wrapper.selectAll('.tape-cell')
-    .attr('transform', function(d, i) {
-            return 'translate(' + (-50+10+cellWidth*(i-1)).toString() + ' 10)';
-          });
+      .attr('transform', function(d, i) {
+              return 'translate(' + (-50+10+cellWidth*(i-1)).toString() + ' 10)';
+            });
   this.wrapper
       .attr('transform', 'translate(' + cellWidth.toString() + ')')
     .transition()
@@ -108,8 +108,8 @@ TapeViz.prototype.headRight = function() {
     .transition()
       .duration(0)
       .attr('transform', null)
-      .select('.exiting')
-        .remove();
+    .select('.exiting')
+      .remove();
 }
 
 TapeViz.prototype.headLeft = function() {
@@ -119,18 +119,18 @@ TapeViz.prototype.headLeft = function() {
 
   // add to left end
   var tapeView = this.wrapper.insert('g', ':first-child')
-    .datum(this.readOffset(-this.lookaround))
-    .attr({'class': 'tape-cell'})
-    .call(appendCellContents);
+      .datum(this.readOffset(-this.lookaround))
+      .call(initTapeCells);
 
   // remove from right end
-  this.wrapper.select('.wrapper > .tape-cell:last-of-type').classed('exiting', true);
+  this.wrapper.select('.wrapper > .tape-cell:last-of-type')
+      .classed('exiting', true);
 
   // translate cells rightward, and wrapper leftward. animate wrapper going right.
   this.wrapper.selectAll('.tape-cell')
-    .attr('transform', function(d, i) {
-            return 'translate(' + (-50+10+cellWidth*i).toString() + ' 10)';
-          });
+      .attr('transform', function(d, i) {
+              return 'translate(' + (-50+10+cellWidth*i).toString() + ' 10)';
+            });
   this.wrapper
       .attr('transform', 'translate(' + (-cellWidth).toString() + ')')
     .transition()
@@ -138,7 +138,7 @@ TapeViz.prototype.headLeft = function() {
     .transition()
       .duration(0)
       .attr('transform', null)
-      .select('.exiting')
-        .remove();
+    .select('.exiting')
+      .remove();
   ;
 }
