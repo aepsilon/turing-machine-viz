@@ -17,23 +17,42 @@ function initTapeCells(selection) {
   return selection;
 }
 
+function positionCells(selection, offset) {
+  offset = (offset == undefined) ? 0 : offset;
+  selection.attr('transform', function(d, i) {
+    return 'translate(' + (-cellWidth+10 + cellWidth*(i+offset)) + ')';
+  });
+  return selection;
+}
+
+function repositionWrapper(wrapper) {
+  wrapper.attr('transform', 'translate(0 10)')
+    .transition()
+      .duration(0)
+    .select('.exiting')
+      .remove();
+}
+
 // Tape visualization centered around the tape head.
 function TapeViz(svg, lookaround, blank, input) {
   Tape.call(this, blank, input);
 
-  // width is before + head + after, trimming 2 off to show cut-off tape ends
-  svg.attr({'width': cellWidth * (lookaround+1+lookaround-2) + 20,
-            'height': cellHeight+20});
-
   this.__defineGetter__('lookaround', function() { return lookaround; });
 
-  this.wrapper = svg.append('g').attr('class', 'wrapper');
+  // TODO: factor out hard-coded constants
+  // width is before + head + after, trimming 2 off to show cut-off tape ends
+  svg.attr({'width': cellWidth * (lookaround+1+lookaround-2) + 2*10,
+            'height': cellHeight + 2*10});
+
+  this.wrapper = svg.append('g')
+      .attr('class', 'wrapper')
+      .call(repositionWrapper);
 
   var tapeHead = svg.append('rect')
       .attr({'id': 'tape-head',
-             'width': cellWidth+10,
-             'height': cellHeight+10,
-             'x': 10/2 + cellWidth*(lookaround-1),
+             'width': (1+1/5) * cellWidth,
+             'height': (1+1/5) * cellHeight,
+             'x': -cellWidth+10/2 + cellWidth*lookaround,
              'y': 10/2
            });
 
@@ -41,8 +60,8 @@ function TapeViz(svg, lookaround, blank, input) {
       .data(this.readRange(-lookaround, lookaround))
     .enter()
     .append('g')
-      .attr('transform', function(d, i) { return 'translate(' + (-50+10 + cellWidth*i) + ' 10)'; })
       .call(initTapeCells)
+      .call(positionCells)
   ;
 }
 
@@ -82,63 +101,39 @@ TapeViz.prototype.write = function(symbol) {
     ;
 }
 
+function moveHead(wrapper, enter, exit, wOffset, cOffset) {
+  // remove leftover .exiting in case animation was interrupted
+  wrapper.selectAll('.exiting').remove();
+  // add to one end
+  enter.call(initTapeCells);
+  // remove from the other end
+  exit.classed('exiting', true);
+  // translate cells forward, and the wrapper backwards
+  wrapper.selectAll('.tape-cell')
+      .call(positionCells, cOffset);
+  wrapper
+      .attr('transform', 'translate(' + (wOffset*cellWidth).toString() + ' 10)')
+    // animate wrapper returning to neutral position
+    .transition()
+      .call(repositionWrapper);
+}
+
 TapeViz.prototype.headRight = function() {
   Tape.prototype.headRight.call(this);
-  // remove leftover .exiting in case animation was interrupted
-  this.wrapper.selectAll('.exiting').remove();
-
-  // add to right end
-  var tapeView = this.wrapper.append('g')
-      .datum(this.readOffset(this.lookaround))
-      .call(initTapeCells);
-
-  // remove from left end
-  this.wrapper.select('.tape-cell')
-      .classed('exiting', true);
-
-  // shift all cells leftwards, but translate wrapper rightwards to compensate
-  this.wrapper.selectAll('.tape-cell')
-      .attr('transform', function(d, i) {
-              return 'translate(' + (-50+10+cellWidth*(i-1)).toString() + ' 10)';
-            });
-  this.wrapper
-      .attr('transform', 'translate(' + cellWidth.toString() + ')')
-    .transition()
-      .attr('transform', 'translate(0)')
-    .transition()
-      .duration(0)
-      .attr('transform', null)
-    .select('.exiting')
-      .remove();
+  moveHead(this.wrapper,
+    // add to right end
+    this.wrapper.append('g')
+        .datum(this.readOffset(this.lookaround)),
+    // remove from left end
+    this.wrapper.select('.tape-cell'),
+    1, -1);
 }
 
 TapeViz.prototype.headLeft = function() {
   Tape.prototype.headLeft.call(this);
-  // remove leftover .exiting in case animation was interrupted
-  this.wrapper.selectAll('.exiting').remove();
-
-  // add to left end
-  var tapeView = this.wrapper.insert('g', ':first-child')
-      .datum(this.readOffset(-this.lookaround))
-      .call(initTapeCells);
-
-  // remove from right end
-  this.wrapper.select('.wrapper > .tape-cell:last-of-type')
-      .classed('exiting', true);
-
-  // translate cells rightward, and wrapper leftward. animate wrapper going right.
-  this.wrapper.selectAll('.tape-cell')
-      .attr('transform', function(d, i) {
-              return 'translate(' + (-50+10+cellWidth*i).toString() + ' 10)';
-            });
-  this.wrapper
-      .attr('transform', 'translate(' + (-cellWidth).toString() + ')')
-    .transition()
-      .attr('transform', 'translate(0)')
-    .transition()
-      .duration(0)
-      .attr('transform', null)
-    .select('.exiting')
-      .remove();
-  ;
+  moveHead(this.wrapper,
+    this.wrapper.insert('g', ':first-child')
+        .datum(this.readOffset(-this.lookaround)),
+    this.wrapper.select('.wrapper > .tape-cell:last-of-type'),
+    -1, 0);
 }
