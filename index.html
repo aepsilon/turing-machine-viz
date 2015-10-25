@@ -4,7 +4,7 @@
 <meta charset='utf-8'>
 <title>Turing machine visualization</title>
 
-<script src='state-viz/underscore-min.js' type='text/javascript'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js' type='text/javascript'></script>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js' charset='utf-8'></script>
 
 <script src='tape/Tape.js' type='text/javascript'></script>
@@ -13,8 +13,20 @@
 <script src='util.js' type='text/javascript'></script>
 <script src='TuringMachine.js' type='text/javascript'></script>
 
+<script src='StateViz.js' type='text/javascript'></script>
+<script src='NodesLinks.js' type='text/javascript'></script>
+
 <link href='tape/tape.css' rel='stylesheet' />
 <style>
+.node {
+  cursor: move;
+}
+
+text {
+  pointer-events: none;
+  text-anchor: middle;
+}
+
 .run-step {
   padding: 4px 12px 6px 12px;
   display: block
@@ -27,56 +39,55 @@
 <noscript><strong>Tip: to enable this visualization, enable JavaScript.</strong></noscript>
 
 <script type='text/javascript'>
+var powersOfTwo = (function() {
+  // convenient synonyms
+  var L = MoveHead.left;
+  var R = MoveHead.right;
 
-// EXAMPLE MACHINE
+  var accept = move(R, 'accept');
+  var reject = move(R, 'reject');
 
-var powersOfTwo = {
-  name: 'powers of two',
-  input: '0000',
-  get construct() {
-    return function(svg) {
-      // convenient synonyms
-      var L = MoveHead.left;
-      var R = MoveHead.right;
+  // transition function
+  var table = Object.freeze({
+    q1: {
+      '0': write(' ', R, 'q2'),
+      '_': reject
+    },
+    q2: {
+      '0': write('x', R, 'q3'),
+      ' ': accept,
+      'x': skip(R)
+    },
+    q3: {
+      '0': move(R, 'q4'),
+      ' ': move(L, 'q5'),
+      'x': skip(R)
+    },
+    q4: {
+      '0': write('x', R, 'q3'),
+      ' ': reject,
+      'x': skip(R)
+    },
+    q5: {
+      ' ': move(R, 'q2'),
+      '_': skip(L)
+    },
+    'accept': null,
+    'reject': null
+  });
+  return {
+    name: 'powers of two',
+    input: '0000',
+    table: table,
+    get construct() {
+      return function(svg) {
+        var tape = new TapeViz(svg, 5, ' ', this.input.split(''));
+        return new TuringMachine(makeTransition(table), 'q1', tape);
+      };
+    }
+  };
+})();
 
-      var accept = move(R, 'accept');
-      var reject = move(R, 'reject');
-
-      // transition function
-      var table = Object.freeze({
-        q1: {
-          '0': write(' ', R, 'q2'),
-          '_': reject
-        },
-        q2: {
-          '0': write('x', R, 'q3'),
-          ' ': accept,
-          'x': skip(R)
-        },
-        q3: {
-          '0': move(R, 'q4'),
-          ' ': move(L, 'q5'),
-          'x': skip(R)
-        },
-        q4: {
-          '0': write('x', R, 'q3'),
-          ' ': reject,
-          'x': skip(R)
-        },
-        q5: {
-          ' ': move(R, 'q2'),
-          '_': skip(L)
-        },
-        'accept': null,
-        'reject': null
-      });
-      var tape = new TapeViz(svg, 5, ' ', this.input.split(''));
-      return new TuringMachine(makeTransition(table), 'q1', tape);
-    };
-  }
-}
-
-// GENERAL D3
 
 var divs = d3.select('body')
   .selectAll('div.machine')
@@ -89,6 +100,10 @@ divs.enter()
     .attr('class', 'machine')
   .each(function(d) {
     var div = d3.select(this);
+    var dataset = deriveNodesLinks(d.table);
+    d.dataset = dataset;
+    visualizeState(div.append('svg'), dataset);
+
     var machine = d.construct(div.append('svg'));
     d.machine = machine;
     div.append('button')
