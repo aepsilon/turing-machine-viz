@@ -18,7 +18,7 @@ function initTapeCells(selection) {
 }
 
 function positionCells(selection, offset) {
-  offset = (offset == undefined) ? 0 : offset;
+  offset = (offset == null) ? 0 : offset;
   selection.attr('transform', function(d, i) {
     return 'translate(' + (-cellWidth+10 + cellWidth*(i+offset)) + ')';
   });
@@ -37,7 +37,11 @@ function repositionWrapper(wrapper) {
 function TapeViz(svg, lookaround, blank, input) {
   Tape.call(this, blank, input);
 
-  this.__defineGetter__('lookaround', function() { return lookaround; });
+  Object.defineProperty(this, 'lookaround', {
+    value: lookaround,
+    writable: false,
+    enumerable: true
+  });
 
   // TODO: factor out hard-coded constants
   // width is before + head + after, trimming 2 off to show cut-off tape ends
@@ -99,7 +103,7 @@ TapeViz.prototype.write = function(symbol) {
       .attr('fill-opacity', null)
       .attr('stroke-opacity', null)
     ;
-}
+};
 
 function moveHead(wrapper, enter, exit, wOffset, cOffset) {
   // remove leftover .exiting in case animation was interrupted
@@ -127,7 +131,7 @@ TapeViz.prototype.headRight = function() {
     // remove from left end
     this.wrapper.select('.tape-cell'),
     1, -1);
-}
+};
 
 TapeViz.prototype.headLeft = function() {
   Tape.prototype.headLeft.call(this);
@@ -136,4 +140,4 @@ TapeViz.prototype.headLeft = function() {
         .datum(this.readOffset(-this.lookaround)),
     this.wrapper.select('.wrapper > .tape-cell:last-of-type'),
     -1, 0);
-}
+};

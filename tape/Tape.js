@@ -3,8 +3,10 @@
 
 // Bidirectional infinite tape
 function Tape(blank, input) {
-  this.__defineGetter__("blank", function() {
-    return blank;
+  Object.defineProperty(this, 'blank', {
+    value: blank,
+    writable: false,
+    enumerable: true
   });
   // zipper data structure
   // INVARIANTS: tape.before can be empty, tape.after must be nonempty.
@@ -12,7 +14,7 @@ function Tape(blank, input) {
   // after:  cells after and including the head (in reverse; right to left).
   this.tape = {
     before: [],
-    after: (input == undefined) ? [blank] : input.slice().reverse(),
+    after: (input == null) ? [blank] : input.slice().reverse(),
     toString: function() {
       return this.before.join('') + '🔎' + this.after.slice().reverse().join('');
     }
