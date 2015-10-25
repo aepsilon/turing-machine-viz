@@ -1,10 +1,100 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang='en'>
 <head>
-<meta charset="utf-8">
+<meta charset='utf-8'>
 <title>Turing machine visualization</title>
 
-<script src="build/turingmachine.js" type="text/javascript"></script>
+<script src='state-viz/underscore-min.js' type='text/javascript'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js' charset='utf-8'></script>
 
+<script src='tape/Tape.js' type='text/javascript'></script>
+<script src='tape/TapeViz.js' type='text/javascript'></script>
+
+<script src='util.js' type='text/javascript'></script>
+<script src='TuringMachine.js' type='text/javascript'></script>
+
+<link href='tape/tape.css' rel='stylesheet' />
+<style>
+.run-step {
+  padding: 4px 12px 6px 12px;
+  display: block
+}
+</style>
 </head>
+
 <body>
+
+<noscript><strong>Tip: to enable this visualization, enable JavaScript.</strong></noscript>
+
+<script type='text/javascript'>
+
+// EXAMPLE MACHINE
+
+var powersOfTwo = {
+  name: 'powers of two',
+  input: '0000',
+  get construct() {
+    return function(svg) {
+      // convenient synonyms
+      var L = MoveHead.left;
+      var R = MoveHead.right;
+
+      var accept = move(R, 'accept');
+      var reject = move(R, 'reject');
+
+      // transition function
+      var table = Object.freeze({
+        q1: {
+          '0': write(' ', R, 'q2'),
+          '_': reject
+        },
+        q2: {
+          '0': write('x', R, 'q3'),
+          ' ': accept,
+          'x': skip(R)
+        },
+        q3: {
+          '0': move(R, 'q4'),
+          ' ': move(L, 'q5'),
+          'x': skip(R)
+        },
+        q4: {
+          '0': write('x', R, 'q3'),
+          ' ': reject,
+          'x': skip(R)
+        },
+        q5: {
+          ' ': move(R, 'q2'),
+          '_': skip(L)
+        },
+        'accept': null,
+        'reject': null
+      });
+      var tape = new TapeViz(svg, 5, ' ', this.input.split(''));
+      return new TuringMachine(makeTransition(table), 'q1', tape);
+    };
+  }
+}
+
+// GENERAL D3
+
+var divs = d3.select('body')
+  .selectAll('div.machine')
+    .data([powersOfTwo], function(d) { return d.name; });
+
+divs.exit().remove();
+
+divs.enter()
+  .append('div')
+    .attr('class', 'machine')
+  .each(function(d) {
+    var div = d3.select(this);
+    var machine = d.construct(div.append('svg'));
+    d.machine = machine;
+    div.append('button')
+        .text('Step')
+        .attr('class', 'run-step')
+      .node()
+        .addEventListener('click', function() { machine.step(); });
+  });
+</script>
