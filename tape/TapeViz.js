@@ -106,8 +106,6 @@ TapeViz.prototype.write = function(symbol) {
 };
 
 function moveHead(wrapper, enter, exit, wOffset, cOffset) {
-  // remove leftover .exiting in case animation was interrupted
-  wrapper.selectAll('.exiting').remove();
   // add to one end
   enter.call(initTapeCells);
   // remove from the other end
@@ -124,6 +122,10 @@ function moveHead(wrapper, enter, exit, wOffset, cOffset) {
 
 TapeViz.prototype.headRight = function() {
   Tape.prototype.headRight.call(this);
+  // remove leftover .exiting in case animation was interrupted.
+  // Important: call-by-value evaluates the selection argument(s) of 'moveHead' before
+  // before entering the function, so exiting nodes have to be removed beforehand.
+  this.wrapper.selectAll('.exiting').remove();
   moveHead(this.wrapper,
     // add to right end
     this.wrapper.append('g')
@@ -135,6 +137,7 @@ TapeViz.prototype.headRight = function() {
 
 TapeViz.prototype.headLeft = function() {
   Tape.prototype.headLeft.call(this);
+  this.wrapper.selectAll('.exiting').remove();
   moveHead(this.wrapper,
     this.wrapper.insert('g', ':first-child')
         .datum(this.readOffset(-this.lookaround)),
