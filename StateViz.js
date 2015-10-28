@@ -56,6 +56,7 @@ function visualizeState(svg, dataset) {
            'fill-opacity':'40%'})
     .style("fill",function(d,i){return colors(i);})
     // .call(force.drag)
+    .each(function(d) { d.domNode = this; })
     .on('dblclick', releasenode)
     .call(drag)
 

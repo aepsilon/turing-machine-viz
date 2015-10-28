@@ -18,7 +18,6 @@ function labelFor(symbol, action) {
 
 // use a transition map to derive the nodes and edges for a D3 diagram
 function deriveNodesLinks(obj) {
-  // set each state to an object: {label:.., symboltabel:..}
   var stateMap = _.mapObject(obj,
     function(symbolMap, state) {
       return {

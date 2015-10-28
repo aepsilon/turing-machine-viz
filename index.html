@@ -31,6 +31,11 @@ text {
   padding: 4px 12px 6px 12px;
   display: block
 }
+
+.current-state {
+  stroke: gold;
+  stroke-width: 5px;
+}
 </style>
 </head>
 
@@ -82,7 +87,20 @@ var powersOfTwo = (function() {
     get construct() {
       return function(svg) {
         var tape = new TapeViz(svg, 5, ' ', this.input.split(''));
-        return new TuringMachine(makeTransition(table), 'q1', tape);
+        var machine = new TuringMachine(makeTransition(table), 'q1', tape);
+        // FIXME: experimental. override TuringMachine.state
+        machine.__state = machine.state;
+        var stateMap = this.dataset.stateMap;
+        Object.defineProperty(machine, 'state', {
+          get: function() { return this.__state; },
+          set: function(s) {
+            d3.select(stateMap[this.__state].domNode).classed('current-state', false);
+            this.__state = s;
+            d3.select(stateMap[s].domNode).classed('current-state', true);
+          }
+        });
+        machine.state = machine.__state;
+        return machine;
       };
     }
   };
