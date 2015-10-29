@@ -39,6 +39,7 @@ function unitV(array) {
 
 // *** D3 diagram ***
 
+// TODO: allow multiple diagrams per page? as is, some element IDs would collide.
 function visualizeState(svg, dataset) {
   // based on [Graph with labeled edges](http://bl.ocks.org/jhb/5955887)
   // and [Sticky Force Layout](http://bl.ocks.org/mbostock/3750558)
@@ -114,14 +115,13 @@ function visualizeState(svg, dataset) {
       .enter()
       .append('text')
       .attr({'class':'edgelabel',
-             'id':function(d,i){return 'edgelabel'+i},
-             'dx':80,
-             'dy':0,
+             'text-anchor': 'middle',
              'font-size':10,
              'fill':'#aaa'});
 
   edgelabels.append('textPath')
       .attr('xlink:href',function(d,i) {return '#edgepath'+i})
+      .attr('startOffset', '50%')
       .text(function(d,i){return d.label});
 
   svg.append('defs').append('marker')
