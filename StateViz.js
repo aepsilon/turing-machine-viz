@@ -1,5 +1,3 @@
-
-
 // *** Arrays as vectors ***
 
 // Add vectors.
@@ -36,6 +34,37 @@ function unitV(array) {
   var n = normV(array);
   return array.map(function(x) { return x / n; });
 }
+
+// *** 2D Vectors ***
+function angleV(array) {
+  var x = array[0], y = array[1];
+  return Math.atan2(y, x);
+}
+
+function vectorFromLengthAngle(length, angle) {
+  return [Math.cos(angle) * length, Math.sin(angle) * length];
+}
+
+// *** Utilities ***
+
+// Count the directed edges that start at a given node and end at another.
+// Example usage:
+// var counts = countEdges(edges);
+// var edgesFrom2To5 = counts.numEdgesFromTo(2,5);
+// var edgesFrom5to2 = counts.numEdgesFromTo(5,2);
+function countEdges(edges) {
+  var result = {
+    numEdgesFromTo: function(src, target) {
+      return this[String(src)+','+String(target)] || 0;
+    }
+  };
+  edges.forEach(function(edge) {
+    var key = edge.source.index +','+ edge.target.index;
+    result[key] = (result[key] || 0) + 1;
+  });
+  return result;
+}
+
 
 // *** D3 diagram ***
 
@@ -117,6 +146,7 @@ function visualizeState(svg, dataset) {
       .attr({'class':'edgelabel',
              'text-anchor': 'middle',
              'font-size':10,
+             'dy': -7,
              'fill':'#aaa'});
 
   edgelabels.append('textPath')
@@ -136,6 +166,8 @@ function visualizeState(svg, dataset) {
           .attr('fill', '#ccc')
           .attr('stroke','#ccc');
 
+  var edgeCount = countEdges(dataset.edges);
+
   force.on("tick", function(){
 
       nodes.attr({"cx":function(d){return d.x;},
@@ -153,13 +185,30 @@ function visualizeState(svg, dataset) {
             return 'M ' + x1 + ',' + (y1-nodeRadius) +
               ' A 30,20 -45 1,1 ' + (x1+nodeRadius) + ',' + y1;
           }
-          // case: line
+          // case: between nodes
           var p1 = [d.source.x, d.source.y];
           var p2 = [d.target.x, d.target.y];
           var offset = subtractV(p2, p1);
-          var target = subtractV(p2, multiplyV(unitV(offset), nodeRadius));
-          return 'M '+x1+' '+y1+' L '+ target[0] +' '+ target[1];
-      });       
+          // TODO: account for multiple edges with same source + target
+          // right now it works for back and forth: one edge out and one edge in.
+          if (edgeCount.numEdgesFromTo(d.target.index, d.source.index)) {
+            // sub-case: arc
+            var radius = 6/5*normV(offset);
+            // Note: SVG's y-axis is flipped, so vector angles are negative
+            // relative to standard coordinates (as used in Math.atan2).
+            // Proof: angle(r <cos ϴ, -sin ϴ>) = angle(r <cos -ϴ, sin -ϴ>) = -ϴ.
+            var angle = angleV(offset);
+            var sep = -Math.PI/2/2; // 90° separation, half on each side
+            var source = addV(p1, vectorFromLengthAngle(nodeRadius, angle+sep));
+            var target = addV(p2, vectorFromLengthAngle(nodeRadius, angle+Math.PI-sep));
+            return 'M '+source[0]+' '+source[1]+' A '+radius+' '+radius + ' 0 0,1 '+
+              target[0] + ' ' +target[1];
+          } else {
+            // sub-case: straight line
+            var target = subtractV(p2, multiplyV(unitV(offset), nodeRadius));
+            return 'M '+x1+' '+y1+' L '+ target[0] +' '+ target[1];
+          }
+      });
 
       edgelabels.attr('transform',function(d,i){
           if (d.target.x<d.source.x){
