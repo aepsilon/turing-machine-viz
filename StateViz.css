@@ -1,0 +1,35 @@
+.node {
+  cursor: move;
+}
+
+circle.node {
+  /*fill-opacity: 20%;*/
+}
+
+.current-state {
+  stroke: gold;
+  stroke-width: 5px;
+}
+
+text {
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.nodelabel {
+  font-size: 15px;
+  stroke: black;
+}
+
+.edgelabel {
+  font-size: 10px;
+  fill: #aaa;
+}
+
+.edgepath {
+  stroke: #ccc;
+  fill: none;
+  marker-end: url(#arrowhead);
+  pointer-events: none;
+}
+
