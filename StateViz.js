@@ -1,4 +1,6 @@
 'use strict';
+// requires d3.js
+
 // *** Arrays as vectors ***
 
 // Add vectors.
@@ -70,6 +72,10 @@ function countEdges(edges) {
 // *** D3 diagram ***
 
 // TODO: allow multiple diagrams per page? as is, some element IDs would collide.
+
+// Create a Turing Machine state diagram inside a given SVG using the given nodes and edges.
+// Each node/edge object is also annotated with a @domNode@ property corresponding
+// to its SVG element.
 function visualizeState(svg, nodeArray, linkArray) {
   // based on [Graph with labeled edges](http://bl.ocks.org/jhb/5955887)
   // and [Sticky Force Layout](http://bl.ocks.org/mbostock/3750558)
@@ -123,7 +129,8 @@ function visualizeState(svg, nodeArray, linkArray) {
   var edgepaths = edgeSelection
     .append('path')
       .attr({'class':'edgepath',
-             'id': function(d,i) { return 'edgepath'+i; }});
+             'id': function(d,i) { return 'edgepath'+i; }})
+      .each(function(d) { d.domNode = this; });
 
   var edgelabels = edgeSelection
     .append('text')
@@ -156,18 +163,17 @@ function visualizeState(svg, nodeArray, linkArray) {
      .text(function(d) { return d.label; });
 
   // Arrowhead
-  svg.append('defs')
-    .append('marker')
-      .attr({'id':'arrowhead',
+  svg.append('defs').selectAll('marker')
+      .data(['arrowhead', 'active-arrowhead'])
+    .enter().append('marker')
+      .attr({'id': function(d) { return d; },
              'viewBox':'0 -5 10 10',
              'refX':10,
              'orient':'auto',
              'markerWidth':10,
              'markerHeight':10})
     .append('path')
-      .attr('d', 'M 0 -5 L 10 0 L 0 5 Z')
-      .attr('fill', '#ccc')
-      .attr('stroke','#ccc');
+      .attr('d', 'M 0 -5 L 10 0 L 0 5 Z');
 
   // Force Layout Update
   var edgeCount = countEdges(linkArray);

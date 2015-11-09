@@ -35,6 +35,56 @@
 <noscript><strong>Tip: to enable this visualization, enable JavaScript.</strong></noscript>
 
 <script type='text/javascript'>
+
+// Animate each transition's edge
+// TODO: factor out
+// FIXME: missing null checks, like for .withSymbol
+
+// TODO: decompose into lookup edge
+function makeTransitionViz(stateMap, callback) {
+  return function(s, sym) {
+    var stateObj = stateMap[s];
+    if (stateObj === null) {
+      throw new Error('the machine has already reached a halting state: ' + String(s));
+    }
+    if (stateObj === undefined) {
+      throw new Error('not a valid state: ' + String(s));
+    }
+    var symbolMap = stateObj.withSymbol;
+    var edgeObj = symbolMap[sym];
+    // try wildcard if not matched
+    edgeObj = (edgeObj === undefined) ? symbolMap['_'] : edgeObj;
+    if (edgeObj == null) {
+      throw new Error('no transition is defined from state ' + String(s) + ' for symbol '+ String(sym));
+    }
+
+    callback(edgeObj.edge);
+    return interpretAction(s, sym, edgeObj.action);
+  };
+}
+
+// sample animation for edges
+function pulseEdgeSample(edge) {
+  var edgepath = d3.select(edge.domNode);
+  // workaround for https://github.com/d3/d3-transition/issues/11
+  var normalColor = edgepath.style('stroke');
+  var pulseColor = d3.select('#active-arrowhead').style('stroke');
+  edgepath
+    .transition()
+      // TODO: animate arrowhead as well
+      .style('marker-end', 'url(#active-arrowhead)')
+      .style('stroke', pulseColor)
+      .style('stroke-width', '3')
+    .transition()
+      .style('stroke', normalColor)
+      .style('stroke-width', '1')
+    .transition()
+      .duration(0)
+      .style('marker-end', null)
+      .style('stroke', null)
+      .style('stroke-width', null);
+}
+
 var powersOfTwo = (function() {
   // convenient synonyms
   var L = MoveHead.left;
@@ -76,12 +126,13 @@ var powersOfTwo = (function() {
     input: '0000',
     table: table,
     get construct() {
-      return function(svg) {
+      return function(svg, dataset) {
+        this.dataset = dataset;
+        var stateMap = dataset.stateMap;
         var tape = new TapeViz(svg, 5, ' ', this.input.split(''));
-        var machine = new TuringMachine(makeTransition(table), 'q1', tape);
+        var machine = new TuringMachine(makeTransitionViz(stateMap, pulseEdgeSample), 'q1', tape);
         // FIXME: experimental. override TuringMachine.state
         machine.__state = machine.state;
-        var stateMap = this.dataset.stateMap;
         Object.defineProperty(machine, 'state', {
           get: function() { return this.__state; },
           set: function(s) {
@@ -108,17 +159,16 @@ divs.enter()
   .append('div')
     .attr('class', 'machine')
   .each(function(d) {
-    var div = d3.select(this);
     var dataset = deriveNodesLinks(d.table);
-    d.dataset = dataset;
-    visualizeState(div.append('svg'), dataset.nodes, dataset.edges);
 
-    var machine = d.construct(div.append('svg'));
-    d.machine = machine;
+    var div = d3.select(this);
+    visualizeState(div.append('svg'), dataset.nodes, dataset.edges);
+    d.machine = d.construct(div.append('svg'), dataset);
+
     div.append('button')
         .text('Step')
         .attr('class', 'run-step')
       .node()
-        .addEventListener('click', function() { machine.step(); });
+        .addEventListener('click', function() { d.machine.step(); });
   });
 </script>

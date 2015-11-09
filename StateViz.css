@@ -33,3 +33,12 @@ text {
   pointer-events: none;
 }
 
+#arrowhead {
+  stroke: #ccc;
+  fill: #ccc;
+}
+
+#active-arrowhead {
+  stroke: lightskyblue;
+  fill: lightskyblue;
+}
