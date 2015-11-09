@@ -130,13 +130,40 @@ var powersOfTwo = {
   })()
 };
 
+var busyBeaver3 = {
+  name: '3-state busy beaver',
+  input: '',
+  blank: 0,
+  startState: 'A',
+  table: (function() {
+    var L = MoveTape.left;
+    var R = MoveTape.right;
+    var halt = move(R, 'halt');
+    return Object.freeze({
+      A: {
+        0: write(1, R, 'B'),
+        1: move(L, 'C')
+      },
+      B: {
+        0: write(1, L, 'A'),
+        1: skip(R)
+      },
+      C: {
+        0: write(1, L, 'B'),
+        1: halt
+      },
+      halt: null
+    });
+  })()
+};
+
 // construct a new state and tape visualization inside the 'div' selection.
 function constructMachine(div, spec) {
   var dataset = deriveNodesLinks(spec.table);
   var stateMap = dataset.stateMap;
   visualizeState(div.append('svg'), dataset.nodes, dataset.edges);
 
-  var tape = new TapeViz(div.append('svg'), 5, spec.blank, spec.input.split(''));
+  var tape = new TapeViz(div.append('svg'), 7, spec.blank, spec.input.split(''));
   var machine = new TuringMachine(makeTransitionViz(stateMap, pulseEdgeSample), spec.startState, tape);
   // FIXME: experimental. override TuringMachine.state
   machine.__state = machine.state;
@@ -155,6 +182,7 @@ function constructMachine(div, spec) {
 var divs = d3.select('body')
   .selectAll('div.machine')
     .data([powersOfTwo], function(d) { return d.name; });
+    // .data([busyBeaver3], function(d) { return d.name; });
 
 divs.exit().remove();
 
