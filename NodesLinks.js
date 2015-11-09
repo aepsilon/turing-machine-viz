@@ -18,34 +18,32 @@ function labelFor(symbol, action) {
 
 // use a transition map to derive the nodes and edges for a D3 diagram
 function deriveNodesLinks(obj) {
-  var stateMap = _.mapObject(obj,
-    function(symbolMap, state) {
-      return {
-        label: state,
-        withSymbol: symbolMap
-      };
-    }
-  );
-
   var edges = [];
 
-  function addEdges(stateObj, state) {
-    stateObj.withSymbol = _(stateObj.withSymbol).mapObject(function(action, symbol) {
-      var edge = {
-        source: stateObj,
-        target: stateMap[coalesce(action.state, state)],
-        label: labelFor(symbol, action)
+  var stateMap = _(obj).mapObject(function(symbolMap, state) {
+    // create the nodes.
+    return {
+      label: state,
+      // create the edges.
+      // defer evaluation until after nodes are created,
+      // since edge.target is potentially another node's object.
+      withSymbol: function(thisObj) {
+        return _(symbolMap).mapObject(function(action, symbol) {
+          return {
+            action: action,
+            edge: _({
+              source: thisObj,
+              target: stateMap[coalesce(action.state, state)],
+              label: labelFor(symbol, action)
+            }).tap(edges.push.bind(edges))
+          };
+        });
       }
-      edges.push(edge);
-      return {
-        action: action,
-        edge: edge
-      };
-    });
-  }
-
-  _(stateMap).mapObject(addEdges);
-
+    };
+  });
+  // evaluate the deferred values
+  _(stateMap).mapObject(function(o) { o.withSymbol = o.withSymbol(o); });
+  
   return {
     nodes: _(stateMap).values(),
     edges: edges,
