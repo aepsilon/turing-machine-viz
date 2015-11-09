@@ -191,6 +191,9 @@ divs.enter()
     .attr('class', 'machine')
     .each(function(d) {
       var div = d3.select(this);
+      div.append('h3')
+          .text(function(d) { return d.name; });
+
       var machine = constructMachine(div, d);
       this.__machine = machine;
 
