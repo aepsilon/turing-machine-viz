@@ -28,7 +28,7 @@ function deriveNodesLinks(obj) {
       // defer evaluation until after nodes are created,
       // since edge.target is potentially another node's object.
       withSymbol: function(thisObj) {
-        return _(symbolMap).mapObject(function(action, symbol) {
+        return (symbolMap == null) ? null : _(symbolMap).mapObject(function(action, symbol) {
           return {
             action: action,
             edge: _({

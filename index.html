@@ -45,13 +45,13 @@
 function makeTransitionViz(stateMap, callback) {
   return function(s, sym) {
     var stateObj = stateMap[s];
-    if (stateObj === null) {
-      throw new Error('the machine has already reached a halting state: ' + String(s));
-    }
     if (stateObj === undefined) {
       throw new Error('not a valid state: ' + String(s));
     }
     var symbolMap = stateObj.withSymbol;
+    if (symbolMap === null) {
+      throw new Error('the machine has already reached a halting state: ' + String(s));
+    }
     var edgeObj = symbolMap[sym];
     // try wildcard if not matched
     edgeObj = (edgeObj === undefined) ? symbolMap['_'] : edgeObj;
