@@ -85,69 +85,71 @@ function pulseEdgeSample(edge) {
       .style('stroke-width', null);
 }
 
-var powersOfTwo = (function() {
-  // convenient synonyms
-  var L = MoveHead.left;
-  var R = MoveHead.right;
+var powersOfTwo = {
+  name: 'powers of two',
+  input: '0000',
+  blank: ' ',
+  startState: 'q1',
+  table: (function() {
+    // convenient synonyms
+    var L = MoveHead.left;
+    var R = MoveHead.right;
 
-  var accept = move(R, 'accept');
-  var reject = move(R, 'reject');
+    var accept = move(R, 'accept');
+    var reject = move(R, 'reject');
 
-  // transition function
-  var table = Object.freeze({
-    q1: {
-      '0': write(' ', R, 'q2'),
-      '_': reject
-    },
-    q2: {
-      '0': write('x', R, 'q3'),
-      ' ': accept,
-      'x': skip(R)
-    },
-    q3: {
-      '0': move(R, 'q4'),
-      ' ': move(L, 'q5'),
-      'x': skip(R)
-    },
-    q4: {
-      '0': write('x', R, 'q3'),
-      ' ': reject,
-      'x': skip(R)
-    },
-    q5: {
-      ' ': move(R, 'q2'),
-      '_': skip(L)
-    },
-    'accept': null,
-    'reject': null
-  });
-  return {
-    name: 'powers of two',
-    input: '0000',
-    table: table,
-    get construct() {
-      return function(svg, dataset) {
-        this.dataset = dataset;
-        var stateMap = dataset.stateMap;
-        var tape = new TapeViz(svg, 5, ' ', this.input.split(''));
-        var machine = new TuringMachine(makeTransitionViz(stateMap, pulseEdgeSample), 'q1', tape);
-        // FIXME: experimental. override TuringMachine.state
-        machine.__state = machine.state;
-        Object.defineProperty(machine, 'state', {
-          get: function() { return this.__state; },
-          set: function(s) {
-            d3.select(stateMap[this.__state].domNode).classed('current-state', false);
-            this.__state = s;
-            d3.select(stateMap[s].domNode).classed('current-state', true);
-          }
-        });
-        machine.state = machine.__state;
-        return machine;
-      };
+    // transition function
+    return Object.freeze({
+      q1: {
+        '0': write(' ', R, 'q2'),
+        '_': reject
+      },
+      q2: {
+        '0': write('x', R, 'q3'),
+        ' ': accept,
+        'x': skip(R)
+      },
+      q3: {
+        '0': move(R, 'q4'),
+        ' ': move(L, 'q5'),
+        'x': skip(R)
+      },
+      q4: {
+        '0': write('x', R, 'q3'),
+        ' ': reject,
+        'x': skip(R)
+      },
+      q5: {
+        ' ': move(R, 'q2'),
+        '_': skip(L)
+      },
+      'accept': null,
+      'reject': null
+    });
+  })()
+};
+
+// construct a new state and tape visualization inside the 'div' selection.
+function constructMachine(div, spec) {
+  var dataset = deriveNodesLinks(spec.table);
+  var stateMap = dataset.stateMap;
+  visualizeState(div.append('svg'), dataset.nodes, dataset.edges);
+
+  var tape = new TapeViz(div.append('svg'), 5, spec.blank, spec.input.split(''));
+  var machine = new TuringMachine(makeTransitionViz(stateMap, pulseEdgeSample), spec.startState, tape);
+  // FIXME: experimental. override TuringMachine.state
+  machine.__state = machine.state;
+  Object.defineProperty(machine, 'state', {
+    get: function() { return this.__state; },
+    set: function(s) {
+      d3.select(stateMap[this.__state].domNode).classed('current-state', false);
+      this.__state = s;
+      d3.select(stateMap[s].domNode).classed('current-state', true);
     }
-  };
-})();
-
+  });
+  machine.state = machine.__state;
+  return machine;
+}
 
 var divs = d3.select('body')
   .selectAll('div.machine')
@@ -158,17 +160,16 @@ divs.exit().remove();
 divs.enter()
   .append('div')
     .attr('class', 'machine')
-  .each(function(d) {
-    var dataset = deriveNodesLinks(d.table);
+    .each(function(d) {
+      var div = d3.select(this);
+      var machine = constructMachine(div, d);
+      this.__machine = machine;
 
-    var div = d3.select(this);
-    visualizeState(div.append('svg'), dataset.nodes, dataset.edges);
-    d.machine = d.construct(div.append('svg'), dataset);
+      div.append('button')
+          .text('Step')
+          .attr('class', 'run-step')
+        .node()
+          .addEventListener('click', function() { machine.step(); });
+    });
 
-    div.append('button')
-        .text('Step')
-        .attr('class', 'run-step')
-      .node()
-        .addEventListener('click', function() { d.machine.step(); });
-  });
 </script>
