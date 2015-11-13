@@ -33,6 +33,7 @@ text {
 .edgelabel {
   font-size: 10px;
   fill: #aaa;
+  letter-spacing: 0.2em;
 }
 
 .edgepath {

@@ -16,7 +16,8 @@ function labelFor(symbol, action) {
   return visibleSpace(String(symbol)) + '→' + rightSide;
 }
 
-// use a transition map to derive the nodes and edges for a D3 diagram
+// use a transition table to derive the nodes and edges for a D3 diagram.
+// edges that have the same source and target are combined.
 function deriveNodesLinks(obj) {
   var edges = [];
 
@@ -28,14 +29,23 @@ function deriveNodesLinks(obj) {
       // defer evaluation until after nodes are created,
       // since edge.target is potentially another node's object.
       withSymbol: function(thisObj) {
+        var edgeTo = {};
         return (symbolMap == null) ? null : _(symbolMap).mapObject(function(action, symbol) {
           return {
             action: action,
-            edge: _({
-              source: thisObj,
-              target: stateMap[coalesce(action.state, state)],
-              label: labelFor(symbol, action)
-            }).tap(edges.push.bind(edges))
+            edge: (function() {
+              var target = coalesce(action.state, state);
+              var label = labelFor(symbol, action);
+              // create only one edge per source-target pair
+              var edge = edgeTo[target];
+              return (edge != null)
+                ? _.constant(edge)(edge.labels.push(label))
+                : _(edgeTo[target] = {
+                    source: thisObj,
+                    target: stateMap[target],
+                    labels: [label]
+                }).tap(Array.prototype.push.bind(edges));
+            })()
           };
         });
       }
@@ -50,4 +60,3 @@ function deriveNodesLinks(obj) {
     stateMap: stateMap
   };
 }
-

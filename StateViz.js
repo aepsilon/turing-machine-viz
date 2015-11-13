@@ -52,22 +52,81 @@ function vectorFromLengthAngle(length, angle) {
 
 // Count the directed edges that start at a given node and end at another.
 // Example usage:
-// var counts = countEdges(edges);
+// var counts = new EdgeCounter(edges);
 // var edgesFrom2To5 = counts.numEdgesFromTo(2,5);
 // var edgesFrom5to2 = counts.numEdgesFromTo(5,2);
-function countEdges(edges) {
-  var result = {
-    numEdgesFromTo: function(src, target) {
-      return this[String(src)+','+String(target)] || 0;
-    }
-  };
-  edges.forEach(function(edge) {
-    var key = edge.source.index +','+ edge.target.index;
-    result[key] = (result[key] || 0) + 1;
-  });
-  return result;
+function EdgeCounter(edges) {
+  edges.forEach(function(e) {
+    var key = e.source.index +','+ e.target.index;
+    this[key] = (this[key] || 0) + 1;
+  }, this);
 }
 
+EdgeCounter.prototype.numEdgesFromTo = function(src, target) {
+  return this[String(src)+','+String(target)] || 0;
+};
+
+var EdgeShape = Object.freeze({
+  loop: {},
+  arc: {},
+  straight: {}
+});
+
+// create a function that will compute an edge's SVG 'd' attribute.
+// returns: {shape: EdgeShape.(..), getPath: <function> }
+function edgePathFor(nodeRadius, edgeCounter, d) {
+  // case: self-loop
+  if (d.target.index === d.source.index) {
+    return {shape: EdgeShape.loop, getPath: function() {
+      var x1 = d.source.x,
+          y1 = d.source.y;
+      // start at the top (90°) and end at the right (0°)
+      return 'M ' + x1 + ',' + (y1-nodeRadius) +
+        ' A 30,20 -45 1,1 ' + (x1+nodeRadius) + ',' + y1;
+    }};
+  }
+  // case: between nodes
+  // has returning edge => arc
+  if (edgeCounter.numEdgesFromTo(d.target.index, d.source.index)) {
+    // sub-case: arc
+    return {shape: EdgeShape.arc, getPath: function() {
+      // note: p1 & p2 have to be delayed, to access x/y at the time of the call
+      var p1 = [d.source.x, d.source.y];
+      var p2 = [d.target.x, d.target.y];
+      var offset = subtractV(p2, p1);
+      var radius = 6/5*normV(offset);
+      // Note: SVG's y-axis is flipped, so vector angles are negative
+      // relative to standard coordinates (as used in Math.atan2).
+      // Proof: angle(r <cos ϴ, -sin ϴ>) = angle(r <cos -ϴ, sin -ϴ>) = -ϴ.
+      var angle = angleV(offset);
+      var sep = -Math.PI/2/2; // 90° separation, half on each side
+      var source = addV(p1, vectorFromLengthAngle(nodeRadius, angle+sep));
+      var target = addV(p2, vectorFromLengthAngle(nodeRadius, angle+Math.PI-sep));
+      // TODO: consider http://www.w3.org/TR/SVG/paths.html#PathDataCubicBezierCommands
+      return 'M '+source[0]+' '+source[1]+' A '+radius+' '+radius + ' 0 0,1 '+
+        target[0] + ' ' +target[1];
+    }};
+  } else {
+    return {shape: EdgeShape.straight, getPath: function() {
+      // sub-case: straight line
+      var p1 = [d.source.x, d.source.y];
+      var p2 = [d.target.x, d.target.y];
+      var offset = subtractV(p2, p1);
+      var target = subtractV(p2, multiplyV(unitV(offset), nodeRadius));
+      return 'M '+p1[0]+' '+p1[1]+' L '+ target[0] +' '+ target[1];
+    }};
+  }
+}
+
+function rectCenter(svgrect) {
+  return {x: svgrect.x + svgrect.width/2,
+          y: svgrect.y + svgrect.height/2};
+}
+
+// function rotateAroundCenter(angle, svglocatable) {
+//   var c = rectCenter(svglocatable.getBBox());
+//   svglocatable.setAttribute('transform', 'rotate('+angle+' '+c.x+' '+c.y+')');
+// }
 
 // *** D3 diagram ***
 
@@ -121,28 +180,57 @@ function visualizeState(svg, nodeArray, linkArray) {
       .on('dragend', dragend);
 
   // Edges
-  var edgeSelection = svg.selectAll('.edgepath')
+  var edgeCounter = new EdgeCounter(linkArray);
+
+  var edgeselection = svg.selectAll('.edgepath')
     .data(linkArray)
     .enter();
 
-  // append edges before nodes, so nodes are painted on top
-  var edgepaths = edgeSelection
+  var edgegroups = edgeselection.append('g')
+  var edgepaths = edgegroups
     .append('path')
       .attr({'class':'edgepath',
              'id': function(d,i) { return 'edgepath'+i; }})
-      .each(function(d) { d.domNode = this; });
+      .each(function(d) { d.domNode = this; })
+      .each(function(d) { _.extendOwn(d, edgePathFor(nodeRadius, edgeCounter, d)); })
 
-  var edgelabels = edgeSelection
-    .append('text')
-      .attr('class', 'edgelabel')
-      .attr('dy', '-7px');
-
-  edgelabels.append('textPath')
-      .attr('xlink:href', function(d,i) { return '#edgepath'+i; })
-      .attr('startOffset', '50%')
-      .text(function(d) { return d.label; });
+  var edgelabels = edgegroups
+    .each(function(d, edgeIndex) {
+      var labels = d3.select(this).selectAll('.edgelabel')
+        .data(d.labels).enter()
+        .append('text')
+          .attr('class', 'edgelabel');
+      labels.append('textPath')
+          .attr('xlink:href', function() { return '#edgepath'+edgeIndex; })
+          .attr('startOffset', '50%')
+          .text(_.identity);
+      /* To reduce JS computation, label positioning varies by edge shape:
+          * Straight edges can use a fixed 'dy' value.
+          * Loops cannot use 'dy' since it increases letter spacing
+            as labels get farther from the path. Instead, since a loop's shape
+            is fixed, it allows a fixed translate 'transform'.
+          * Arcs are bent and their shape is not fixed, so neither 'dy'
+            nor 'transform' can be constant.
+            Fortunately the curvature is slight enough that a fixed 'dy'
+            looks good enough without resorting to dynamic translations.
+      */
+      switch (d.shape) {
+        case EdgeShape.straight:
+        case EdgeShape.arc:
+          labels.attr('dy', function(d, i) { return String(-1.1*(i+1)) + 'em'; })
+          break;
+        case EdgeShape.loop:
+          labels.attr('transform', function(d, i) {
+            return 'translate(' + String(8*(i+1)) + ' ' + String(-8*(i+1)) + ')';
+          })
+              // .classed('looplabel', true);
+          break;
+      }
+    });
+  // var nonlooplabels = svg.selectAll('.edgelabel:not(.looplabel)');
 
   // Nodes
+  // note: nodes are added after edges so as to paint over excess edge lines
   var nodeSelection = svg.selectAll('.node')
     .data(nodeArray)
     .enter();
@@ -176,8 +264,6 @@ function visualizeState(svg, nodeArray, linkArray) {
       .attr('d', 'M 0 -5 L 10 0 L 0 5 Z');
 
   // Force Layout Update
-  var edgeCount = countEdges(linkArray);
-
   force.on('tick', function(){
     nodecircles.attr({'cx': function(d) { return d.x; },
                       'cy': function(d) { return d.y; }
@@ -186,51 +272,16 @@ function visualizeState(svg, nodeArray, linkArray) {
     nodelabels.attr('x', function(d) { return d.x; }) 
               .attr('y', function(d) { return d.y; });
 
-    edgepaths.attr('d', function(d) {
-      var x1 = d.source.x,
-          y1 = d.source.y;
-      // case: self-loop
-      if (d.target.index === d.source.index) {
-        return 'M ' + x1 + ',' + (y1-nodeRadius) +
-          ' A 30,20 -45 1,1 ' + (x1+nodeRadius) + ',' + y1;
-      }
-      // case: between nodes
-      var p1 = [d.source.x, d.source.y];
-      var p2 = [d.target.x, d.target.y];
-      var offset = subtractV(p2, p1);
-      var target;
-      // TODO: account for multiple edges with same source + target
-      // right now it works for back and forth: one edge out and one edge in.
-      if (edgeCount.numEdgesFromTo(d.target.index, d.source.index)) {
-        // sub-case: arc
-        var radius = 6/5*normV(offset);
-        // Note: SVG's y-axis is flipped, so vector angles are negative
-        // relative to standard coordinates (as used in Math.atan2).
-        // Proof: angle(r <cos ϴ, -sin ϴ>) = angle(r <cos -ϴ, sin -ϴ>) = -ϴ.
-        var angle = angleV(offset);
-        var sep = -Math.PI/2/2; // 90° separation, half on each side
-        var source = addV(p1, vectorFromLengthAngle(nodeRadius, angle+sep));
-        target = addV(p2, vectorFromLengthAngle(nodeRadius, angle+Math.PI-sep));
-        // TODO: consider http://www.w3.org/TR/SVG/paths.html#PathDataCubicBezierCommands
-        return 'M '+source[0]+' '+source[1]+' A '+radius+' '+radius + ' 0 0,1 '+
-          target[0] + ' ' +target[1];
-      } else {
-        // sub-case: straight line
-        target = subtractV(p2, multiplyV(unitV(offset), nodeRadius));
-        return 'M '+x1+' '+y1+' L '+ target[0] +' '+ target[1];
-      }
-    });
+    edgepaths.attr('d', function(d) { return d.getPath(); });
 
-    edgelabels.attr('transform', function(d) {
-      // auto-rotate edge labels that are upside-down
-      if (d.target.x < d.source.x) {
-        var box = this.getBBox();
-        var rx = box.x+box.width/2;
-        var ry = box.y+box.height/2;
-        return 'rotate(180 '+rx+' '+ry+')';
-      } else {
-        return null;
-      }
-    });
+    // auto-rotate edge labels that are upside-down
+    // nonlooplabels.attr('transform', function(d) {
+    //   if (d.target.x < d.source.x) {
+    //     var c = rectCenter(this.getBBox());
+    //     return 'rotate(180 '+c.x+' '+c.y+')';
+    //   } else {
+    //     return null;
+    //   }
+    // });
   });
 }

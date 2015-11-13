@@ -286,10 +286,10 @@ var binaryIncrement = {
 // construct a new state and tape visualization inside the 'div' selection.
 function constructMachine(div, spec) {
   var dataset = deriveNodesLinks(spec.table);
-  var stateMap = dataset.stateMap;
   visualizeState(div.append('svg'), dataset.nodes, dataset.edges);
 
   var tape = new TapeViz(div.append('svg'), 7, spec.blank, spec.input.split(''));
+  var stateMap = dataset.stateMap;
   var machine = new TuringMachine(makeTransitionViz(stateMap, pulseEdgeSample), spec.startState, tape);
   // FIXME: experimental. override TuringMachine.state
   machine.__state = machine.state;
