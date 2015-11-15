@@ -217,17 +217,17 @@ function visualizeState(svg, nodeArray, linkArray) {
       switch (d.shape) {
         case EdgeShape.straight:
         case EdgeShape.arc:
-          labels.attr('dy', function(d, i) { return String(-1.1*(i+1)) + 'em'; })
+          labels.attr('dy', function(d, i) { return String(-1.1*(i+1)) + 'em'; });
+          labels.classed('straight-label', true);
           break;
         case EdgeShape.loop:
           labels.attr('transform', function(d, i) {
             return 'translate(' + String(8*(i+1)) + ' ' + String(-8*(i+1)) + ')';
-          })
-              // .classed('looplabel', true);
+          });
           break;
       }
     });
-  // var nonlooplabels = svg.selectAll('.edgelabel:not(.looplabel)');
+  var straightLabels = edgegroups.selectAll('.straight-label');
 
   // Nodes
   // note: nodes are added after edges so as to paint over excess edge lines
@@ -275,13 +275,15 @@ function visualizeState(svg, nodeArray, linkArray) {
     edgepaths.attr('d', function(d) { return d.getPath(); });
 
     // auto-rotate edge labels that are upside-down
-    // nonlooplabels.attr('transform', function(d) {
-    //   if (d.target.x < d.source.x) {
-    //     var c = rectCenter(this.getBBox());
-    //     return 'rotate(180 '+c.x+' '+c.y+')';
-    //   } else {
-    //     return null;
-    //   }
-    // });
+    // TODO: correct for curvature reversal for rotated arcs
+    straightLabels.attr('transform', function() {
+      var d = d3.select(this.parentNode).datum();
+      if (d.target.x < d.source.x) {
+        var c = rectCenter(this.getBBox());
+        return 'rotate(180 '+c.x+' '+c.y+')';
+      } else {
+        return null;
+      }
+    });
   });
 }
