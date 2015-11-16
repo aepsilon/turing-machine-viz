@@ -67,29 +67,38 @@ EdgeCounter.prototype.numEdgesFromTo = function(src, target) {
 };
 
 var EdgeShape = Object.freeze({
-  loop: {},
-  arc: {},
-  straight: {}
+  loop: {},     // self-loop: a->a
+  arc: {},      // curved arc: a->b when b->a exists
+  straight: {}  // straight edge: a->b when b->a does not exist
 });
 
+EdgeCounter.prototype.shapeForEdge = function(e) {
+  if (e.target.index === e.source.index) {
+    return EdgeShape.loop;
+  } else if (this.numEdgesFromTo(e.target.index, e.source.index)) {
+    // has returning edge => arc
+    return EdgeShape.arc;
+  } else {
+    return EdgeShape.straight;
+  }
+}
+
 // create a function that will compute an edge's SVG 'd' attribute.
-// returns: {shape: EdgeShape.(..), getPath: <function> }
-function edgePathFor(nodeRadius, edgeCounter, d) {
+function edgePathFor(nodeRadius, shape, d) {
   // case: self-loop
-  if (d.target.index === d.source.index) {
-    return {shape: EdgeShape.loop, getPath: function() {
+  if (shape === EdgeShape.loop) {
+    return function() {
       var x1 = d.source.x,
           y1 = d.source.y;
       // start at the top (90°) and end at the right (0°)
       return 'M ' + x1 + ',' + (y1-nodeRadius) +
         ' A 30,20 -45 1,1 ' + (x1+nodeRadius) + ',' + y1;
-    }};
+    };
   }
   // case: between nodes
-  // has returning edge => arc
-  if (edgeCounter.numEdgesFromTo(d.target.index, d.source.index)) {
+  if (shape === EdgeShape.arc) {
     // sub-case: arc
-    return {shape: EdgeShape.arc, getPath: function() {
+    return function() {
       // note: p1 & p2 have to be delayed, to access x/y at the time of the call
       var p1 = [d.source.x, d.source.y];
       var p2 = [d.target.x, d.target.y];
@@ -103,18 +112,19 @@ function edgePathFor(nodeRadius, edgeCounter, d) {
       var source = addV(p1, vectorFromLengthAngle(nodeRadius, angle+sep));
       var target = addV(p2, vectorFromLengthAngle(nodeRadius, angle+Math.PI-sep));
       // TODO: consider http://www.w3.org/TR/SVG/paths.html#PathDataCubicBezierCommands
-      return 'M '+source[0]+' '+source[1]+' A '+radius+' '+radius + ' 0 0,1 '+
-        target[0] + ' ' +target[1];
-    }};
-  } else {
-    return {shape: EdgeShape.straight, getPath: function() {
+      return (p1[0] <= p2[0])
+        ? 'M '+source[0]+' '+source[1]+' A '+radius+' '+radius+' 0 0,1 '+target[0]+' '+target[1]
+        : 'M '+target[0]+' '+target[1]+' A '+radius+' '+radius+' 0 0,0 '+source[0]+' '+source[1];
+    };
+  } else if (shape === EdgeShape.straight) {
+    return function() {
       // sub-case: straight line
       var p1 = [d.source.x, d.source.y];
       var p2 = [d.target.x, d.target.y];
       var offset = subtractV(p2, p1);
       var target = subtractV(p2, multiplyV(unitV(offset), nodeRadius));
       return 'M '+p1[0]+' '+p1[1]+' L '+ target[0] +' '+ target[1];
-    }};
+    };
   }
 }
 
@@ -187,47 +197,73 @@ function visualizeState(svg, nodeArray, linkArray) {
     .enter();
 
   var edgegroups = edgeselection.append('g')
-  var edgepaths = edgegroups
-    .append('path')
-      .attr({'class':'edgepath',
-             'id': function(d,i) { return 'edgepath'+i; }})
-      .each(function(d) { d.domNode = this; })
-      .each(function(d) { _.extendOwn(d, edgePathFor(nodeRadius, edgeCounter, d)); })
 
-  var edgelabels = edgegroups
-    .each(function(d, edgeIndex) {
-      var labels = d3.select(this).selectAll('.edgelabel')
-        .data(d.labels).enter()
-        .append('text')
-          .attr('class', 'edgelabel');
-      labels.append('textPath')
-          .attr('xlink:href', function() { return '#edgepath'+edgeIndex; })
-          .attr('startOffset', '50%')
-          .text(_.identity);
-      /* To reduce JS computation, label positioning varies by edge shape:
-          * Straight edges can use a fixed 'dy' value.
-          * Loops cannot use 'dy' since it increases letter spacing
-            as labels get farther from the path. Instead, since a loop's shape
-            is fixed, it allows a fixed translate 'transform'.
-          * Arcs are bent and their shape is not fixed, so neither 'dy'
-            nor 'transform' can be constant.
-            Fortunately the curvature is slight enough that a fixed 'dy'
-            looks good enough without resorting to dynamic translations.
-      */
-      switch (d.shape) {
-        case EdgeShape.straight:
-        case EdgeShape.arc:
-          labels.attr('dy', function(d, i) { return String(-1.1*(i+1)) + 'em'; });
-          labels.classed('straight-label', true);
-          break;
-        case EdgeShape.loop:
-          labels.attr('transform', function(d, i) {
-            return 'translate(' + String(8*(i+1)) + ' ' + String(-8*(i+1)) + ')';
+  var labelAbove = function(d, i) { return String(-1.1*(i+1)) + 'em'; };
+  var labelBelow = function(d, i) { return String(0.6+ 1.1*(i+1)) + 'em'; };
+
+  edgegroups.each(function(edgeD, edgeIndex) {
+    var group = d3.select(this);
+    var edgepath = group
+      .append('path')
+        .attr({'class': 'edgepath',
+               'id': 'edgepath'+edgeIndex })
+        .each(function(d) { d.domNode = this; })
+
+    var labels = group.selectAll('.edgelabel')
+      .data(edgeD.labels).enter()
+      .append('text')
+        .attr('class', 'edgelabel');
+    labels.append('textPath')
+        .attr('xlink:href', function() { return '#edgepath'+edgeIndex; })
+        .attr('startOffset', '50%')
+        .text(_.identity);
+    /* To reduce JS computation, label positioning varies by edge shape:
+        * Straight edges can use a fixed 'dy' value.
+        * Loops cannot use 'dy' since it increases letter spacing
+          as labels get farther from the path. Instead, since a loop's shape
+          is fixed, it allows a fixed translate 'transform'.
+        * Arcs are bent and their shape is not fixed, so neither 'dy'
+          nor 'transform' can be constant.
+          Fortunately the curvature is slight enough that a fixed 'dy'
+          looks good enough without resorting to dynamic translations.
+    */
+    var shape = edgeCounter.shapeForEdge(edgeD);
+    edgeD.getPath = edgePathFor(nodeRadius, shape, edgeD);
+    switch (shape) {
+      case EdgeShape.straight:
+        labels.attr('dy', labelAbove);
+        edgeD.refreshLabels = function() {
+          // flip edge labels that are upside-down
+          labels.attr('transform', function() {
+            if (edgeD.target.x < edgeD.source.x) {
+              var c = rectCenter(this.getBBox());
+              return 'rotate(180 '+c.x+' '+c.y+')';
+            } else {
+              return null;
+            }
           });
-          break;
-      }
-    });
-  var straightLabels = edgegroups.selectAll('.straight-label');
+        };
+        break;
+      case EdgeShape.arc:
+        var isFlipped = undefined;
+        edgeD.refreshLabels = function() {
+          var shouldFlip = edgeD.target.x < edgeD.source.x;
+          if (shouldFlip !== isFlipped) {
+            edgepath.classed('reversed-arc', shouldFlip);
+            labels.attr('dy', shouldFlip ? labelBelow : labelAbove);
+            isFlipped = shouldFlip;
+          }
+        };
+        break;
+      case EdgeShape.loop:
+        labels.attr('transform', function(d, i) {
+          return 'translate(' + String(8*(i+1)) + ' ' + String(-8*(i+1)) + ')';
+        });
+        edgeD.refreshLabels = _.noop;
+        break;
+    }
+  });
+  var edgepaths = edgegroups.selectAll('.edgepath');
 
   // Nodes
   // note: nodes are added after edges so as to paint over excess edge lines
@@ -250,18 +286,25 @@ function visualizeState(svg, nodeArray, linkArray) {
      .attr('dy', '0.25em') /* dy doesn't work in CSS */
      .text(function(d) { return d.label; });
 
-  // Arrowhead
-  svg.append('defs').selectAll('marker')
-      .data(['arrowhead', 'active-arrowhead'])
+  // Arrowheads
+  var svgdefs = svg.append('defs');
+  svgdefs.selectAll('marker')
+      .data(['arrowhead', 'active-arrowhead', 'reversed-arrowhead', 'reversed-active-arrowhead'])
     .enter().append('marker')
       .attr({'id': function(d) { return d; },
              'viewBox':'0 -5 10 10',
-             'refX':10,
+             'refX': function(d) {
+                return (d.lastIndexOf('reversed-', 0) === 0) ? 0 : 10;
+              },
              'orient':'auto',
              'markerWidth':10,
-             'markerHeight':10})
+             'markerHeight':10
+            })
     .append('path')
-      .attr('d', 'M 0 -5 L 10 0 L 0 5 Z');
+      .attr('d', 'M 0 -5 L 10 0 L 0 5 Z')
+      .attr('transform', function(d) {
+        return (d.lastIndexOf('reversed-', 0) === 0) ? 'rotate(180 5 0)' : null;
+      });
 
   // Force Layout Update
   force.on('tick', function(){
@@ -274,16 +317,6 @@ function visualizeState(svg, nodeArray, linkArray) {
 
     edgepaths.attr('d', function(d) { return d.getPath(); });
 
-    // auto-rotate edge labels that are upside-down
-    // TODO: correct for curvature reversal for rotated arcs
-    straightLabels.attr('transform', function() {
-      var d = d3.select(this.parentNode).datum();
-      if (d.target.x < d.source.x) {
-        var c = rectCenter(this.getBBox());
-        return 'rotate(180 '+c.x+' '+c.y+')';
-      } else {
-        return null;
-      }
-    });
+    edgegroups.each(function(d) { d.refreshLabels(); });
   });
 }

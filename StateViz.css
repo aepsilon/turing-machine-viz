@@ -43,12 +43,26 @@ text {
   pointer-events: none;
 }
 
-#arrowhead {
+.edgepath.reversed-arc {
+  marker-start: url(#reversed-arrowhead);
+  marker-end: none;
+}
+
+.edgepath.active-edge {
+  marker-end: url(#active-arrowhead);
+}
+
+.edgepath.active-edge.reversed-arc {
+  marker-start: url(#reversed-active-arrowhead);
+  marker-end: none;
+}
+
+#arrowhead, #reversed-arrowhead {
   stroke: #ccc;
   fill: #ccc;
 }
 
-#active-arrowhead {
+#active-arrowhead, #reversed-active-arrowhead {
   stroke: lightskyblue;
   fill: lightskyblue;
 }

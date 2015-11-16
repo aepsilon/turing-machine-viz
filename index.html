@@ -70,10 +70,10 @@ function pulseEdgeSample(edge) {
   // workaround for https://github.com/d3/d3-transition/issues/11
   var normalColor = edgepath.style('stroke');
   var pulseColor = d3.select('#active-arrowhead').style('stroke');
+  // TODO: animate arrowhead as well
   edgepath
+      .classed('active-edge', true)
     .transition()
-      // TODO: animate arrowhead as well
-      .style('marker-end', 'url(#active-arrowhead)')
       .style('stroke', pulseColor)
       .style('stroke-width', '3')
     .transition()
@@ -81,7 +81,7 @@ function pulseEdgeSample(edge) {
       .style('stroke-width', '1')
     .transition()
       .duration(0)
-      .style('marker-end', null)
+      .each('end', function() { d3.select(this).classed('active-edge', false) })
       .style('stroke', null)
       .style('stroke-width', null);
 }
