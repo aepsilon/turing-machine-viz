@@ -26,9 +26,9 @@
 <link href='tape/tape.css' rel='stylesheet' />
 <style>
 .run-step {
-  padding: 4px 12px 6px 12px;
-  display: block;
-  margin: auto;
+  padding: 0.5em 1em 0.6em 1em;
+  /*display: block;*/
+  margin: 1em;
 }
 </style>
 </head>
@@ -66,14 +66,15 @@ function makeTransitionViz(stateMap, callback) {
   };
 }
 
-// sample animation for edges
+// sample animation for edges.
+// returns the last chained transition.
 function pulseEdgeSample(edge) {
   var edgepath = d3.select(edge.domNode);
   // workaround for https://github.com/d3/d3-transition/issues/11
   var normalColor = edgepath.style('stroke');
   var pulseColor = d3.select('#active-arrowhead').style('stroke');
   // TODO: animate arrowhead as well
-  edgepath
+  return edgepath
       .classed('active-edge', true)
     .transition()
       .style('stroke', pulseColor)
@@ -83,7 +84,7 @@ function pulseEdgeSample(edge) {
       .style('stroke-width', '1')
     .transition()
       .duration(0)
-      .each('end', function() { d3.select(this).classed('active-edge', false) })
+      .each('start', function() { d3.select(this).classed('active-edge', false) })
       .style('stroke', null)
       .style('stroke-width', null);
 }
@@ -97,9 +98,30 @@ function constructMachine(div, spec) {
   var dataset = deriveNodesLinks(spec.table);
   visualizeState(div.append('svg'), dataset.nodes, dataset.edges);
 
-  var tape = new TapeViz(div.append('svg'), 7, spec.blank, spec.input.split(''));
+  function addTape() {
+    return new TapeViz(div.insert('svg', 'button').attr('class', 'tm-tape'), 7, spec.blank, spec.input.split(''));
+  }
   var stateMap = dataset.stateMap;
-  var machine = new TuringMachine(makeTransitionViz(stateMap, pulseEdgeSample), spec.startState, tape);
+  // FIXME: factor out this experimental code.
+  var machine;
+  var delayBetweenSteps = 100;
+  function edgeCallback(edge) {
+    var transition = pulseEdgeSample(edge);
+    // TODO: bind machine.isRunning to the run button's text
+    transition.transition().duration(delayBetweenSteps).each('end', function() {
+      if (machine.isRunning) {
+        try {
+          machine.step();
+          // FIXME: specialize to rethrow if not HaltError
+        } catch (e) {
+          machine.isRunning = false;
+          console.log(e);
+        }
+      }
+    });
+  }
+
+  machine = new TuringMachine(makeTransitionViz(stateMap, edgeCallback), spec.startState, addTape());
   // FIXME: experimental. override TuringMachine.state
   machine.__state = machine.state;
   Object.defineProperty(machine, 'state', {
@@ -111,6 +133,25 @@ function constructMachine(div, spec) {
     }
   });
   machine.state = machine.__state;
+
+  var isRunning = false;
+  Object.defineProperty(machine, 'isRunning', {
+    get: function() { return isRunning; },
+    set: function(value) {
+      isRunning = value;
+      if (isRunning) { this.step(); }
+    }
+  })
+
+  // FIXME: bind isRunning to update Run/Pause button
+  machine.reset = function() {
+    machine.isRunning = false;
+    machine.state = spec.startState;
+    // div.selectAll('svg.tm-tape').remove();
+    machine.tape.domNode.remove();
+    machine.tape = addTape();
+  }
+
   return machine;
 }
 
@@ -131,11 +172,29 @@ divs.enter()
       var machine = constructMachine(div, d);
       this.__machine = machine;
 
+      // FIXME: step causing chain reaction when isRunning
       div.append('button')
           .text('Step')
           .attr('class', 'run-step')
         .node()
           .addEventListener('click', function() { machine.step(); });
+
+      div.append('button')
+          .text('Run')
+          .attr('class', 'run-step')
+        .call(function(selection) {
+          selection.node().addEventListener('click', function() {
+            machine.isRunning = !machine.isRunning;
+            selection.text(machine.isRunning ? 'Pause' : 'Run');
+          });
+        });
+
+      div.append('button')
+          .text('Reset')
+          .attr('class', 'run-step')
+          .style('float', 'right')
+        .node()
+          .addEventListener('click', function() { machine.reset(); });
     });
 
 </script>

@@ -42,6 +42,11 @@ function TapeViz(svg, lookaround, blank, input) {
     writable: false,
     enumerable: true
   });
+  Object.defineProperty(this, 'domNode', {
+    value: svg,
+    writable: false,
+    enumerable: true
+  });
 
   // TODO: factor out hard-coded constants
   // width is before + head + after, trimming 2 off to show cut-off tape ends
