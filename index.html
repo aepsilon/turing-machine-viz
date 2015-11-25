@@ -109,11 +109,15 @@ function constructMachine(div, spec) {
   var delayBetweenSteps = 100;
   function edgeCallback(edge) {
     var transition = pulseEdgeSample(edge);
-    transition.transition().duration(delayBetweenSteps).each('end', function() {
-      if (machine.isRunning) {
-        machine.step();
-      }
-    });
+    // check beforehand in case .isRunning changes to true during the transition
+    if (machine.isRunning) {
+      transition.transition().duration(delayBetweenSteps).each('end', function() {
+        // check afterwards in case machine was paused during the transition
+        if (machine.isRunning) {
+          machine.step();
+        }
+      });
+    }
   }
 
   machine = new TuringMachine(makeTransitionViz(stateMap, edgeCallback), spec.startState, addTape());
