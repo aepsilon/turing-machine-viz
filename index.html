@@ -146,6 +146,7 @@ function constructMachine(div, spec) {
     }
   })
 
+  // .step() immediately advances the machine and interrupts any transitions
   // TODO: factor out into TMViz class prototype
   var singleStep = Object.getPrototypeOf(machine).step.bind(machine);
   machine.step = function() {
@@ -191,12 +192,15 @@ divs.enter()
       var machine = constructMachine(div, d);
       this.__machine = machine;
 
-      // FIXME: step causing chain reaction when isRunning
+      // each step click corresponds to 1 machine step.
       var stepButton = div.append('button')
           .text('Step')
           .attr('class', 'run-step');
       stepButton.node()
-          .addEventListener('click', function() { machine.step(); });
+          .addEventListener('click', function() {
+            machine.isRunning = false;
+            machine.step();
+          });
 
       div.append('button')
           .text('Run')
