@@ -176,7 +176,10 @@ function constructMachine(div, spec) {
     machine.tape = addTape();
   }
 
-  return machine;
+  return {
+    machine: machine,
+    stateMap: stateMap
+  };
 }
 
 var divs = d3.select('body')
@@ -184,6 +187,9 @@ var divs = d3.select('body')
     .data([ExampleTMs.powersOfTwo], function(d) { return d.name; });
 
 divs.exit().remove();
+
+// FIXME: this is a debug global
+var singleStateMap;
 
 divs.enter()
   .append('div')
@@ -193,8 +199,12 @@ divs.enter()
       div.append('h3')
           .text(function(d) { return d.name; });
 
-      var machine = constructMachine(div, d);
-      this.__machine = machine;
+      // FIXME: remove debug singleStateMap
+      var result_ = constructMachine(div, d);
+      var machine = result_.machine;
+      var stateMap = result_.stateMap;
+      singleStateMap = stateMap;
+      this.__machine = machine.machine;
 
       // each step click corresponds to 1 machine step.
       var stepButton = div.append('button')
@@ -233,3 +243,6 @@ divs.enter()
     });
 
 </script>
+
+<script src='lib/lodash-fp.js'></script>
+<script src='./Position.js' type='text/javascript'></script>
