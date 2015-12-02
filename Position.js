@@ -1,4 +1,4 @@
-// requires lodash-fp.js
+var _ = require('lodash-fp');
 
 // ** Misc Utilities **
 
@@ -91,3 +91,12 @@ var posPowersOfTwo = _.mapValues(
   q1: [1,2], q2: [3,2], q3: [5,2], q5: [4,1.3],
   reject: [1,3.7], accept: [3,2.9], q4: [5,3.7]
 });
+
+exports.getNodePosition = getNodePosition;
+exports.getNodePositions = getNodePositions;
+exports.arrangeNodes = arrangeNodes;
+exports.stringifyPositions = stringifyPositions;
+exports.parsePositions = parsePositions;
+exports.stringifyNodePositions = stringifyNodePositions;
+exports.posPowersOfTwoAlt = posPowersOfTwoAlt;
+exports.posPowersOfTwo = posPowersOfTwo;

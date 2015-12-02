@@ -1,4 +1,5 @@
 // requires ./TuringMachine.js
+// requires ./Position.js
 
 var ExampleTMs = (function(examples) {
   // From "Introduction to the Theory of Computation" (3rd ed.) by Michael Sipser, pg. 172
@@ -43,7 +44,8 @@ var ExampleTMs = (function(examples) {
         'accept': null,
         'reject': null
       });
-    })()
+    })(),
+    positions: Position.posPowersOfTwo
   };
 
   // Busy beavers, repeat01, and copy1s are from

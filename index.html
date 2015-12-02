@@ -8,8 +8,13 @@
 <script src='https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js' type='text/javascript'></script>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js' charset='utf-8'></script>
 -->
-<script src='lib/underscore.js' type='text/javascript'></script>
 <script src='lib/d3.js' type='text/javascript'></script>
+
+<script src='lib/lodash-fp.js'></script>
+<script src='./build/bundle.js' type='text/javascript'></script>
+
+<!-- TODO: refactor to all use lodash-fp -->
+<script src='lib/underscore.js' type='text/javascript'></script>
 
 <script src='tape/Tape.js' type='text/javascript'></script>
 <script src='tape/TapeViz.js' type='text/javascript'></script>
@@ -98,12 +103,15 @@ function pulseEdgeSample(edge) {
 // construct a new state and tape visualization inside the 'div' selection.
 function constructMachine(div, spec) {
   var dataset = deriveNodesLinks(spec.table);
+  var stateMap = dataset.stateMap;
+  if (spec.positions != undefined) {
+    Position.arrangeNodes(spec.positions, stateMap);
+  }
   visualizeState(div.append('svg'), dataset.nodes, dataset.edges);
 
   function addTape() {
     return new TapeViz(div.insert('svg', 'button').attr('class', 'tm-tape'), 7, spec.blank, spec.input.split(''));
   }
-  var stateMap = dataset.stateMap;
   // FIXME: factor out this experimental code.
   var machine;
   var delayBetweenSteps = 100;
@@ -243,6 +251,3 @@ divs.enter()
     });
 
 </script>
-
-<script src='lib/lodash-fp.js'></script>
-<script src='./Position.js' type='text/javascript'></script>
