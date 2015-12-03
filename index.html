@@ -10,24 +10,17 @@
 -->
 <script src='lib/d3.js' charset='utf-8'></script>
 <script src='lib/lodash-fp.js'></script>
-
-<script src='build/util.bundle.js' type='text/javascript'></script>
-<script src='build/Position.bundle.js' type='text/javascript'></script>
-<script src='build/TapeViz.bundle.js' type='text/javascript'></script>
-<script src='build/StateViz.bundle.js' type='text/javascript'></script>
-
-<script src='build/TuringMachine.bundle.js' type='text/javascript'></script>
-
-<script src='build/ExampleTMs.bundle.js' type='text/javascript'></script>
-
-<script src='watch.js' type='text/javascript'></script>
 <!-- TODO: refactor to all use lodash-fp -->
 <script src='lib/underscore.js' type='text/javascript'></script>
 <script type='text/javascript'>
 var underscore = _.noConflict();
 </script>
+<script src='watch.js' charset='utf-8'></script>
 
-<script src='build/NodesLinks.bundle.js' type='text/javascript'></script>
+<script src='build/util.bundle.js' charset='utf-8'></script>
+<script src='build/TuringMachine.bundle.js' charset='utf-8'></script>
+<script src='build/TapeViz.bundle.js' charset='utf-8'></script>
+<script src='build/StateViz.bundle.js' charset='utf-8'></script>
 
 <link href='StateViz.css' rel='stylesheet' />
 <link href='tape/tape.css' rel='stylesheet' />
@@ -41,216 +34,9 @@ var underscore = _.noConflict();
 </head>
 
 <body>
-
 <noscript><strong>Tip: to enable this visualization, enable JavaScript.</strong></noscript>
 
-<script type='text/javascript'>
-var TM = TuringMachine;
-var TuringMachine = TM.TuringMachine;
-var interpretAction = TM.interpretAction;
 
-// Animate each transition's edge
-// TODO: factor out
-// FIXME: missing null checks, like for .withSymbol
+<script src='build/main.bundle.js' charset='utf-8'></script>
 
-// TODO: decompose into lookup edge
-function makeTransitionViz(stateMap, callback) {
-  return function(s, sym) {
-    var stateObj = stateMap[s];
-    if (stateObj === undefined) {
-      throw new Error('not a valid state: ' + String(s));
-    }
-    var symbolMap = stateObj.withSymbol;
-    if (symbolMap === null) {
-      throw new Error('the machine has already reached a halting state: ' + String(s));
-    }
-    var edgeObj = symbolMap[sym];
-    // try wildcard if not matched
-    edgeObj = (edgeObj === undefined) ? symbolMap['_'] : edgeObj;
-    if (edgeObj == null) {
-      throw new Error('no transition is defined from state ' + String(s) + ' for symbol '+ String(sym));
-    }
-
-    callback(edgeObj.edge);
-    return interpretAction(s, sym, edgeObj.action);
-  };
-}
-
-// sample animation for edges.
-// returns the last chained transition.
-function pulseEdgeSample(edge) {
-  var edgepath = d3.select(edge.domNode);
-  // workaround for https://github.com/d3/d3-transition/issues/11
-  var normalColor = edgepath.style('stroke');
-  var pulseColor = d3.select('#active-arrowhead').style('stroke');
-  // TODO: animate arrowhead as well
-  return edgepath
-      .classed('active-edge', true)
-    .transition()
-      .style('stroke', pulseColor)
-      .style('stroke-width', '3')
-    .transition()
-      .style('stroke', normalColor)
-      .style('stroke-width', '1')
-    .transition()
-      .duration(0)
-      .each('start', function() { d3.select(this).classed('active-edge', false) })
-      .style('stroke', null)
-      .style('stroke-width', null);
-}
-
-// TODO: machine spec checker:
-// * typeof table should be object, not function.
-// * each non-halting state should cover all symbol cases
-
-// construct a new state and tape visualization inside the 'div' selection.
-function constructMachine(div, spec) {
-  var dataset = NodesLinks.deriveNodesLinks(spec.table);
-  var stateMap = dataset.stateMap;
-  if (spec.positions != undefined) {
-    Position.arrangeNodes(spec.positions, stateMap);
-  }
-  StateViz.visualizeState(div.append('svg'), dataset.nodes, dataset.edges);
-
-  function addTape() {
-    return new TapeViz(div.insert('svg', 'button').attr('class', 'tm-tape'), 7, spec.blank, spec.input.split(''));
-  }
-  // FIXME: factor out this experimental code.
-  var machine;
-  var delayBetweenSteps = 100;
-  function edgeCallback(edge) {
-    var transition = pulseEdgeSample(edge);
-    // check beforehand in case .isRunning changes to true during the transition
-    if (machine.isRunning) {
-      transition.transition().duration(delayBetweenSteps).each('end', function() {
-        // check afterwards in case machine was paused during the transition
-        if (machine.isRunning) {
-          machine.step();
-        }
-      });
-    }
-  }
-
-  machine = new TuringMachine(makeTransitionViz(stateMap, edgeCallback), spec.startState, addTape());
-  // FIXME: experimental. override TuringMachine.state
-  machine.__state = machine.state;
-  Object.defineProperty(machine, 'state', {
-    get: function() { return this.__state; },
-    set: function(s) {
-      d3.select(stateMap[this.__state].domNode).classed('current-state', false);
-      this.__state = s;
-      d3.select(stateMap[s].domNode).classed('current-state', true);
-    }
-  });
-  machine.state = machine.__state;
-
-
-
-  // FIXME: check if starting state is already halted. factor out into TM.js.
-  machine.isHalted = false;
-
-  var isRunning = false;
-  Object.defineProperty(machine, 'isRunning', {
-    configurable: true,
-    get: function() { return isRunning; },
-    set: function(value) {
-      if (isRunning !== value) {
-        isRunning = value;
-        if (isRunning) { this.step(); }
-      }
-    }
-  })
-
-  // .step() immediately advances the machine and interrupts any transitions
-  // TODO: factor out into TMViz class prototype
-  var singleStep = Object.getPrototypeOf(machine).step.bind(machine);
-  machine.step = function() {
-    if (machine.isHalted) {
-      console.error('Logic error: tried to step a halted machine');
-      machine.isRunning = false;
-      return;
-    }
-    try {
-      singleStep();
-      // FIXME: specialize to rethrow if not HaltError
-    } catch (e) {
-      machine.isRunning = false;
-      machine.isHalted = true;
-    }
-  }
-
-  machine.reset = function() {
-    machine.isRunning = false;
-    machine.isHalted = false;
-    machine.state = spec.startState;
-    machine.tape.domNode.remove();
-    machine.tape = addTape();
-  }
-
-  return {
-    machine: machine,
-    stateMap: stateMap
-  };
-}
-
-var divs = d3.select('body')
-  .selectAll('div.machine')
-    .data([ExampleTMs.powersOfTwo], function(d) { return d.name; });
-
-divs.exit().remove();
-
-// FIXME: this is a debug global
-var singleStateMap;
-
-divs.enter()
-  .append('div')
-    .attr('class', 'machine')
-    .each(function(d) {
-      var div = d3.select(this);
-      div.append('h3')
-          .text(function(d) { return d.name; });
-
-      // FIXME: remove debug singleStateMap
-      var result_ = constructMachine(div, d);
-      var machine = result_.machine;
-      var stateMap = result_.stateMap;
-      singleStateMap = stateMap;
-      this.__machine = machine.machine;
-
-      // each step click corresponds to 1 machine step.
-      var stepButton = div.append('button')
-          .text('Step')
-          .attr('class', 'run-step');
-      stepButton.node()
-          .addEventListener('click', function() {
-            machine.isRunning = false;
-            machine.step();
-          });
-
-      div.append('button')
-          .text('Run')
-          .attr('class', 'run-step')
-        .call(function(sel) {
-          sel.node().addEventListener('click', function() {
-            machine.isRunning = !machine.isRunning;
-          });
-          watch(machine, 'isRunning', function(prop, oldval, isRunning) {
-            sel.text(isRunning ? 'Pause' : 'Run');
-            return isRunning;
-          });
-          watch(machine, 'isHalted', function(prop, oldval, isHalted) {
-            sel.node().disabled = isHalted;
-            stepButton.node().disabled = isHalted;
-            return isHalted;
-          });
-        });
-
-      div.append('button')
-          .text('Reset')
-          .attr('class', 'run-step')
-          .style('float', 'right')
-        .node()
-          .addEventListener('click', function() { machine.reset(); });
-    });
-
-</script>
+</body></html>
