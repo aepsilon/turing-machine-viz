@@ -1,5 +1,4 @@
-'use strict';
-// requires d3.js
+var d3 = require('d3');
 
 // *** Arrays as vectors ***
 
@@ -320,3 +319,5 @@ function visualizeState(svg, nodeArray, linkArray) {
     edgegroups.each(function(d) { d.refreshLabels(); });
   });
 }
+
+exports.visualizeState = visualizeState;

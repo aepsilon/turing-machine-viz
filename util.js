@@ -12,3 +12,6 @@ function nonNull(value) {
 function coalesce(a, b) {
   return (a == null) ? b : a;
 }
+
+exports.nonNull = nonNull
+exports.coalesce = coalesce

@@ -1,5 +1,4 @@
-'use strict';
-// requires underscore.js: uses isEmpty, last, range
+var _ = require('lodash-fp');
 
 // Bidirectional infinite tape
 function Tape(blank, input) {
@@ -71,3 +70,5 @@ Tape.prototype.readRange = function(start, end) {
     return this.readOffset(i);
   }, this);
 };
+
+module.exports = Tape;

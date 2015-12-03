@@ -1,5 +1,5 @@
-'use strict';
-// requires ./Tape.js, D3
+var Tape = require('./Tape.js'),
+    d3   = require('d3');
 
 var cellWidth = 50;
 var cellHeight = 50;
@@ -149,3 +149,5 @@ TapeViz.prototype.headLeft = function() {
     this.wrapper.select('.wrapper > .tape-cell:last-of-type'),
     -1, 0);
 };
+
+module.exports = TapeViz;

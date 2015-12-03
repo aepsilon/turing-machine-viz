@@ -1,5 +1,11 @@
-// requires ./TuringMachine.js
-// requires ./Position.js
+var TM = require('./TuringMachine.js'),
+    Position = require('./Position.js');
+
+var TuringMachine = TM.TuringMachine, MoveHead = TM.MoveHead, MoveTape = TM.MoveTape,
+    write = TM.write, move = TM.move, skip = TM.skip;
+// convenient synonyms
+var L = MoveHead.left;
+var R = MoveHead.right;
 
 var ExampleTMs = (function(examples) {
   // From "Introduction to the Theory of Computation" (3rd ed.) by Michael Sipser, pg. 172
@@ -9,10 +15,6 @@ var ExampleTMs = (function(examples) {
     blank: ' ',
     startState: 'q1',
     table: (function() {
-      // convenient synonyms
-      var L = MoveHead.left;
-      var R = MoveHead.right;
-
       var accept = move(R, 'accept');
       var reject = move(R, 'reject');
 
@@ -84,8 +86,6 @@ var ExampleTMs = (function(examples) {
     blank: 0,
     startState: 'A',
     table: (function() {
-      var L = MoveHead.left;
-      var R = MoveHead.right;
       var halt = move(R, 'halt')
       return Object.freeze({
         A: {
@@ -111,8 +111,6 @@ var ExampleTMs = (function(examples) {
     blank: 0,
     startState: 'A',
     table: (function() {
-      var L = MoveHead.left;
-      var R = MoveHead.right;
       return Object.freeze({
         A: {0: write(1, R, 'B'), 1: move(L, 'B')},
         B: {0: write(1, L, 'A'), 1: write(0, L, 'C')},
@@ -129,7 +127,6 @@ var ExampleTMs = (function(examples) {
     blank: ' ',
     startState: 'b',
     table: (function() {
-      var R = MoveHead.right;
       return Object.freeze({
         b: {' ': write(0, R, 'c')},
         c: {' ': move(R, 'e')},
@@ -145,8 +142,6 @@ var ExampleTMs = (function(examples) {
     blank: '0',
     startState: 's1',
     table: (function() {
-      var L = MoveHead.left;
-      var R = MoveHead.right;
       var halt = move(R, 'H');
       return Object.freeze({
         s1: {
@@ -180,8 +175,6 @@ var ExampleTMs = (function(examples) {
     blank: ' ',
     startState: 'right',
     table: (function() {
-      var L = MoveHead.left;
-      var R = MoveHead.right;
       return Object.freeze({
         'right': {
           0: skip(R),
@@ -200,3 +193,5 @@ var ExampleTMs = (function(examples) {
 
   return examples;
 })(ExampleTMs || {});
+
+module.exports = ExampleTMs;

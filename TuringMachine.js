@@ -1,5 +1,6 @@
-'use strict';
-// requires ./util.js
+var util = require('./util.js');
+
+var nonNull = util.nonNull, coalesce = util.coalesce;
 
 // Allow for both notational conventions of moving the head or moving the tape
 // FIXME: display L/R according to convention, or specify custom showing function
@@ -74,3 +75,12 @@ function makeTransition(obj) {
     return interpretAction(s, sym, action);
   };
 }
+
+exports.MoveHead = MoveHead;
+exports.MoveTape = MoveTape;
+exports.TuringMachine = TuringMachine;
+exports.write = write;
+exports.move = move;
+exports.skip = skip;
+exports.interpretAction = interpretAction;
+exports.makeTransition = makeTransition;

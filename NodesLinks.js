@@ -1,5 +1,7 @@
-// requires Underscore.js
-// requires ./util.js
+var util = require('./util.js'),
+    _ = require('underscore');
+
+var coalesce = util.coalesce;
 
 // replace ' ' with '␣'.
 function visibleSpace(c) {
@@ -60,3 +62,5 @@ function deriveNodesLinks(obj) {
     stateMap: stateMap
   };
 }
+
+exports.deriveNodesLinks = deriveNodesLinks;
