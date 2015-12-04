@@ -12,6 +12,7 @@ module.exports = {
     main: "./main.js"
   },
   output: {
+    library: "[name]", // allow console interaction
     path: path.join(__dirname, "build"),
     filename: "[name].bundle.js"
   },
