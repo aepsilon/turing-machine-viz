@@ -5,6 +5,7 @@ var TM = require('./TuringMachine.js'),
     Position = require('./Position.js'),
     ExampleTMs = require('./Examples.js'),
     watch = require('./watch.js'),
+    Storage = require('./Storage.js'),
     d3 = require('d3');
 
 var TuringMachine = TM.TuringMachine;
@@ -223,6 +224,25 @@ TMViz.prototype.setMachine = function(machineSpec) {
             .style('float', 'right')
           .node()
             .addEventListener('click', function() { machine.reset(); });
+
+        div.selectAll('button.btn-positioning')
+            .data([
+              {label: 'Save positions', onClick: function() {
+                Storage.saveNodePositions(machineSpec.name, tmviz.stateMap);
+              }},
+              {label: 'Load positions', onClick: function() {
+                var positions = Storage.loadPositions(machineSpec.name);
+                if (positions) {
+                  Position.arrangeNodes(positions, tmviz.stateMap);
+                }
+            }}])
+          .enter().append('button')
+            .attr('class', 'run-step btn-positioning')
+            .style('float', 'right')
+            .text(function(d) { return d.label; })
+            .each(function(d) {
+              this.addEventListener('click', d.onClick);
+            })
       });
 }
 
