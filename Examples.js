@@ -9,46 +9,45 @@ var R = MoveHead.right;
 
 var ExampleTMs = (function(examples) {
   // From "Introduction to the Theory of Computation" (3rd ed.) by Michael Sipser, pg. 172
-  examples.powersOfTwo = {
-    name: 'powers of two',
-    input: '0000',
-    blank: ' ',
-    startState: 'q1',
-    table: (function() {
-      var accept = move(R, 'accept');
-      var reject = move(R, 'reject');
+examples.powersOfTwo = `return {
+  name: 'powers of two',
+  input: '0000',
+  blank: ' ',
+  startState: 'q1',
+  table: (function() {
+    var accept = move(R, 'accept');
+    var reject = move(R, 'reject');
 
-      // transition function
-      return Object.freeze({
-        q1: {
-          '0': write(' ', R, 'q2'),
-          '_': reject
-        },
-        q2: {
-          '0': write('x', R, 'q3'),
-          ' ': accept,
-          'x': skip(R)
-        },
-        q3: {
-          '0': move(R, 'q4'),
-          ' ': move(L, 'q5'),
-          'x': skip(R)
-        },
-        q4: {
-          '0': write('x', R, 'q3'),
-          ' ': reject,
-          'x': skip(R)
-        },
-        q5: {
-          ' ': move(R, 'q2'),
-          '_': skip(L)
-        },
-        'accept': null,
-        'reject': null
-      });
-    })(),
-    positions: Position.posPowersOfTwo
-  };
+    // transition function
+    return Object.freeze({
+      q1: {
+        '0': write(' ', R, 'q2'),
+        '_': reject
+      },
+      q2: {
+        '0': write('x', R, 'q3'),
+        ' ': accept,
+        'x': skip(R)
+      },
+      q3: {
+        '0': move(R, 'q4'),
+        ' ': move(L, 'q5'),
+        'x': skip(R)
+      },
+      q4: {
+        '0': write('x', R, 'q3'),
+        ' ': reject,
+        'x': skip(R)
+      },
+      q5: {
+        ' ': move(R, 'q2'),
+        '_': skip(L)
+      },
+      'accept': null,
+      'reject': null
+    });
+  })()
+};`;
 
   // Busy beavers, repeat01, and copy1s are from
   // https://en.wikipedia.org/wiki/Busy_beaver and
@@ -136,38 +135,38 @@ var ExampleTMs = (function(examples) {
     })()
   };
 
-  examples.copy1s = {
-    name: 'copy 1s',
-    input: '111',
-    blank: '0',
-    startState: 's1',
-    table: (function() {
-      var halt = move(R, 'H');
-      return Object.freeze({
-        s1: {
-          0: halt,
-          1: write(0, R, 's2')
-        },
-        s2: {
-          0: move(R, 's3'),
-          1: skip(R)
-        },
-        s3: {
-          0: write(1, L, 's4'),
-          1: skip(R)
-        },
-        s4: {
-          0: move(L, 's5'),
-          1: skip(L)
-        },
-        s5: {
-          0: write(1, R, 's1'),
-          1: skip(L)
-        },
-        H: null
-      });
-    })()
-  };
+examples.copy1s = `return {
+  name: 'copy 1s',
+  input: '111',
+  blank: '0',
+  startState: 's1',
+  table: (function() {
+    var halt = move(R, 'H');
+    return Object.freeze({
+      s1: {
+        0: halt,
+        1: write(0, R, 's2')
+      },
+      s2: {
+        0: move(R, 's3'),
+        1: skip(R)
+      },
+      s3: {
+        0: write(1, L, 's4'),
+        1: skip(R)
+      },
+      s4: {
+        0: move(L, 's5'),
+        1: skip(L)
+      },
+      s5: {
+        0: write(1, R, 's1'),
+        1: skip(L)
+      },
+      H: null
+    });
+  })()
+};`;
 
   examples.binaryIncrement = {
     name: 'binary increment',

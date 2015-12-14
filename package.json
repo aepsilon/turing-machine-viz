@@ -1,0 +1,20 @@
+{
+  "name": "tm-viz",
+  "version": "1.0.0",
+  "description": "Turing machine editor and visualization",
+  "main": "main.js",
+  "dependencies": {},
+  "devDependencies": {
+    "babel-core": "^6.3.17",
+    "babel-loader": "^6.2.0",
+    "babel-plugin-transform-es2015-template-literals": "^6.3.13",
+    "babel-plugin-transform-strict-mode": "^6.3.13",
+    "webpack": "^1.12.9"
+  },
+  "scripts": {
+    "watch": "webpack --watch --progress --colors --display-error-details",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Andy Li",
+  "license": "MIT"
+}

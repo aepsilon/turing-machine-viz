@@ -162,7 +162,9 @@ function TMViz(parentSelection, machineSpec) {
     configurable: false,
     enumerable: true,
   });
-  this.setMachine(machineSpec);
+  if (machineSpec) {
+    this.setMachine(machineSpec);
+  }
 }
 
 TMViz.prototype.setMachine = function(machineSpec) {
@@ -246,6 +248,21 @@ TMViz.prototype.setMachine = function(machineSpec) {
       });
 }
 
-// a demo
-exports.tmviz = new TMViz(d3.select('body'), ExampleTMs.powersOfTwo);
+function loadMachine(tmviz, editor, machineSpecString, isFromEditor) {
+  var dirConvention = 'var L = MoveHead.left;\nvar R = MoveHead.right;\n';
+  // TODO: limit permissions? place inside iframe sandbox and run w/ web worker
+  var spec = (new Function('write', 'move', 'skip', 'MoveHead', 'MoveTape',
+    // dirConvention + 'return ' + machineSpecString + ';'))
+    dirConvention + machineSpecString))
+    (TM.write, TM.move, TM.skip, TM.MoveHead, TM.MoveTape);
+  tmviz.setMachine(spec);
+  if (!isFromEditor) {
+    editor.setValue(machineSpecString, -1 /* cursor at doc start */);
+  }
+}
+
+function editMachine() { console.error('editMachine: unimplemented'); }
+
+exports.loadMachine = loadMachine;
+exports.TMViz = TMViz;
 exports.examples = ExampleTMs;

@@ -13,7 +13,7 @@
 <!-- TODO: refactor to all use lodash-fp -->
 <script src='lib/underscore.js' type='text/javascript'></script>
 <script type='text/javascript'>
-var underscore = _.noConflict();
+  var underscore = _.noConflict();
 </script>
 <script src='watch.js' charset='utf-8'></script>
 
@@ -30,13 +30,57 @@ var underscore = _.noConflict();
   /*display: block;*/
   margin: 1em;
 }
+
+#load-btn {
+  margin: 3em auto 1em auto;
+  display: block;
+}
+
+#editor {
+  height: 60em;
+  width: 40em;
+  border: 1px solid #DDD;
+  border-radius: 4px;
+  margin: auto;
+  /*margin-top: 3em;*/
+  font: 12px/normal 'Source Code Pro', 'source-code-pro', 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+}
+
+@media print {
+  .run-step { visibility: hidden; }
+}
 </style>
 </head>
 
 <body>
 <noscript><strong>Tip: to enable this visualization, enable JavaScript.</strong></noscript>
 
+<div id='machine-container'></div>
+
+<button id='load-btn' class='run-step'>Load machine</button>
+<div id='editor'>
+</div>
+
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.2/ace.js" type="text/javascript" charset="utf-8"></script> -->
+<script src='lib/ace-builds/src-min-noconflict/ace.js' type='text/javascript' charset='utf-8'></script>
+<script>
+  var editor = ace.edit('editor');
+  editor.setTheme('ace/theme/chrome');
+  editor.session.setOptions({
+    mode: 'ace/mode/javascript',
+    tabSize: 2,
+    useSoftTabs: true
+  });
+</script>
 
 <script src='build/main.bundle.js' charset='utf-8'></script>
+<script>
+tmviz = new main.TMViz(d3.select('#machine-container'));
+main.loadMachine(tmviz, editor, main.examples.powersOfTwo);
+
+document.getElementById('load-btn').addEventListener('click', function() {
+  main.loadMachine(tmviz, editor, editor.getValue(), true);
+});
+</script>
 
 </body></html>

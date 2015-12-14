@@ -30,5 +30,18 @@ module.exports = {
       // For clarity, reverse this to be consistent with browser include order.
       names: ["util", "TuringMachine", "TapeViz", "StateViz"].reverse()
     })
-  ]
+  ],
+  module: {
+    loaders: [
+      // ./Examples.js uses ES6 template literals for multiline strings
+      { test: /\/Examples\.js$/,
+        exclude: /(node_modules|bower_components)/,
+        loader: 'babel-loader',
+        query: {
+          plugins: ['babel-plugin-transform-es2015-template-literals', 'transform-strict-mode']
+        },
+        cacheDirectory: true
+      }
+    ]
+  }
 }
