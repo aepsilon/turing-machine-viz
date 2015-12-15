@@ -74,13 +74,5 @@
 </script>
 
 <script src='build/main.bundle.js' charset='utf-8'></script>
-<script>
-tmviz = new main.TMViz(d3.select('#machine-container'));
-main.loadMachine(tmviz, editor, main.examples.powersOfTwo);
-
-document.getElementById('load-btn').addEventListener('click', function() {
-  main.loadMachine(tmviz, editor, editor.getValue(), true);
-});
-</script>
 
 </body></html>
