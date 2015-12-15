@@ -4,23 +4,40 @@ var TM = require('./TuringMachine.js'),
     NodesLinks = require('./NodesLinks.js'),
     d3 = require('d3');
 
+// StateMap -> State -> SymbolMap?
+// throws error if state was not in the map.
+// returns null for explicit halting state (assuming that .withSymbol was set correctly)
+function lookupState(stateMap, s) {
+  var stateObj = stateMap[s];
+  if (stateObj === undefined) {
+    throw new Error('not a valid state: ' + String(s));
+  }
+  return stateObj.withSymbol;
+}
+
+function isHaltingState(stateMap, state) {
+  return lookupState(stateMap, state) == null;
+}
+
+function HaltedError(state) {
+  this.name = 'HaltedError';
+  this.message = 'the machine has already reached a halting state: ' + String(state);
+  this.stack = (new Error()).stack;
+}
+HaltedError.prototype = Object.create(Error.prototype);
+HaltedError.prototype.constructor = HaltedError;
+
 // Animate each transition's edge
 // TODO: factor out
 // FIXME: missing null checks, like for .withSymbol
-
 // TODO: decompose into lookup edge
 function makeTransitionViz(stateMap, callback) {
   return function(s, sym) {
-    var stateObj = stateMap[s];
-    if (stateObj === undefined) {
-      throw new Error('not a valid state: ' + String(s));
-    }
-    var symbolMap = stateObj.withSymbol;
-    if (symbolMap === null) {
-      throw new Error('the machine has already reached a halting state: ' + String(s));
-    }
+    var symbolMap = lookupState(stateMap, s);
+    if (symbolMap == null) { throw new HaltedError(s); }
     var edgeObj = symbolMap[sym];
     // try wildcard if not matched
+    // TODO: remove wildcards (deprecated)
     edgeObj = (edgeObj === undefined) ? symbolMap['_'] : edgeObj;
     if (edgeObj == null) {
       throw new Error('no transition is defined from state ' + String(s) + ' for symbol '+ String(sym));
@@ -31,9 +48,9 @@ function makeTransitionViz(stateMap, callback) {
   };
 }
 
-// sample animation for edges.
+// default animation for edges.
 // returns the last chained transition.
-function pulseEdgeSample(edge) {
+function pulseEdge(edge) {
   var edgepath = d3.select(edge.domNode);
   // workaround for https://github.com/d3/d3-transition/issues/11
   var normalColor = edgepath.style('stroke');
@@ -54,58 +71,61 @@ function pulseEdgeSample(edge) {
       .style('stroke-width', null);
 }
 
+function addTape(div, spec) {
+  return new TapeViz(div.append('svg').attr('class', 'tm-tape'), 7, spec.blank, spec.input.split(''));
+}
+
 // TODO: machine spec checker:
 // * typeof table should be object, not function.
 // * each non-halting state should cover all symbol cases
 
 // construct a new state and tape visualization inside the 'div' selection.
-function constructMachine(div, spec) {
+function TMViz(div, spec, positions) {
   var dataset = NodesLinks.deriveNodesLinks(spec.table);
   var stateMap = dataset.stateMap;
-  if (spec.positions != undefined) {
-    Position.arrangeNodes(spec.positions, stateMap);
+  this.stateMap = stateMap;
+  if (positions != undefined) {
+    Position.arrangeNodes(positions, stateMap);
   }
   StateViz.visualizeState(div.append('svg'), dataset.nodes, dataset.edges);
-
-  function addTape() {
-    return new TapeViz(div.insert('svg', 'button').attr('class', 'tm-tape'), 7, spec.blank, spec.input.split(''));
-  }
-  // FIXME: factor out this experimental code.
-  var machine;
-  var delayBetweenSteps = 100;
+  
+  var viz = this; // bind 'this' to use inside callbacks
+  // FIXME: find a solution that doesn't require the edge animation to return the chained animation
+  this.edgeAnimation = pulseEdge;
+  this.stepInterval = 100;
   function edgeCallback(edge) {
-    var transition = pulseEdgeSample(edge);
+    var transition = viz.edgeAnimation(edge);
     // check beforehand in case .isRunning changes to true during the transition
-    if (machine.isRunning) {
-      transition.transition().duration(delayBetweenSteps).each('end', function() {
+    if (viz.isRunning) {
+      transition.transition().duration(viz.stepInterval).each('end', function() {
         // check afterwards in case machine was paused during the transition
-        if (machine.isRunning) {
-          machine.step();
+        if (viz.isRunning) {
+          viz.step();
         }
       });
     }
-  }
+  };
 
-  machine = new TM.TuringMachine(makeTransitionViz(stateMap, edgeCallback), spec.startState, addTape());
+  // TODO: rewrite the transition. make it point to this.stateMap, this.etc so it stays in sync with the spec.
+  var machine = new TM.TuringMachine(makeTransitionViz(stateMap, edgeCallback), spec.startState, addTape(div, spec));
+  this.machine = machine;
+  // intercept and animate when the state is set
   // FIXME: experimental. override TuringMachine.state
-  machine.__state = machine.state;
+  var state = machine.state;
   Object.defineProperty(machine, 'state', {
-    get: function() { return this.__state; },
+    get: function() { return state; },
     set: function(s) {
-      d3.select(stateMap[this.__state].domNode).classed('current-state', false);
-      this.__state = s;
+      d3.select(stateMap[state].domNode).classed('current-state', false);
+      state = s;
       d3.select(stateMap[s].domNode).classed('current-state', true);
     }
   });
-  machine.state = machine.__state;
+  machine.state = state;
 
-
-
-  // FIXME: check if starting state is already halted. factor out into TM.js.
-  machine.isHalted = false;
+  this.isHalted = isHaltingState(stateMap, state);
 
   var isRunning = false;
-  Object.defineProperty(machine, 'isRunning', {
+  Object.defineProperty(this, 'isRunning', {
     configurable: true,
     get: function() { return isRunning; },
     set: function(value) {
@@ -114,38 +134,36 @@ function constructMachine(div, spec) {
         if (isRunning) { this.step(); }
       }
     }
-  })
+  });
 
-  // .step() immediately advances the machine and interrupts any transitions
-  // TODO: factor out into TMViz class prototype
-  var singleStep = Object.getPrototypeOf(machine).step.bind(machine);
-  machine.step = function() {
-    if (machine.isHalted) {
-      console.error('Logic error: tried to step a halted machine');
-      machine.isRunning = false;
-      return;
-    }
-    try {
-      singleStep();
-      // FIXME: specialize to rethrow if not HaltError
-    } catch (e) {
-      machine.isRunning = false;
-      machine.isHalted = true;
-    }
-  }
-
-  machine.reset = function() {
-    machine.isRunning = false;
-    machine.isHalted = false;
-    machine.state = spec.startState;
-    machine.tape.domNode.remove();
-    machine.tape = addTape();
-  }
-
-  return {
-    machine: machine,
-    stateMap: stateMap
-  };
+  this.__parentDiv = div;
+  this.__spec = spec;
 }
 
-exports.constructMachine = constructMachine;
+// .step() immediately advances the machine and interrupts any transitions
+TMViz.prototype.step = function() {
+  if (this.isHalted) {
+    console.error('Logic error: tried to step a halted machine');
+    this.isRunning = false;
+    return;
+  }
+  try {
+    this.machine.step();
+  } catch (e) {
+    this.isRunning = false;
+    this.isHalted = true;
+    if (!(e instanceof HaltedError)) {
+      throw e;
+    }
+  }
+}
+
+TMViz.prototype.reset = function() {
+  this.isRunning = false;
+  this.isHalted = false;
+  this.machine.state = this.__spec.startState;
+  this.machine.tape.domNode.remove();
+  this.machine.tape = addTape(this.__parentDiv, this.__spec);
+}
+
+exports.TMViz = TMViz;

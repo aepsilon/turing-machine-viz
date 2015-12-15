@@ -1,3 +1,5 @@
+// note: loadMachine interacts with an Ace editor
+
 var TM = require('./TuringMachine.js'),
     TMViz = require('./TMViz.js'),
     Position = require('./Position.js'),
@@ -19,8 +21,6 @@ function TMVizControl(parentSelection, machineSpec) {
 }
 
 TMVizControl.prototype.setMachine = function(machineSpec) {
-  var tmviz = this;
-
   var divs = this.parentSelection
     .selectAll('div.machine')
     // TODO: key by an ID guaranteed to be unique
@@ -35,13 +35,11 @@ TMVizControl.prototype.setMachine = function(machineSpec) {
         var div = d3.select(this);
         div.append('h3')
             .text(function(d) { return d.name; });
-
-        (function() {
-          var result = TMViz.constructMachine(div, d);
-          tmviz.stateMap = result.stateMap;
-          tmviz.machine = result.machine;
+        
+        var machine = (function() {
+          var diagrams = div.append('div').attr('class', 'machine-diagrams');
+          return new TMViz.TMViz(diagrams, d);
         })();
-        var machine = tmviz.machine;
 
         // each step click corresponds to 1 machine step.
         var stepButton = div.append('button')
@@ -81,12 +79,12 @@ TMVizControl.prototype.setMachine = function(machineSpec) {
         div.selectAll('button.btn-positioning')
             .data([
               {label: 'Save positions', onClick: function() {
-                Storage.saveNodePositions(machineSpec.name, tmviz.stateMap);
+                Storage.saveNodePositions(machineSpec.name, machine.stateMap);
               }},
               {label: 'Load positions', onClick: function() {
                 var positions = Storage.loadPositions(machineSpec.name);
                 if (positions) {
-                  Position.arrangeNodes(positions, tmviz.stateMap);
+                  Position.arrangeNodes(positions, machine.stateMap);
                 }
             }}])
           .enter().append('button')
@@ -108,7 +106,7 @@ function loadMachine(tmviz, editor, machineSpecString, isFromEditor) {
     (TM.write, TM.move, TM.skip, TM.MoveHead, TM.MoveTape);
   tmviz.setMachine(spec);
   if (!isFromEditor) {
-    editor.setValue(machineSpecString, -1 /* cursor at doc start */);
+    editor.setValue(machineSpecString, -1 /* put cursor at beginning */);
   }
 }
 
