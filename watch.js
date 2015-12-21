@@ -1,17 +1,32 @@
 'use strict';
-/*
- * Lightweight property assignment observing, by overriding getters/setters.
- * 2015-11-21
+/**
+ * Lightweight property assignment watching by overriding getters/setters.
+ * Intended as a bridge between plain JS properties and other libraries.
  *
- * Inspired by https://gist.github.com/eligrey/384583 (only works for data properties).
- * This also works for accessor properties (getters/setters).
+ * Inspired by https://gist.github.com/eligrey/384583, which works for
+ * data properties only, this works for both data and accessor properties.
+ *
+ * 2015-11-21
+ * @author Andy Li
  */
 
-// TODO: JSDoc
-// TODO: module export
-// TODO: for predictability, don't require/allow handler to modify value?
-// watch for assignments to an own property
-// when the object has a setter but no getter, oldval will be undefined.
+/**
+ * Watches a property for assignment by overriding it with a getter & setter
+ * on top of the previous value or accessors.
+ *
+ * The handler can intercept assignments by returning a different value.
+ * Watching an unwritable/unsettable property does nothing, but trying to watch
+ * a non-existent or non-configurable property fails fast with TypeError.
+ * @param  {!Object} thisArg The object that contains the property.
+ * @param  {String}  prop    The name of the property to watch.
+ * @param            handler The function to call when the property is
+ *   assigned to. Important: this function intercepts assignment;
+ *   its return value is set as the new value.
+ * @throws {TypeError} if object is null or does not have the property
+ * @throws {TypeError} if thisArg.prop is non-configurable
+ * @return {?Object}         The previous property descriptor, or null if the
+ *   property is not writable/settable.
+ */
 function watch(thisArg, prop, handler) {
   var desc = Object.getOwnPropertyDescriptor(thisArg, prop);
   // check pre-conditions: existent, configurable, writable/settable
@@ -24,7 +39,7 @@ function watch(thisArg, prop, handler) {
   }
 
   var accessors = (function() {
-    if (desc.value === undefined) {
+    if (desc.set) {
       // case: .get/.set
       return {
         get: desc.get,
@@ -45,13 +60,22 @@ function watch(thisArg, prop, handler) {
       };
     }
   })();
+  Object.defineProperty(thisArg, prop, accessors);
 
-  Object.defineProperty(thisArg, prop, {
-    get: accessors.get,
-    set: accessors.set
-  });
+  return desc;
 }
 
+/**
+ * {@link watch} that, if successful, also calls the handler once with
+ *   the current value (by setting it).
+ * @see watch
+ */
+function watchInit(thisArg, prop, handler) {
+  var value = thisArg[prop];
+  var desc = watch(thisArg, prop, handler);
+  if (desc) { thisArg[prop] = value; }
+  return desc;
+}
 
-// TODO: define unwatch
-
+// exports.watch = watch;
+// exports.watchInit = watchInit;
