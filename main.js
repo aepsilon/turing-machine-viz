@@ -1,13 +1,16 @@
 // main entry point for index.html.
 // important: make sure to coordinate variables and elements between the HTML and JS
 
+/* global editor */
+/* eslint-env browser */
 var TMVizControl = require('./TMVizControl.js'),
-    Examples = require('./Examples.js');
+    Examples = require('./Examples.js'),
+    d3 = require('d3');
 
-tmvc = new TMVizControl.TMVizControl(d3.select('#machine-container'));
+var tmvc = new TMVizControl.TMVizControl(d3.select('#machine-container'));
 TMVizControl.loadMachine(tmvc, editor, Examples.powersOfTwo);
 
-document.getElementById('load-btn').addEventListener('click', function() {
+document.getElementById('btn-loadmachine').addEventListener('click', function() {
   TMVizControl.loadMachine(tmvc, editor, editor.getValue(), true);
 });
 

@@ -2,6 +2,7 @@ var TM = require('./TuringMachine.js'),
     TapeViz = require('./tape/TapeViz.js'),
     StateViz = require('./StateViz.js'),
     NodesLinks = require('./NodesLinks.js'),
+    Position = require('./Position.js'),
     d3 = require('d3');
 
 // StateMap -> State -> SymbolMap?
@@ -66,7 +67,7 @@ function pulseEdge(edge) {
       .style('stroke-width', '1')
     .transition()
       .duration(0)
-      .each('start', function() { d3.select(this).classed('active-edge', false) })
+      .each('start', function() { d3.select(this).classed('active-edge', false); })
       .style('stroke', null)
       .style('stroke-width', null);
 }
@@ -88,7 +89,7 @@ function TMViz(div, spec, positions) {
     Position.arrangeNodes(positions, stateMap);
   }
   StateViz.visualizeState(div.append('svg'), dataset.nodes, dataset.edges);
-  
+
   var viz = this; // bind 'this' to use inside callbacks
   // FIXME: find a solution that doesn't require the edge animation to return the chained animation
   this.edgeAnimation = pulseEdge;
@@ -104,7 +105,7 @@ function TMViz(div, spec, positions) {
         }
       });
     }
-  };
+  }
 
   // TODO: rewrite the transition. make it point to this.stateMap, this.etc so it stays in sync with the spec.
   var machine = new TM.TuringMachine(makeTransitionViz(stateMap, edgeCallback), spec.startState, addTape(div, spec));
@@ -156,7 +157,7 @@ TMViz.prototype.step = function() {
       throw e;
     }
   }
-}
+};
 
 TMViz.prototype.reset = function() {
   this.isRunning = false;
@@ -164,6 +165,6 @@ TMViz.prototype.reset = function() {
   this.machine.state = this.__spec.startState;
   this.machine.tape.domNode.remove();
   this.machine.tape = addTape(this.__parentDiv, this.__spec);
-}
+};
 
 exports.TMViz = TMViz;

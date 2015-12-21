@@ -7,13 +7,88 @@ var TM = require('./TuringMachine.js'),
     Storage = require('./Storage.js'),
     d3 = require('d3');
 
+// TODO: prevent double-binding?
+// (HTMLButtonElement, HTMLButtonElement, TMVizData) -> void
+function bindStepRunButtons(stepButton, runButton, data) {
+  function updateRunning(isRunning) {
+    runButton.textContent = (isRunning ? 'Pause' : 'Run');
+    return isRunning;
+  }
+  function updateHalted(isHalted) {
+    stepButton.disabled = isHalted;
+    runButton.disabled = isHalted;
+    return isHalted;
+  }
+  updateRunning(data.machine.isRunning);
+  updateHalted(data.machine.isHalted);
+  watch(data.machine, 'isRunning', function(prop, oldval, isRunning) {
+    return updateRunning(isRunning);
+  });
+  watch(data.machine, 'isHalted', function(prop, oldval, isHalted) {
+    return updateHalted(isHalted);
+  });
+}
+
+// add controls (buttons) for a TMViz
+// div: the selection of the parent div of the .machine-diagram
+function addControls(div) {
+  // each step click corresponds to 1 machine step.
+  var stepButton = div.append('button')
+      .text('Step')
+      .attr('class', 'btn-tmcontrol btn-step')
+      .on('click', function(d) {
+        d.machine.isRunning = false;
+        d.machine.step();
+      });
+
+  var runButton = div.append('button')
+      .text('Run')
+      .attr('class', 'btn-tmcontrol btn-run')
+      .on('click', function(d) {
+        d.machine.isRunning = !d.machine.isRunning;
+      });
+  bindStepRunButtons(stepButton.node(), runButton.node(), div.datum());
+
+  div.append('button')
+      .text('Reset')
+      .attr('class', 'btn-tmcontrol')
+      .style('float', 'right')
+      .property('type', 'reset') // ?
+      .on('click', function(d) { d.machine.reset(); });
+
+  // use a plain Array to ease setup, then propagate the actual data
+  [{label: 'Save positions', onClick: function(d) {
+    Storage.saveNodePositions(d.name, d.machine.stateMap);
+  }},
+  {label: 'Load positions', onClick: function(d) {
+    var positions = Storage.loadPositions(d.name);
+    if (positions) {
+      Position.arrangeNodes(positions, d.machine.stateMap);
+    }
+  }}].map(function(obj) {
+    div.append('button')
+        .attr('class', 'btn-tmcontrol btn-positioning')
+        .style('float', 'right')
+        .text(obj.label)
+        .on('click', function(d) {
+          obj.onClick(d);
+        });
+  });
+}
+
+// (D3Selection, TMVizData) -> void
+function rebindControls(buttons, data) {
+  buttons.datum(data);
+  bindStepRunButtons(buttons.filter('.btn-step').node(), buttons.filter('.btn-run').node(), data);
+}
+
 // Contains & provides controls for a TMViz.
 function TMVizControl(parentSelection, machineSpec) {
   Object.defineProperty(this, 'parentSelection', {
     value: parentSelection,
     writable: false,
     configurable: false,
-    enumerable: true,
+    enumerable: true
   });
   if (machineSpec) {
     this.setMachine(machineSpec);
@@ -25,9 +100,32 @@ TMVizControl.prototype.setMachine = function(machineSpec) {
     .selectAll('div.machine')
     // TODO: key by an ID guaranteed to be unique
       .data([machineSpec], function(d) { return d.name; });
-
+  // Exit
   divs.exit().remove();
 
+  // Update
+  divs.each(function() {
+    var div = d3.select(this);
+    div.select('.machine-diagram').each(function(d) {
+      // save position table
+      var posTable = Position.getPositionTable(this.__olddata__.machine.stateMap);
+      // clear contents
+      this.innerHTML = '';
+      this.__olddata__.machine.isRunning = false; // important
+      this.__olddata__ = d;
+      // display new spec
+      div.select('h3').text(function(d) { return d.name; });
+      var diagramDiv = d3.select(this);
+      // TODO: impl. proper data join in TMViz
+      d.machine = new TMViz.TMViz(diagramDiv, d);
+      Position.setPositionInfo(posTable, d.machine.stateMap);
+      // FIXME: call force.start
+      // rebind controls to data
+      rebindControls(div.selectAll('button'), d);
+    });
+  });
+
+  // Enter
   divs.enter()
     .append('div')
       .attr('class', 'machine')
@@ -35,82 +133,29 @@ TMVizControl.prototype.setMachine = function(machineSpec) {
         var div = d3.select(this);
         div.append('h3')
             .text(function(d) { return d.name; });
-        
-        var machine = (function() {
-          var diagrams = div.append('div').attr('class', 'machine-diagrams');
-          return new TMViz.TMViz(diagrams, d);
+
+        d.machine = (function() {
+          var diagram = div.append('div')
+              .attr('class', 'machine-diagram')
+              .property('__olddata__', function(d) { return d; });
+          return new TMViz.TMViz(diagram, d);
         })();
-
-        // each step click corresponds to 1 machine step.
-        var stepButton = div.append('button')
-            .text('Step')
-            .attr('class', 'run-step');
-        stepButton.node()
-            .addEventListener('click', function() {
-              machine.isRunning = false;
-              machine.step();
-            });
-
-        div.append('button')
-            .text('Run')
-            .attr('class', 'run-step')
-          .call(function(sel) {
-            sel.node().addEventListener('click', function() {
-              machine.isRunning = !machine.isRunning;
-            });
-            watch(machine, 'isRunning', function(prop, oldval, isRunning) {
-              sel.text(isRunning ? 'Pause' : 'Run');
-              return isRunning;
-            });
-            watch(machine, 'isHalted', function(prop, oldval, isHalted) {
-              sel.node().disabled = isHalted;
-              stepButton.node().disabled = isHalted;
-              return isHalted;
-            });
-          });
-
-        div.append('button')
-            .text('Reset')
-            .attr('class', 'run-step')
-            .style('float', 'right')
-          .node()
-            .addEventListener('click', function() { machine.reset(); });
-
-        div.selectAll('button.btn-positioning')
-            .data([
-              {label: 'Save positions', onClick: function() {
-                Storage.saveNodePositions(machineSpec.name, machine.stateMap);
-              }},
-              {label: 'Load positions', onClick: function() {
-                var positions = Storage.loadPositions(machineSpec.name);
-                if (positions) {
-                  Position.arrangeNodes(positions, machine.stateMap);
-                }
-            }}])
-          .enter().append('button')
-            .attr('class', 'run-step btn-positioning')
-            .style('float', 'right')
-            .text(function(d) { return d.label; })
-            .each(function(d) {
-              this.addEventListener('click', d.onClick);
-            })
+        addControls(div);
       });
-}
+};
 
 function loadMachine(tmviz, editor, machineSpecString, isFromEditor) {
   var dirConvention = 'var L = MoveHead.left;\nvar R = MoveHead.right;\n';
   // TODO: limit permissions? place inside iframe sandbox and run w/ web worker
   var spec = (new Function('write', 'move', 'skip', 'MoveHead', 'MoveTape',
     // dirConvention + 'return ' + machineSpecString + ';'))
-    dirConvention + machineSpecString))
-    (TM.write, TM.move, TM.skip, TM.MoveHead, TM.MoveTape);
+    dirConvention + machineSpecString))(
+      TM.write, TM.move, TM.skip, TM.MoveHead, TM.MoveTape);
   tmviz.setMachine(spec);
   if (!isFromEditor) {
     editor.setValue(machineSpecString, -1 /* put cursor at beginning */);
   }
 }
-
-function editMachine() { console.error('editMachine: unimplemented'); }
 
 exports.TMVizControl = TMVizControl;
 exports.loadMachine = loadMachine;

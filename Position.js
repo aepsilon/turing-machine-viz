@@ -25,7 +25,7 @@ function point2DToTuple(point) {
 
 // [Double, Double] -> Point2D
 function tupleToPoint2D(tuple) {
-  return {x: tuple[0], y: tuple[1]}
+  return {x: tuple[0], y: tuple[1]};
 }
 
 // ** Node, {State: Node} Functions **
@@ -35,6 +35,16 @@ function tupleToPoint2D(tuple) {
 function getNodePosition(node) {
   return {x: node.x, y: node.y};
 }
+
+// type PositionInfo = {x: number, y: number, px: number, py: number, fixed: boolean}
+// Node -> PositionInfo
+function getNodePositionInfo(node) {
+  return _.pick(['x', 'y', 'px', 'py', 'fixed'], node);
+}
+
+// type PositionTable = {State: PositionInfo}
+// {State: Node} -> PositionTable
+var getPositionTable = _.mapValues(getNodePositionInfo);
 
 // {State: Node} -> {State: Point2D}
 var getNodePositions = _.mapValues(getNodePosition);
@@ -52,6 +62,18 @@ function arrangeNodes(positionFor, nodes) {
       _.assign(pos, node);
     }
   })(nodes);
+}
+
+// tag w/ positions. mutates the node map.
+// remember to call force.start() afterwards.
+// {State: PositionInfo} -> {State: Node} -> IO ()
+function setPositionInfo(posTable, stateMap) {
+  _.forEach(function(node, state) {
+    var posinfo = posTable[state];
+    if (posinfo !== undefined) {
+      _.assign(posinfo, node);
+    }
+  }, stateMap);
 }
 
 // ** Serialization **
@@ -74,7 +96,7 @@ var parsePositions = _.flow(
 );
 
 // {State: Node} -> JSON
-var stringifyNodePositions = _.flow(getNodePositions, stringifyPositions)
+var stringifyNodePositions = _.flow(getNodePositions, stringifyPositions);
 
 
 // ** Sample position data **
@@ -93,6 +115,11 @@ var posPowersOfTwo = _.mapValues(
 });
 
 exports.getNodePosition = getNodePosition;
+
+exports.getNodePositionInfo = getNodePositionInfo;
+exports.getPositionTable = getPositionTable;
+exports.setPositionInfo = setPositionInfo;
+
 exports.getNodePositions = getNodePositions;
 exports.arrangeNodes = arrangeNodes;
 exports.stringifyPositions = stringifyPositions;

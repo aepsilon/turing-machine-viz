@@ -1,7 +1,8 @@
+/* eslint-env es6 */ // for template literals
 var TM = require('./TuringMachine.js'),
     Position = require('./Position.js');
 
-var TuringMachine = TM.TuringMachine, MoveHead = TM.MoveHead, MoveTape = TM.MoveTape,
+var MoveHead = TM.MoveHead, MoveTape = TM.MoveTape,
     write = TM.write, move = TM.move, skip = TM.skip;
 // convenient synonyms
 var L = MoveHead.left;
@@ -85,7 +86,7 @@ examples.powersOfTwo = `return {
     blank: 0,
     startState: 'A',
     table: (function() {
-      var halt = move(R, 'halt')
+      var halt = move(R, 'halt');
       return Object.freeze({
         A: {
           0: write(1, R, 'B'),
@@ -102,7 +103,7 @@ examples.powersOfTwo = `return {
         halt: null
       });
     })()
-  }
+  };
 
   examples.busyBeaver4 = {
     name: '4-state busy beaver',
