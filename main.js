@@ -7,14 +7,28 @@ var TMVizControl = require('./TMVizControl.js'),
     Examples = require('./Examples.js'),
     d3 = require('d3');
 
-var tmvc = new TMVizControl.TMVizControl(d3.select('#machine-container'));
-TMVizControl.loadMachine(tmvc, editor, Examples.powersOfTwo);
+var controller = new TMVizControl.TMVizControl(d3.select('#machine-container'));
+
+// abstract user actions.
+// note to self: aim for same levels of abstraction.
+// these functions assume the existence of the controller and editor.
+function loadMachineFromEditor() {
+  controller.setMachineString(editor.getValue());
+}
+// (string, AceEditor) -> void
+function loadMachineFromSavedDocument(specString) {
+  controller.setMachineString(specString);
+  editor.setValue(specString, -1 /* put cursor at beginning */);
+}
 
 document.getElementById('btn-loadmachine').addEventListener('click', function() {
-  TMVizControl.loadMachine(tmvc, editor, editor.getValue(), true);
+  loadMachineFromEditor();
 });
 
+// demo main
+loadMachineFromSavedDocument(Examples.powersOfTwo);
+
 // dev exports
-exports.tmvc = tmvc;
-exports.TMVizControl = TMVizControl;
+exports.loadMachineFromEditor = loadMachineFromEditor;
+exports.loadMachineFromSavedDocument = loadMachineFromSavedDocument;
 exports.examples = Examples;

@@ -1,5 +1,3 @@
-// note: loadMachine interacts with an Ace editor
-
 var TM = require('./TuringMachine.js'),
     TMViz = require('./TMViz.js'),
     Position = require('./Position.js'),
@@ -95,6 +93,9 @@ function TMVizControl(parentSelection, machineSpec) {
   }
 }
 
+// TODO: annotate with types
+// type Spec = {State: Object}
+// Spec -> void
 TMVizControl.prototype.setMachine = function(machineSpec) {
   var divs = this.parentSelection
     .selectAll('div.machine')
@@ -104,6 +105,7 @@ TMVizControl.prototype.setMachine = function(machineSpec) {
   divs.exit().remove();
 
   // Update
+  // FIXME: handle when previous machine was not loaded (e.g. had errors)
   divs.each(function() {
     var div = d3.select(this);
     div.select('.machine-diagram').each(function(d) {
@@ -144,18 +146,14 @@ TMVizControl.prototype.setMachine = function(machineSpec) {
       });
 };
 
-function loadMachine(tmviz, editor, machineSpecString, isFromEditor) {
+// eval a string and set the returned spec as the machine
+TMVizControl.prototype.setMachineString = function(specString) {
   var dirConvention = 'var L = MoveHead.left;\nvar R = MoveHead.right;\n';
   // TODO: limit permissions? place inside iframe sandbox and run w/ web worker
   var spec = (new Function('write', 'move', 'skip', 'MoveHead', 'MoveTape',
-    // dirConvention + 'return ' + machineSpecString + ';'))
-    dirConvention + machineSpecString))(
+    dirConvention + specString))(
       TM.write, TM.move, TM.skip, TM.MoveHead, TM.MoveTape);
-  tmviz.setMachine(spec);
-  if (!isFromEditor) {
-    editor.setValue(machineSpecString, -1 /* put cursor at beginning */);
-  }
-}
+  this.setMachine(spec);
+};
 
 exports.TMVizControl = TMVizControl;
-exports.loadMachine = loadMachine;
