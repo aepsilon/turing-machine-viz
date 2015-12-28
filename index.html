@@ -30,6 +30,9 @@
   /*display: block;*/
   margin: 1em;
 }
+@media print {
+  button { visibility: hidden; }
+}
 
 #btn-loadmachine {
   margin: 3em auto 1em auto;
@@ -46,9 +49,7 @@
   font: 12px/normal 'Source Code Pro', 'source-code-pro', 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
 }
 
-@media print {
-  .run-step { visibility: hidden; }
-}
+
 </style>
 </head>
 
