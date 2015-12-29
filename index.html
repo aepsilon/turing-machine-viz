@@ -72,6 +72,9 @@
     tabSize: 2,
     useSoftTabs: true
   });
+  // suppress warning about
+  // "Automatically scrolling cursor into view after selection change"
+  editor.$blockScrolling = Infinity;
 </script>
 
 <script src='build/main.bundle.js' charset='utf-8'></script>
