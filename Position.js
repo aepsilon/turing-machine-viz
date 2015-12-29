@@ -18,6 +18,17 @@ function truncatePoint2D(decimalPlaces) {
   return _.mapValues(_.partial(truncate, decimalPlaces));
 }
 
+// type HasXY = {x: number, y: number, ...};
+// number -> HasXY -> HasXY
+function truncateXY(decimalPlaces) {
+  return function(val) {
+    var info =  _(val).pick(['x','y','px','py'])
+      .mapValues(_.partial(truncate, decimalPlaces))
+      .value();
+    return _.assign(info, _.clone(val));
+  };
+}
+
 // Point2D -> [Double, Double]
 function point2DToTuple(point) {
   return [point.x, point.y];
@@ -42,7 +53,8 @@ function getNodePositionInfo(node) {
   return _.pick(['x', 'y', 'px', 'py', 'fixed'], node);
 }
 
-// type PositionTable = {State: PositionInfo}
+// type State = string
+// type PositionTable = { [key: State]: PositionInfo }
 // {State: Node} -> PositionTable
 var getPositionTable = _.mapValues(getNodePositionInfo);
 
@@ -67,6 +79,7 @@ function arrangeNodes(positionFor, nodes) {
 // tag w/ positions. mutates the node map.
 // remember to call force.start() afterwards.
 // {State: PositionInfo} -> {State: Node} -> IO ()
+// TODO: rename to setPositionTable to match the getter
 function setPositionInfo(posTable, stateMap) {
   _.forEach(function(node, state) {
     var posinfo = posTable[state];
@@ -77,6 +90,16 @@ function setPositionInfo(posTable, stateMap) {
 }
 
 // ** Serialization **
+
+// PositionTable -> JSON
+var stringifyPositionTable = _.flow(
+  _.mapValues(truncateXY(2)),
+  JSON.stringify
+);
+
+// throws SyntaxError on exception
+// JSON -> Object
+var parsePositionTable = JSON.parse;
 
 // We want the following properties:
 //  * for all valid serializations: stringifyPositions . parsePositions = identity (by value)
@@ -125,5 +148,9 @@ exports.arrangeNodes = arrangeNodes;
 exports.stringifyPositions = stringifyPositions;
 exports.parsePositions = parsePositions;
 exports.stringifyNodePositions = stringifyNodePositions;
+
+exports.stringifyPositionTable = stringifyPositionTable;
+exports.parsePositionTable = parsePositionTable;
+
 exports.posPowersOfTwoAlt = posPowersOfTwoAlt;
 exports.posPowersOfTwo = posPowersOfTwo;

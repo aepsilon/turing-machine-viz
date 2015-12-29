@@ -3,8 +3,9 @@
 
 /* global editor */
 /* eslint-env browser */
-var TMVizControl = require('./TMVizControl.js'),
-    Examples = require('./Examples.js'),
+var TMVizControl = require('./TMVizControl'),
+    Examples = require('./Examples'),
+    util = require('./util'),
     d3 = require('d3');
 
 var controller = new TMVizControl.TMVizControl(d3.select('#machine-container'));
@@ -73,14 +74,8 @@ var picker = document.body.insertBefore(
   menuFromDocumentListing(getExampleDocumentListing()),
   document.body.firstChild);
 
-// monadic bind for maybe (option) type
-// ((a -> b), ?a) -> ?b
-function applyMaybe(f, x) {
-  return (x != null) ? f(x) : x;
-}
-
 picker.addEventListener('change', function(event) {
-  applyMaybe(loadDocument, lookupDocument(event.target.value));
+  util.applyMaybe(loadDocument, lookupDocument(event.target.value));
 });
 
 // dev exports

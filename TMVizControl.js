@@ -1,8 +1,9 @@
 var TM = require('./TuringMachine.js'),
     TMViz = require('./TMViz.js'),
-    Position = require('./Position.js'),
     watch = require('./watch.js'),
-    Storage = require('./Storage.js'),
+    TMDocument = require('./TMDocument'),
+    // Storage = require('./Storage.js'),
+    util = require('./util'),
     d3 = require('d3');
 
 // TODO: prevent double-binding?
@@ -56,12 +57,13 @@ function addControls(div) {
 
   // use a plain Array to ease setup, then propagate the actual data
   [{label: 'Save positions', onClick: function(d) {
-    Storage.saveNodePositions(d.name, d.machine.stateMap);
+    // FIXME: use actual docID
+    TMDocument.saveDocumentPositions('example.'+d.name, d.machine.positionTable);
   }},
   {label: 'Load positions', onClick: function(d) {
-    var positions = Storage.loadPositions(d.name);
+    var positions = TMDocument.getDocumentSavedPositions('example.'+d.name);
     if (positions) {
-      Position.arrangeNodes(positions, d.machine.stateMap);
+      d.machine.positionTable = positions;
     }
   }}].map(function(obj) {
     div.append('button')
@@ -110,7 +112,7 @@ TMVizControl.prototype.setMachine = function(machineSpec) {
     var div = d3.select(this);
     div.select('.machine-diagram').each(function(d) {
       // save position table
-      var posTable = Position.getPositionTable(this.__olddata__.machine.stateMap);
+      var posTable = this.__olddata__.machine.positionTable;
       // clear contents
       this.innerHTML = '';
       this.__olddata__.machine.isRunning = false; // important
@@ -120,7 +122,7 @@ TMVizControl.prototype.setMachine = function(machineSpec) {
       var diagramDiv = d3.select(this);
       // TODO: impl. proper data join in TMViz
       d.machine = new TMViz.TMViz(diagramDiv, d);
-      Position.setPositionInfo(posTable, d.machine.stateMap);
+      d.machine.positionTable = posTable;
       // FIXME: call force.start
       // rebind controls to data
       rebindControls(div.selectAll('button'), d);
@@ -142,6 +144,11 @@ TMVizControl.prototype.setMachine = function(machineSpec) {
               .property('__olddata__', function(d) { return d; });
           return new TMViz.TMViz(diagram, d);
         })();
+        // TODO: refactor into TMDocument
+        var positions = TMDocument.getDocumentSavedPositions('example.'+d.name);
+        if (positions) {
+          d.machine.positionTable = positions;
+        }
         addControls(div);
       });
 };

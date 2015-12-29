@@ -85,7 +85,8 @@ function addTape(div, spec) {
 function TMViz(div, spec, positions) {
   var dataset = NodesLinks.deriveNodesLinks(spec.table);
   var stateMap = dataset.stateMap;
-  this.stateMap = stateMap;
+  this.__stateMap = stateMap;
+  // HACK: move this into TMDocument
   if (positions != undefined) {
     Position.arrangeNodes(positions, stateMap);
   }
@@ -112,7 +113,6 @@ function TMViz(div, spec, positions) {
   var machine = new TM.TuringMachine(makeTransitionViz(stateMap, edgeCallback), spec.startState, addTape(div, spec));
   this.machine = machine;
   // intercept and animate when the state is set
-  // FIXME: experimental. override TuringMachine.state
   var state = machine.state;
   Object.defineProperty(machine, 'state', {
     get: function() { return state; },
@@ -167,5 +167,13 @@ TMViz.prototype.reset = function() {
   this.machine.tape.domNode.remove();
   this.machine.tape = addTape(this.__parentDiv, this.__spec);
 };
+
+Object.defineProperty(TMViz.prototype, 'positionTable', {
+  get: function() { return Position.getPositionTable(this.__stateMap); },
+  set: function(posTable) {
+    Position.setPositionInfo(posTable, this.__stateMap);
+    // FIXME: refactor StateViz as object, then call this.__stateviz.force.tick();
+  }
+});
 
 exports.TMViz = TMViz;
