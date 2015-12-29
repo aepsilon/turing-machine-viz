@@ -1,3 +1,13 @@
+/**
+ * Turing Machine Visualization component.
+ *
+ * Concerns:
+ * 	* Keeping state & tape diagram in sync with TM
+ * 	* TM running/reset
+ * (controls not included)
+ * @module ./TMViz
+ */
+
 var TM = require('./TuringMachine.js'),
     TapeViz = require('./tape/TapeViz.js'),
     StateViz = require('./StateViz.js'),
@@ -20,6 +30,10 @@ function isHaltingState(stateMap, state) {
   return lookupState(stateMap, state) == null;
 }
 
+/**
+ * Thrown when trying to transition from a final state.
+ * @param state the halted state (one without any exiting transitions)
+ */
 function HaltedError(state) {
   this.name = 'HaltedError';
   this.message = 'the machine has already reached a halting state: ' + String(state);
@@ -81,7 +95,14 @@ function addTape(div, spec) {
 // * typeof table should be object, not function.
 // * each non-halting state should cover all symbol cases
 
-// construct a new state and tape visualization inside the 'div' selection.
+
+/**
+ * Construct a new state and tape visualization inside the `div` selection.
+ * @param div       D3 selection of an HTML `div`
+ * @param spec      machine specification
+ * @param positions position map for the state nodes
+ * @alias module:./TMViz.TMViz
+ */
 function TMViz(div, spec, positions) {
   var dataset = NodesLinks.deriveNodesLinks(spec.table);
   var stateMap = dataset.stateMap;
