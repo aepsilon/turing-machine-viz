@@ -100,17 +100,14 @@ function addTape(div, spec) {
  * Construct a new state and tape visualization inside the `div` selection.
  * @param div       D3 selection of an HTML `div`
  * @param spec      machine specification
- * @param positions position map for the state nodes
+ * @param posTable  position table for the state nodes
  * @alias module:./TMViz.TMViz
  */
-function TMViz(div, spec, positions) {
+function TMViz(div, spec, posTable) {
   var dataset = NodesLinks.deriveNodesLinks(spec.table);
   var stateMap = dataset.stateMap;
   this.__stateMap = stateMap;
-  // HACK: move this into TMDocument
-  if (positions != undefined) {
-    Position.arrangeNodes(positions, stateMap);
-  }
+  if (posTable != undefined) { this.positionTable = posTable; }
   StateViz.visualizeState(div.append('svg'), dataset.nodes, dataset.edges);
 
   var viz = this; // bind 'this' to use inside callbacks
@@ -189,10 +186,11 @@ TMViz.prototype.reset = function() {
   this.machine.tape = addTape(this.__parentDiv, this.__spec);
 };
 
+// FIXME: also call force.tick / force.start
 Object.defineProperty(TMViz.prototype, 'positionTable', {
   get: function() { return Position.getPositionTable(this.__stateMap); },
   set: function(posTable) {
-    Position.setPositionInfo(posTable, this.__stateMap);
+    Position.setPositionTable(posTable, this.__stateMap);
     // FIXME: refactor StateViz as object, then call this.__stateviz.force.tick();
   }
 });

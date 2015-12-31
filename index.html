@@ -25,31 +25,35 @@
 <link href='StateViz.css' rel='stylesheet' />
 <link href='tape/tape.css' rel='stylesheet' />
 <style>
-.btn-tmcontrol {
+.tm-btn-controldiagram {
   padding: 0.5em 1em 0.6em 1em;
   /*display: block;*/
   margin: 1em;
+}
+.btn-reset {
+  float: left;
+}
+.btn-positioning {
+  float: right;
 }
 @media print {
   button { visibility: hidden; }
 }
 
-#btn-loadmachine {
+.tm-btn-loadmachine {
   margin: 3em auto 1em auto;
   display: block;
 }
 
-#editor {
+.tm-editor.ace_editor {
   height: 60em;
   width: 40em;
   border: 1px solid #DDD;
   border-radius: 4px;
   margin: auto;
   /*margin-top: 3em;*/
-  font: 12px/normal 'Source Code Pro', 'source-code-pro', 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-family: 'Source Code Pro', 'source-code-pro', 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
 }
-
-
 </style>
 </head>
 
@@ -58,25 +62,7 @@
 
 <div id='machine-container'></div>
 
-<button id='btn-loadmachine' class='run-step'>Load machine</button>
-<div id='editor'>
-</div>
-
-<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.2/ace.js" type="text/javascript" charset="utf-8"></script> -->
 <script src='lib/ace-builds/src-min-noconflict/ace.js' type='text/javascript' charset='utf-8'></script>
-<script>
-  var editor = ace.edit('editor');
-  editor.setTheme('ace/theme/chrome');
-  editor.session.setOptions({
-    mode: 'ace/mode/javascript',
-    tabSize: 2,
-    useSoftTabs: true
-  });
-  // suppress warning about
-  // "Automatically scrolling cursor into view after selection change"
-  editor.$blockScrolling = Infinity;
-</script>
-
 <script src='build/main.bundle.js' charset='utf-8'></script>
 
 </body></html>

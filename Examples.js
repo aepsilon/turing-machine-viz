@@ -2,6 +2,9 @@
 var TM = require('./TuringMachine.js'),
     Position = require('./Position.js');
 
+// FIXME: fix type signatures. modify examples to include name.
+// use makeExample: string -> {name: string, spec: Spec, sourceCode: string}
+//
 // var MoveHead = TM.MoveHead, MoveTape = TM.MoveTape,
 //     write = TM.write, move = TM.move, skip = TM.skip;
 // // convenient synonyms

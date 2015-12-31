@@ -61,26 +61,12 @@ var getPositionTable = _.mapValues(getNodePositionInfo);
 // {State: Node} -> {State: Point2D}
 var getNodePositions = _.mapValues(getNodePosition);
 
-// tag w/ positions. mutates the node map.
-// remember to call force.start() afterwards.
-// {State: Point2D} -> {State: Node} -> IO ()
-function arrangeNodes(positionFor, nodes) {
-  _.forEach(function(node, state) {
-    var pos = positionFor[state];
-    if (pos !== undefined) {
-      // note: D3 seems to ignore .x/.y; it re-renders only if .px/.py is set
-      node.fixed = true;
-      _.assign({px: pos.x, py: pos.y}, node);
-      _.assign(pos, node);
-    }
-  })(nodes);
-}
 
 // tag w/ positions. mutates the node map.
 // remember to call force.start() afterwards.
-// {State: PositionInfo} -> {State: Node} -> IO ()
+// {[key: State]: PositionInfo} -> {[key: State]: Node} -> void
 // TODO: rename to setPositionTable to match the getter
-function setPositionInfo(posTable, stateMap) {
+function setPositionTable(posTable, stateMap) {
   _.forEach(function(node, state) {
     var posinfo = posTable[state];
     if (posinfo !== undefined) {
@@ -141,10 +127,10 @@ exports.getNodePosition = getNodePosition;
 
 exports.getNodePositionInfo = getNodePositionInfo;
 exports.getPositionTable = getPositionTable;
-exports.setPositionInfo = setPositionInfo;
+exports.setPositionTable = setPositionTable;
 
-exports.getNodePositions = getNodePositions;
-exports.arrangeNodes = arrangeNodes;
+// exports.getNodePositions = getNodePositions;
+// exports.arrangeNodes = arrangeNodes;
 exports.stringifyPositions = stringifyPositions;
 exports.parsePositions = parsePositions;
 exports.stringifyNodePositions = stringifyNodePositions;

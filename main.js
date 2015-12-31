@@ -1,84 +1,36 @@
 // main entry point for index.html.
 // important: make sure to coordinate variables and elements between the HTML and JS
 
-/* global editor */
 /* eslint-env browser */
 var TMVizControl = require('./TMVizControl'),
-    Examples = require('./Examples'),
-    util = require('./util'),
-    d3 = require('d3');
+    TMDocument = require('./TMDocument');
 
-var controller = new TMVizControl.TMVizControl(d3.select('#machine-container'));
-
-// abstract user actions.
-// note to self: aim for same levels of abstraction.
-// these functions assume the existence of the controller and editor.
-function loadMachineFromEditor() {
-  controller.setMachineString(editor.getValue());
-}
-// string -> void
-function loadMachineFromSavedDocument(specString) {
-  controller.setMachineString(specString);
-  editor.setValue(specString, -1 /* put cursor at beginning */);
-}
-
-// type DocID = string
-// type name = string
-// type TMDocument = {id: DocID, name: string}
-// () -> [TMDocument]
-function getExampleDocumentListing() {
-  return Object.keys(Examples).map(function(key) {
-    return {id: 'example.' + key, name: key};
-  });
-}
-
-// DocID -> ?TMDocument
-function lookupDocument(docID) {
-  var parts = docID.split('.');
-  if (parts.length < 2) { return; }
-  // Example document
-  if (parts[0] == 'example') {
-    var key = parts.splice(1).join('.');
-    return Examples[key];
-  }
-}
-
-// FIXME: fix type signatures. modify examples to include name.
-// use makeExample: string -> {name: string, spec: Spec, sourceCode: string}
-// TMDocument contains all info needed to replicate every detail of a document
-// type TMDocument = {name: string, sourceCode: string, positions: PositionMap}
-// TMDocument -> void
-var loadDocument = loadMachineFromSavedDocument;
-// function loadDocument(doc) {
-// }
-
-// [TMDocument] -> HTMLSelectElement
-function menuFromDocumentListing(docs) {
+// [DocEntry] -> HTMLSelectElement
+function menuFromDocumentListing(entries) {
   var select = document.createElement('select');
-  docs.forEach(function(doc) {
+  entries.forEach(function(entry) {
     var option = document.createElement('option');
-    option.appendChild(document.createTextNode(doc.name));
-    option.setAttribute('value', doc.id);
+    option.appendChild(document.createTextNode(entry.name));
+    option.setAttribute('value', entry.id);
     select.appendChild(option);
   });
   return select;
 }
 
-document.getElementById('btn-loadmachine').addEventListener('click', function() {
-  loadMachineFromEditor();
-});
-
 // demo main
-loadMachineFromSavedDocument(Examples.powersOfTwo);
-var picker = document.body.insertBefore(
-  menuFromDocumentListing(getExampleDocumentListing()),
-  document.body.firstChild);
+var controller = new TMVizControl.TMVizControl(
+  document.getElementById('machine-container'),
+  'example.powersOfTwo');
 
-picker.addEventListener('change', function(event) {
-  util.applyMaybe(loadDocument, lookupDocument(event.target.value));
+controller.editor.setTheme('ace/theme/chrome');
+
+// dropdown menu
+var picker = document.body.insertBefore(
+  menuFromDocumentListing(TMDocument.listExampleDocuments()),
+  document.body.firstChild);
+picker.addEventListener('change', function(ev) {
+  controller.loadDocumentById(ev.target.value);
 });
 
-// dev exports
-exports.loadMachineFromEditor = loadMachineFromEditor;
-exports.loadMachineFromSavedDocument = loadMachineFromSavedDocument;
-exports.examples = Examples;
+// XXX:
+exports.controller = controller;

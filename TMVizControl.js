@@ -1,9 +1,6 @@
-var TM = require('./TuringMachine.js'),
-    TMViz = require('./TMViz.js'),
+/* global ace */ // requires the Ace editor
+var TMDocument = require('./TMDocument'),
     watch = require('./watch.js'),
-    TMDocument = require('./TMDocument'),
-    // Storage = require('./Storage.js'),
-    util = require('./util'),
     d3 = require('d3');
 
 // TODO: prevent double-binding?
@@ -28,13 +25,15 @@ function bindStepRunButtons(stepButton, runButton, data) {
   });
 }
 
-// add controls (buttons) for a TMViz
+// Add controls (buttons) for a TMViz.
+// div.datum() can be null (missing), in which case the buttons will be disabled.
+// remember to rebind after loading/modifying a document.
 // div: the selection of the parent div of the .machine-diagram
-function addControls(div) {
+function addButtons(div) {
   // each step click corresponds to 1 machine step.
   var stepButton = div.append('button')
       .text('Step')
-      .attr('class', 'btn-tmcontrol btn-step')
+      .attr('class', 'tm-btn-controldiagram btn-step')
       .on('click', function(d) {
         d.machine.isRunning = false;
         d.machine.step();
@@ -42,125 +41,125 @@ function addControls(div) {
 
   var runButton = div.append('button')
       .text('Run')
-      .attr('class', 'btn-tmcontrol btn-run')
+      .attr('class', 'tm-btn-controldiagram btn-run')
       .on('click', function(d) {
         d.machine.isRunning = !d.machine.isRunning;
       });
-  bindStepRunButtons(stepButton.node(), runButton.node(), div.datum());
 
   div.append('button')
-      .text('Reset')
-      .attr('class', 'btn-tmcontrol')
-      .style('float', 'right')
+      .text('Reset to start')
+      .attr('class', 'tm-btn-controldiagram btn-reset')
       .property('type', 'reset') // ?
       .on('click', function(d) { d.machine.reset(); });
 
   // use a plain Array to ease setup, then propagate the actual data
-  [{label: 'Save positions', onClick: function(d) {
-    // FIXME: use actual docID
-    TMDocument.saveDocumentPositions('example.'+d.name, d.machine.positionTable);
-  }},
-  {label: 'Load positions', onClick: function(d) {
-    var positions = TMDocument.getDocumentSavedPositions('example.'+d.name);
-    if (positions) {
-      d.machine.positionTable = positions;
-    }
-  }}].map(function(obj) {
+  [{label: 'Save positions', onClick: function(d) { d.savePositions(); }},
+   {label: 'Load positions', onClick: function(d) { d.loadSavedPositions(); }}
+  ].forEach(function(obj) {
     div.append('button')
-        .attr('class', 'btn-tmcontrol btn-positioning')
-        .style('float', 'right')
+        .attr('class', 'tm-btn-controldiagram btn-positioning')
         .text(obj.label)
         .on('click', function(d) {
           obj.onClick(d);
         });
   });
+  return {
+    all: div.selectAll('button.tm-btn-controldiagram'),
+    step: stepButton.node(),
+    run: runButton.node()
+  };
 }
 
-// (D3Selection, TMVizData) -> void
-function rebindControls(buttons, data) {
-  buttons.datum(data);
-  bindStepRunButtons(buttons.filter('.btn-step').node(), buttons.filter('.btn-run').node(), data);
-}
-
-// Contains & provides controls for a TMViz.
-function TMVizControl(parentSelection, machineSpec) {
-  Object.defineProperty(this, 'parentSelection', {
-    value: parentSelection,
+// Contains & provides controls for a TMDocument.
+// (HTMLDivElement, ?DocID) -> TMVizControl
+function TMVizControl(documentContainer, docID) {
+  documentContainer = d3.select(documentContainer);
+  Object.defineProperty(this, 'documentContainer', {
+    value: documentContainer,
     writable: false,
     configurable: false,
     enumerable: true
   });
-  if (machineSpec) {
-    this.setMachine(machineSpec);
-  }
-}
 
-// TODO: annotate with types
-// type Spec = {State: Object}
-// Spec -> void
-TMVizControl.prototype.setMachine = function(machineSpec) {
-  var divs = this.parentSelection
-    .selectAll('div.machine')
-    // TODO: key by an ID guaranteed to be unique
-      .data([machineSpec], function(d) { return d.name; });
-  // Exit
-  divs.exit().remove();
+  this.__buttons = addButtons(documentContainer);
 
-  // Update
-  // FIXME: handle when previous machine was not loaded (e.g. had errors)
-  divs.each(function() {
-    var div = d3.select(this);
-    div.select('.machine-diagram').each(function(d) {
-      // save position table
-      var posTable = this.__olddata__.machine.positionTable;
-      // clear contents
-      this.innerHTML = '';
-      this.__olddata__.machine.isRunning = false; // important
-      this.__olddata__ = d;
-      // display new spec
-      div.select('h3').text(function(d) { return d.name; });
-      var diagramDiv = d3.select(this);
-      // TODO: impl. proper data join in TMViz
-      d.machine = new TMViz.TMViz(diagramDiv, d);
-      d.machine.positionTable = posTable;
-      // FIXME: call force.start
-      // rebind controls to data
-      rebindControls(div.selectAll('button'), d);
-    });
+  var self = this;
+  var editorContainer = documentContainer.append('div');
+  editorContainer
+    .append('button')
+      .text('Load machine')
+      .attr('class', 'tm-btn-loadmachine')
+      .on('click', function() { self.loadEditorSource(); });
+
+  var editor = ace.edit(
+    editorContainer.append('div').attr('class', 'tm-editor').node()
+  );
+  editor.session.setOptions({
+    mode: 'ace/mode/javascript',
+    tabSize: 2,
+    useSoftTabs: true
+  });
+  // suppress warning about
+  // "Automatically scrolling cursor into view after selection change"
+  editor.$blockScrolling = Infinity;
+  Object.defineProperty(this, 'editor', {
+    value: editor,
+    writable: false,
+    configurable: false,
+    enumerable: true
   });
 
-  // Enter
-  divs.enter()
-    .append('div')
-      .attr('class', 'machine')
-      .each(function(d) {
-        var div = d3.select(this);
-        div.append('h3')
-            .text(function(d) { return d.name; });
+  if (docID != null) { this.loadDocumentById(docID); }
+}
 
-        d.machine = (function() {
-          var diagram = div.append('div')
-              .attr('class', 'machine-diagram')
-              .property('__olddata__', function(d) { return d; });
-          return new TMViz.TMViz(diagram, d);
-        })();
-        // TODO: refactor into TMDocument
-        var positions = TMDocument.getDocumentSavedPositions('example.'+d.name);
-        if (positions) {
-          d.machine.positionTable = positions;
-        }
-        addControls(div);
+var diagramClass = 'machine-diagram';
+
+TMVizControl.prototype.loadDocumentById = function(docID) {
+  var divs = this.documentContainer
+    .selectAll('div.'+diagramClass)
+      .data([docID], function(d) { return d; });
+
+  // Exit
+  divs.exit()
+      .each(function(doc) { doc.close(); })
+      .remove();
+
+  // Enter
+  // TODO: reset / create new undo history on load
+  var self = this;
+  divs.enter()
+    .insert('div', ':first-child')
+      .attr('class', diagramClass)
+      .datum(function(id) {
+        return TMDocument.openDocument(d3.select(this), id);
+      })
+      .each(function(doc) {
+        self.__rebindButtons(doc);
+        // TODO: also preserve cursor position?
+        self.editor.setValue(doc.sourceCode, -1 /* put cursor at beginning */);
       });
 };
 
-// eval a string and set the returned spec as the machine
-TMVizControl.prototype.setMachineString = function(specString) {
-  var dirConvention = 'var L = MoveHead.left;\nvar R = MoveHead.right;\n';
-  // TODO: limit permissions? place inside iframe sandbox and run w/ web worker
-  var spec = (new Function('write', 'move', 'skip', 'MoveHead', 'MoveTape',
-    dirConvention + specString))(
-      TM.write, TM.move, TM.skip, TM.MoveHead, TM.MoveTape);
-  this.setMachine(spec);
+// TMDocument -> void
+TMVizControl.prototype.__rebindButtons = function (doc) {
+  var buttons = this.__buttons;
+  buttons.all.datum(doc);
+  if (doc && doc.machine) {
+    buttons.all.attr('disabled', null);
+    bindStepRunButtons(buttons.step, buttons.run, doc);
+  } else {
+    buttons.all.attr('disabled', '');
+  }
+};
+
+TMVizControl.prototype.loadEditorSource = function () {
+  var self = this;
+  this.documentContainer
+    .selectAll('div.'+diagramClass)
+    .each(function(doc) {
+      doc.sourceCode = self.editor.getValue();
+      self.__rebindButtons(doc);
+    });
 };
 
 exports.TMVizControl = TMVizControl;

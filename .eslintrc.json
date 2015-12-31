@@ -20,6 +20,8 @@
             1,
             "always"
         ],
+        "no-shadow": [2, {"builtinGlobals": true}],
+        "no-shadow-restricted-names": 2,
         "no-unexpected-multiline": 2
     },
     "env": {
