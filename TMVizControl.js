@@ -1,7 +1,8 @@
-/* global ace */ // requires the Ace editor
+/* global ace */ // requires the Ace editor (no-conflict version)
 var TMDocument = require('./TMDocument'),
     watch = require('./watch.js'),
     d3 = require('d3');
+var UndoManager = ace.require('ace/undomanager').UndoManager;
 
 // TODO: prevent double-binding?
 // (HTMLButtonElement, HTMLButtonElement, TMVizData) -> void
@@ -137,6 +138,9 @@ TMVizControl.prototype.loadDocumentById = function(docID) {
         self.__rebindButtons(doc);
         // TODO: also preserve cursor position?
         self.editor.setValue(doc.sourceCode, -1 /* put cursor at beginning */);
+        // prevent undo-ing to the previous document
+        self.editor.session.setUndoManager(new UndoManager());
+        // self.editor.session.getUndoManager().reset(); // note: this doesn't work
       });
 };
 
