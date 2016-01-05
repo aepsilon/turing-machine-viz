@@ -15,6 +15,7 @@
 <script type='text/javascript'>
   var underscore = _.noConflict();
 </script>
+<script src='lib/js-yaml.min.js' charset='utf-8'></script>
 <script src='watch.js' charset='utf-8'></script>
 
 <script src='build/util.bundle.js' charset='utf-8'></script>
@@ -64,5 +65,39 @@
 
 <script src='lib/ace-builds/src-min-noconflict/ace.js' type='text/javascript' charset='utf-8'></script>
 <script src='build/main.bundle.js' charset='utf-8'></script>
+<script src='build/Parser.bundle.js' charset='utf-8'></script>
 
+<textarea id="yamltest" rows="8" cols="40">
+name: powers of two
+input: '0000'
+blank: ' '
+startState: q1
+table:
+  q1:
+    0: write   R q2
+    _: move R reject
+  q2:
+    0  : write x R q3
+    ' ': move R accept
+    x  : skip R # TODO: try skip   R (extra whitespace)
+  q3:
+    0  : move R q4
+    ' ': move L q5
+    x  : skip R
+  q4:
+    0  : write x R q3
+    ' ': move R reject
+    x  : skip R
+  q5:
+    ' ': move R q2
+    _  : skip L
+  accept:
+  reject:
+</textarea>
+<script>
+function yamltest() {
+  console.log(Parser.parseSpec(document.getElementById('yamltest').value));
+}
+yamltest()
+</script>
 </body></html>

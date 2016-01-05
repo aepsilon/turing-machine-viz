@@ -9,6 +9,7 @@ module.exports = {
     TuringMachine: ["./TuringMachine.js"],
     TapeViz: ["./tape/TapeViz.js"],
     StateViz: ["./StateViz.js"],
+    Parser: ["./Parser"],
     main: "./main.js"
   },
   output: {
@@ -20,6 +21,7 @@ module.exports = {
     "d3": "d3",
     "lodash-fp": "_",
     "underscore": "underscore",
+    "js-yaml": "jsyaml",
     "./watch.js": "watch"
   },
   plugins: [
