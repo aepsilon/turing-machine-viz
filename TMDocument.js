@@ -1,7 +1,8 @@
 /* eslint-env browser */
 
-var TM = require('./TuringMachine.js'),
-    TMViz = require('./TMViz.js'),
+var TM = require('./TuringMachine'),
+    TMViz = require('./TMViz'),
+    Parser = require('./Parser'),
     Position = require('./Position'),
     Examples = require('./Examples'),
     util = require('./util');
@@ -112,19 +113,6 @@ TMDocument.prototype.loadSavedPositions = function () {
   if (posTable) { this.machine.positionTable = posTable; }
 };
 
-// TODO: check spec validity, throw if invalid
-// ?string -> ?spec
-function evalSpecString(specString) {
-  if (specString) {
-    var dirConvention = 'var L = MoveHead.left;\nvar R = MoveHead.right;\n';
-    // TODO: limit permissions? place inside iframe sandbox and run w/ web worker
-    var spec = (new Function('write', 'move', 'skip', 'MoveHead', 'MoveTape',
-      dirConvention + specString))(
-      TM.write, TM.move, TM.skip, TM.MoveHead, TM.MoveTape);
-    return spec;
-  }
-}
-
 // load a new spec, or update the current one (preserving node positions)
 // TMSpec -> void
 TMDocument.prototype.__setSpec = function (spec) {
@@ -147,11 +135,10 @@ TMDocument.prototype.__setSpec = function (spec) {
 Object.defineProperty(TMDocument.prototype, 'sourceCode', {
   get: function () { return this.__sourceCode; },
   set: function (sourceCode) {
-    var spec = evalSpecString(sourceCode);
-    if (spec) {
-      this.__sourceCode = sourceCode;
-      this.__setSpec(spec);
-    }
+    // parse & check before setting source
+    var spec = Parser.parseSpec(sourceCode);
+    this.__sourceCode = sourceCode;
+    this.__setSpec(spec);
   },
   enumerable: true,
   configurable: true

@@ -15,73 +15,56 @@ var TM = require('./TuringMachine.js'),
 var examples = {};
 
 // From "Introduction to the Theory of Computation" (3rd ed.) by Michael Sipser, pg. 172
-examples.powersOfTwo = `return {
-  name: 'powers of two',
-  input: '0000',
-  blank: ' ',
-  startState: 'q1',
-  table: (function() {
-    var accept = move(R, 'accept');
-    var reject = move(R, 'reject');
-    return {
-      q1: {
-        '0': write(' ', R, 'q2'),
-        '_': reject
-      },
-      q2: {
-        '0': write('x', R, 'q3'),
-        ' ': accept,
-        'x': skip(R)
-      },
-      q3: {
-        '0': move(R, 'q4'),
-        ' ': move(L, 'q5'),
-        'x': skip(R)
-      },
-      q4: {
-        '0': write('x', R, 'q3'),
-        ' ': reject,
-        'x': skip(R)
-      },
-      q5: {
-        ' ': move(R, 'q2'),
-        '_': skip(L)
-      },
-      'accept': null,
-      'reject': null
-    };
-  })()
-};`;
+examples.powersOfTwo =
+`# Matches strings of 0s whose length is a power of two
+name: powers of two
+input: '0000'
+blank: ' '
+start state: q1
+synonyms:
+  accept: {R: accept}
+  reject: {R: reject}
+table:
+  q1:
+    0: {write: ' ', R: q2}
+    _: reject
+  q2:
+    0  : {write: x, R: q3}
+    ' ': accept
+    x  : R
+  q3:
+    0  : {R: q4}
+    ' ': {L: q5}
+    x  : R
+  q4:
+    0  : {write: x, R: q3}
+    ' ': reject
+    x  : R
+  q5:
+    ' ': {R: q2}
+    _  : L
+  accept:
+  reject:`;
 
 // Busy beavers, repeat01, and copy1s are from
 // https://en.wikipedia.org/wiki/Busy_beaver and
 // https://en.wikipedia.org/wiki/Turing_machine_examples
-examples.busyBeaver3 = `return {
-  name: '3-state busy beaver',
-  input: '',
-  blank: 0,
-  startState: 'A',
-  table: (function() {
-    var L = MoveTape.left;
-    var R = MoveTape.right;
-    var halt = move(R, 'halt');
-    return {
-      A: {
-        0: write(1, R, 'B'),
-        1: move(L, 'C')
-      },
-      B: {
-        0: write(1, L, 'A'),
-        1: skip(R)
-      },
-      C: {
-        0: write(1, L, 'B'),
-        1: halt
-      },
-      halt: null
-    };
-  })()
-};`;
+examples.busyBeaver3 =
+`name: 3-state busy beaver
+blank: 0
+start state: A
+table:
+  A:
+    0: {write: 1, R: B}
+    1: {L: C}
+  B:
+    0: {write: 1, L: A}
+    1: R
+  C:
+    0: {write: 1, L: B}
+    1: {R: halt}
+  halt:
+`;
 
 examples.busyBeaver3alt = `return {
   name: '3-state busy beaver (alternate)',

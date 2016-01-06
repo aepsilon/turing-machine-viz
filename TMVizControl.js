@@ -96,7 +96,7 @@ function TMVizControl(documentContainer, docID) {
     editorContainer.append('div').attr('class', 'tm-editor').node()
   );
   editor.session.setOptions({
-    mode: 'ace/mode/javascript',
+    mode: 'ace/mode/yaml',
     tabSize: 2,
     useSoftTabs: true
   });
@@ -122,7 +122,7 @@ TMVizControl.prototype.loadDocumentById = function(docID) {
 
   // Exit
   divs.exit()
-      .each(function(doc) { doc.close(); })
+      .each(function(doc) { doc.close && doc.close(); })
       .remove();
 
   // Enter
