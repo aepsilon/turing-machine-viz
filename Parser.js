@@ -3,9 +3,11 @@ var TM = require('./TuringMachine'),
     _ = require('underscore'); // lodash-fp's .mapValues doesn't pass the key
 
 /**
- * Thrown for a semantic (non-syntactic) problem with a machine specification.
+ * Thrown when parsing a string that is valid as YAML but invalid
+ * as a machine specification.
  *
- * Examples: no start state defined, or transitioning to an undeclared state.
+ * Examples: unrecognized synonym, no start state defined,
+ * transitioning to an undeclared state.
  * @param message  the error message
  */
 function TMSpecError(message) {
@@ -20,25 +22,76 @@ TMSpecError.prototype.constructor = TMSpecError;
 // type TMSpec = {blank: string, input: ?string,
   // startState: string, table: TransitionTable}
 
-// throws YAMLException on syntax error
+// TODO: check with flow type-checker
+// throws YAMLException on YAML syntax error
 // throws TMSpecError for an invalid spec (eg. no start state, transitioning to an undefined state)
 // string -> TMSpec
 function parseSpec(str) {
-  // FIXME: check all types and pre-conditions
   var obj = jsyaml.safeLoad(str);
   // check for required object properties
-  if (!obj) { throw new TMSpecError('empty string'); }
-  [ [obj.blank, 'no blank symbol specified'],
-    [obj.startState, 'no start state specified'],
-    [obj.table, 'missing transition table']
-  ].forEach(function (d) {
-    if (!d[0]) { throw new TMSpecError(d[1]); }
+  if (!obj) { throw new TMSpecError('the document is empty'); }
+  if (!obj.blank) {
+    throw new TMSpecError('no blank symbol specified');
+  } else if (!(typeof obj.blank === 'string' && obj.blank.length === 1)) {
+    throw new TMSpecError('blank symbol must be a string of length 1');
+  }
+  obj.startState = obj['start state'];
+  delete obj['start state'];
+  if (obj.startState == null) {
+    throw new TMSpecError('no start state specified');
+  } else if (typeof obj.startState !== 'string') {
+    // auto-convert to string for convenience
+    obj.startState = String(obj.startState);
+  }
+  // parse synonyms and transition table
+  var synonyms = parseSynonyms(obj.synonyms);
+  obj.table = parseTable(synonyms, obj.table);
+  // check for references to non-existent states
+  if (!(obj.startState in obj.table)) {
+    throw new TMSpecError('the start state needs to be declared in the transition table');
+  }
+  checkTargetStates(obj.table);
+
+  return obj;
+}
+
+// any -> ?SynonymMap
+function parseSynonyms(val) {
+  if (val == null) {
+    return null;
+  }
+  if (typeof val !== 'object') {
+    throw new TMSpecError('expected a mapping (object) for synonyms but got: ' +
+      typeof val);
+  }
+  return _(val).mapObject(function(actionVal, key) {
+    try {
+      return parseAction(null, actionVal);
+    } catch (e) {
+      if (e instanceof TMSpecError) {
+        e.message = 'for synonym \'' + key + '\': ' + e.message;
+      }
+      throw e;
+    }
   });
-  // parse each transition
-  obj.table = _(obj.table).mapObject(function(stateObj, state) {
-    return _(stateObj).mapObject(function(actionStr, symbol) {
+}
+
+// (?SynonymMap, any) -> TransitionTable
+function parseTable(synonyms, val) {
+  if (val == null) {
+    throw new TMSpecError('missing transition table');
+  }
+  if (typeof val !== 'object') {
+    throw new TMSpecError('expected a mapping (object) for table but got: ' +
+      typeof val);
+  }
+  return _(val).mapObject(function(stateObj, state) {
+    if (typeof stateObj !== 'object') {
+      throw new TMSpecError('expected a mapping (object) for the transitions for state: ' + state);
+    }
+    return _(stateObj).mapObject(function(actionVal, symbol) {
       try {
-        return parseAction(actionStr);
+        return parseAction(synonyms, actionVal);
       } catch (e) {
         if (e instanceof TMSpecError) {
           e.message = 'for state ' + state +
@@ -48,50 +101,68 @@ function parseSpec(str) {
       }
     });
   });
-  // check for transitions to non-existent states
-  checkTargetStates(obj.table);
-
-  return obj;
 }
 
-function parseDirection(s) {
-  switch (s) {
-    case 'L': return TM.MoveHead.left;
-    case 'R': return TM.MoveHead.right;
-    default: throw new TMSpecError('invalid movement direction: ' + s);
-  }
+// omits null/undefined properties
+// (?string, direction, ?string) -> {symbol?: string, move: direction, state?: string}
+function constructAction(symbol, move, state) {
+  return Object.freeze(_.omit({symbol: symbol, move: move, state: state},
+    function(x) { return x == null; }));
 }
 
-// Note: symbol parsing is simplified by taking one character verbatim.
-// That is, "write   R q2" instead of "write ' ' R q2".
-// This precludes issues with escaping quotes, but breaks on extra whitespace:
-// FIXME: very brittle with whitespace. eg. chokes on "skip   R"
-// string -> TMAction
-function parseAction(str) {
-  var words = str.split(' ');
-  var action = words[0];
-  // FIXME: check for missing word parts (i.e. out of bounds)
-  switch (action) {
-    case 'write':
-      if (words[1] === '') {
-        // special case: symbol is space ' '
-        return TM.write(' ', parseDirection(words[3]), words.slice(4).join(' '));
-      } else {
-        // regular case
-        return TM.write(words[1], parseDirection(words[2]), words.slice(3).join(' '));
-      }
-      break; // placate eslint
-    case 'move':
-      return TM.move(parseDirection(words[1]), words.slice(2).join(' '));
-    case 'skip':
-      if (words.length > 2) {
-        throw new TMSpecError('skip takes one argument (the direction)');
-      }
-      return TM.skip(parseDirection(words[1]));
-    default:
-    // TODO: lookup in synonyms
-      throw new TMSpecError('unrecognized verb for transition: ' + str);
+var leftAction = Object.freeze({move: TM.MoveHead.left});
+var rightAction = Object.freeze({move: TM.MoveHead.right});
+
+// type SynonymMap = {[key: string]: TMAction}
+// (SynonymMap?, string | Object) -> TMAction
+function parseAction(synonyms, val) {
+  switch (typeof val) {
+    case 'string': return parseActionString(synonyms, val);
+    case 'object': return parseActionObject(val);
   }
+  throw new TMSpecError('expected a string or an object but got: ' + typeof val);
+}
+
+// case: direction or synonym
+function parseActionString(synonyms, val) {
+  if (val === 'L') {
+    return leftAction;
+  } else if (val === 'R') {
+    return rightAction;
+  }
+  // note: this order prevents overriding L/R in synonyms, as that would
+  // allow inconsistent notation, e.g. 'R' and {R: ..} being different.
+  if (synonyms && synonyms[val]) { return synonyms[val]; }
+  throw new TMSpecError('found a string but could not parse it ' +
+    'as a direction or synonym: ' + val);
+}
+
+// type ActionObj = {write?: string, L: ?string} | {write?: string, R: ?string}
+// case: ActionObj
+function parseActionObject(val) {
+  var symbol, move, state;
+  // one L/R key is required, with optional state value
+  if ('L' in val && 'R' in val) {
+    throw new TMSpecError('expected one movement direction but found two');
+  }
+  if ('L' in val) {
+    move = TM.MoveTape.left;
+    state = val.L;
+  } else if ('R' in val) {
+    move = TM.MoveTape.right;
+    state = val.R;
+  } else {
+    throw new TMSpecError('did not specify a movement direction');
+  }
+  // write key is optional, but must contain a char value if present
+  if ('write' in val) {
+    if (typeof val.write === 'string' && val.write.length === 1) {
+      symbol = val.write;
+    } else {
+      throw new TMSpecError('the write key requires a string of length 1');
+    }
+  }
+  return constructAction(symbol, move, state);
 }
 
 // throws if any transition goes to a non-existent (undeclared) state
