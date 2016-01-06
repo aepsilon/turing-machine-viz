@@ -18,7 +18,7 @@ function TMSpecError(message) {
 TMSpecError.prototype = Object.create(Error.prototype);
 TMSpecError.prototype.constructor = TMSpecError;
 
-// type TransitionTable = {[key: string]: {[key: string]: string} }
+// type TransitionTable = {[key: string]: ?{[key: string]: string} }
 // type TMSpec = {blank: string, input: ?string,
   // startState: string, table: TransitionTable}
 
@@ -28,21 +28,22 @@ TMSpecError.prototype.constructor = TMSpecError;
 // string -> TMSpec
 function parseSpec(str) {
   var obj = jsyaml.safeLoad(str);
-  // check for required object properties
-  if (!obj) { throw new TMSpecError('the document is empty'); }
-  if (!obj.blank) {
+  // check for required object properties.
+  // auto-convert .blank and 'start state' to string, for convenience.
+  if (obj == null) { throw new TMSpecError('the document is empty'); }
+  if (obj.blank == null) {
     throw new TMSpecError('no blank symbol specified');
-  } else if (!(typeof obj.blank === 'string' && obj.blank.length === 1)) {
-    throw new TMSpecError('blank symbol must be a string of length 1');
+  }
+  obj.blank = String(obj.blank);
+  if (obj.blank.length !== 1) {
+    throw new TMSpecError('the blank symbol must be a string of length 1');
   }
   obj.startState = obj['start state'];
   delete obj['start state'];
   if (obj.startState == null) {
     throw new TMSpecError('no start state specified');
-  } else if (typeof obj.startState !== 'string') {
-    // auto-convert to string for convenience
-    obj.startState = String(obj.startState);
   }
+  obj.startState = String(obj.startState);
   // parse synonyms and transition table
   var synonyms = parseSynonyms(obj.synonyms);
   obj.table = parseTable(synonyms, obj.table);
@@ -86,8 +87,12 @@ function parseTable(synonyms, val) {
       typeof val);
   }
   return _(val).mapObject(function(stateObj, state) {
+    if (stateObj == null) {
+      // case: halting state
+      return null;
+    }
     if (typeof stateObj !== 'object') {
-      throw new TMSpecError('expected a mapping (object) for the transitions for state: ' + state);
+      throw new TMSpecError('expected null or a mapping (object) for the transitions from state: ' + state);
     }
     return _(stateObj).mapObject(function(actionVal, symbol) {
       try {
@@ -137,7 +142,7 @@ function parseActionString(synonyms, val) {
     'as a direction or synonym: ' + val);
 }
 
-// type ActionObj = {write?: string, L: ?string} | {write?: string, R: ?string}
+// type ActionObj = {write?: any, L: ?string} | {write?: any, R: ?string}
 // case: ActionObj
 function parseActionObject(val) {
   var symbol, move, state;
@@ -146,18 +151,19 @@ function parseActionObject(val) {
     throw new TMSpecError('expected one movement direction but found two');
   }
   if ('L' in val) {
-    move = TM.MoveTape.left;
+    move = TM.MoveHead.left;
     state = val.L;
   } else if ('R' in val) {
-    move = TM.MoveTape.right;
+    move = TM.MoveHead.right;
     state = val.R;
   } else {
     throw new TMSpecError('did not specify a movement direction');
   }
   // write key is optional, but must contain a char value if present
   if ('write' in val) {
-    if (typeof val.write === 'string' && val.write.length === 1) {
-      symbol = val.write;
+    var writeStr = String(val.write);
+    if (writeStr.length === 1) {
+      symbol = writeStr;
     } else {
       throw new TMSpecError('the write key requires a string of length 1');
     }
