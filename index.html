@@ -65,42 +65,5 @@
 
 <script src='lib/ace-builds/src-min-noconflict/ace.js' type='text/javascript' charset='utf-8'></script>
 <script src='build/main.bundle.js' charset='utf-8'></script>
-<script src='build/Parser.bundle.js' charset='utf-8'></script>
 
-<textarea id="yamltest" rows="8" cols="40">
-name: powers of two
-input: '0000'
-blank: ' '
-start state: q1
-synonyms:
-  accept: {R: accept}
-  reject: {R: reject}
-table:
-  q1:
-    0: {write: ' ', R: q2}
-    _: reject
-  q2:
-    0  : {write: x, R: q3}
-    ' ': accept
-    x  : R
-  q3:
-    0  : {R: q4}
-    ' ': {L: q5}
-    x  : R
-  q4:
-    0  : {write: x, R: q3}
-    ' ': reject
-    x  : R
-  q5:
-    ' ': {R: q2}
-    _  : L
-  accept:
-  reject:
-</textarea>
-<script>
-function yamltest() {
-  console.log(Parser.parseSpec(document.getElementById('yamltest').value));
-}
-yamltest()
-</script>
 </body></html>

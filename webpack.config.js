@@ -9,7 +9,6 @@ module.exports = {
     TuringMachine: ["./TuringMachine.js"],
     TapeViz: ["./tape/TapeViz.js"],
     StateViz: ["./StateViz.js"],
-    Parser: ["./Parser"],
     main: "./main.js"
   },
   output: {
