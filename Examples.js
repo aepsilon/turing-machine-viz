@@ -1,17 +1,8 @@
-/* eslint-env es6 */ // for template literals
-var TM = require('./TuringMachine.js'),
-    Position = require('./Position.js');
+/* eslint-env es6 */
+// enable es6 for template literals, since per-file ecmaFeatures aren't available.
+// https://github.com/eslint/eslint/issues/2950
 
-// FIXME: fix type signatures. modify examples to include name.
-// use makeExample: string -> {name: string, spec: Spec, sourceCode: string}
-//
-// var MoveHead = TM.MoveHead, MoveTape = TM.MoveTape,
-//     write = TM.write, move = TM.move, skip = TM.skip;
-// // convenient synonyms
-// var L = MoveHead.left;
-// var R = MoveHead.right;
-
-// {string: string}
+// {[key: string]: string}
 var examples = {};
 
 // From "Introduction to the Theory of Computation" (3rd ed.) by Michael Sipser, pg. 172
@@ -44,7 +35,8 @@ table:
     ' ': {R: q2}
     _  : L
   accept:
-  reject:`;
+  reject:
+`;
 
 // Busy beavers, repeat01, and copy1s are from
 // https://en.wikipedia.org/wiki/Busy_beaver and
@@ -66,109 +58,89 @@ table:
   halt:
 `;
 
-examples.busyBeaver3alt = `return {
-  name: '3-state busy beaver (alternate)',
-  input: '',
-  blank: 0,
-  startState: 'A',
-  table: (function() {
-    var halt = move(R, 'halt');
-    return {
-      A: {
-        0: write(1, R, 'B'),
-        1: halt
-      },
-      B: {
-        0: move(R, 'C'),
-        1: skip(R)
-      },
-      C: {
-        0: write(1, L, 'C'),
-        1: move(L, 'A')
-      },
-      halt: null
-    };
-  })()
-};`;
+examples.busyBeaver3alt =
+`name: 3-state busy beaver (alternate)
+blank: 0
+start state: A
+table:
+  A:
+    0: {write: 1, R: B}
+    1: {R: halt}
+  B:
+    0: {R: C}
+    1: R
+  C:
+    0: {write: 1, L: C}
+    1: {L: A}
+  halt:
+`;
 
-examples.busyBeaver4 = `return {
-  name: '4-state busy beaver',
-  input: '',
-  blank: 0,
-  startState: 'A',
-  table: {
-    A: {0: write(1, R, 'B'), 1: move(L, 'B')},
-    B: {0: write(1, L, 'A'), 1: write(0, L, 'C')},
-    C: {0: write(1, R, 'H'), 1: move(L, 'D')},
-    D: {0: write(1, R, 'D'), 1: write(0, R, 'A')},
-    H: null
-  }
-};`;
+examples.busyBeaver4 =
+`name: 4-state busy beaver
+blank: 0
+start state: A
+table:
+  A: {0: {write: 1, R: B}, 1:           {L: B}}
+  B: {0: {write: 1, L: A}, 1: {write: 0, L: C}}
+  C: {0: {write: 1, R: H}, 1:           {L: D}}
+  D: {0: {write: 1, R   }, 1: {write: 0, R: A}}
+  H:
+`;
 
-examples.repeat01 = `return {
-  name: 'repeat 0 1',
-  input: '',
-  blank: ' ',
-  startState: 'b',
-  table: {
-    b: {' ': write(0, R, 'c')},
-    c: {' ': move(R, 'e')},
-    e: {' ': write(1, R, 'f')},
-    f: {' ': move(R, 'b')}
-  }
-};`;
+examples.repeat01 =
+`name: repeat 0 1
+blank: ' '
+start state: b
+table:
+  b:
+    ' ': {write: 0, R: c}
+  c:
+    ' ':           {R: e}
+  e:
+    ' ': {write: 1, R: f}
+  f:
+    ' ':           {R: b}
+`;
 
-examples.copy1s = `return {
-  name: 'copy 1s',
-  input: '111',
-  blank: '0',
-  startState: 's1',
-  table: (function() {
-    var halt = move(R, 'H');
-    return {
-      s1: {
-        0: halt,
-        1: write(0, R, 's2')
-      },
-      s2: {
-        0: move(R, 's3'),
-        1: skip(R)
-      },
-      s3: {
-        0: write(1, L, 's4'),
-        1: skip(R)
-      },
-      s4: {
-        0: move(L, 's5'),
-        1: skip(L)
-      },
-      s5: {
-        0: write(1, R, 's1'),
-        1: skip(L)
-      },
-      H: null
-    };
-  })()
-};`;
+examples.copy1s =
+`name: copy 1s
+input: '111'
+blank: 0
+start state: s1
+table:
+  s1:
+    0: {R: H}
+    1: {write: 0, R: s2}
+  s2:
+    0: {R: s3}
+    1: R
+  s3:
+    0: {write: 1, L: s4}
+    1: R
+  s4:
+    0: {L: s5}
+    1: L
+  s5:
+    0: {write 1, R: s1}
+    1: L
+  H:
+`;
 
-examples.binaryIncrement = `return {
-  name: 'binary increment',
-  input: '1011',
-  blank: ' ',
-  startState: 'right',
-  table: {
-    'right': {
-      0: skip(R),
-      1: skip(R),
-      ' ': move(L, 'inc')
-    },
-    'inc': {
-      1: write(0, L, 'inc'),
-      0: write(1, R, 'done'),
-      ' ': write(1, R, 'done')
-    },
-    'done': null
-  }
-};`;
+examples.binaryIncrement =
+`name: binary increment
+input: '1011'
+blank: ' '
+start state: right
+table:
+  right:
+    1  : R
+    0  : R
+    ' ': {L: inc}
+  inc:
+    1  : {write: 0, L: inc}
+    0  : {write: 1, R: done}
+    ' ': {write: 1, R: done}
+  done:
+`;
 
 module.exports = exports = examples;
