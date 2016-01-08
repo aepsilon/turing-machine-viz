@@ -20,6 +20,7 @@ module.exports = {
     "d3": "d3",
     "lodash-fp": "_",
     "underscore": "underscore",
+    "js-yaml": "jsyaml",
     "./watch.js": "watch"
   },
   plugins: [
