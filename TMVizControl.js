@@ -2,6 +2,7 @@
 var TMDocument = require('./TMDocument'),
     watch = require('./watch.js'),
     d3 = require('d3');
+var YAMLException = require('js-yaml').YAMLException;
 var UndoManager = ace.require('ace/undomanager').UndoManager;
 
 // TODO: prevent double-binding?
@@ -126,7 +127,6 @@ TMVizControl.prototype.loadDocumentById = function(docID) {
       .remove();
 
   // Enter
-  // TODO: reset / create new undo history on load
   var self = this;
   divs.enter()
     .insert('div', ':first-child')
@@ -156,13 +156,34 @@ TMVizControl.prototype.__rebindButtons = function (doc) {
   }
 };
 
+function aceAnnotationFromYAMLException(e) {
+  return {
+    row: e.mark.line,
+    column: e.mark.column,
+    text: 'Not valid YAML (possibly caused by a typo):\n' + e.message,
+    type: 'error'
+  };
+}
+
 TMVizControl.prototype.loadEditorSource = function () {
   var self = this;
   this.documentContainer
     .selectAll('div.'+diagramClass)
     .each(function(doc) {
-      doc.sourceCode = self.editor.getValue();
-      self.__rebindButtons(doc);
+      // load to diagram, and report any errors
+      self.editor.session.clearAnnotations();
+      try {
+        doc.sourceCode = self.editor.getValue();
+        self.__rebindButtons(doc);
+      } catch (e) {
+        if (e instanceof YAMLException) {
+          self.editor.session.setAnnotations([aceAnnotationFromYAMLException(e)]);
+        } else {
+          // TODO: display error instead of re-throwing
+          // also display error next to load button
+          throw e;
+        }
+      }
     });
 };
 
