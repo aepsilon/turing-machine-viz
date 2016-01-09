@@ -70,7 +70,7 @@ table:
     0: {R: C}
     1: R
   C:
-    0: {write: 1, L: C}
+    0: {write: 1, L}
     1: {L: A}
   halt:
 `;
@@ -121,7 +121,7 @@ table:
     0: {L: s5}
     1: L
   s5:
-    0: {write 1, R: s1}
+    0: {write: 1, R: s1}
     1: L
   H:
 `;
@@ -137,7 +137,7 @@ table:
     0  : R
     ' ': {L: inc}
   inc:
-    1  : {write: 0, L: inc}
+    1  : {write: 0, L}
     0  : {write: 1, R: done}
     ' ': {write: 1, R: done}
   done:
