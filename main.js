@@ -20,7 +20,7 @@ function menuFromDocumentListing(entries) {
 // demo main
 var controller = new TMVizControl.TMVizControl(
   document.getElementById('machine-container'),
-  'example.powersOfTwo');
+  'powersOfTwo');
 
 controller.editor.setTheme('ace/theme/chrome');
 
