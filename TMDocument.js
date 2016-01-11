@@ -41,21 +41,24 @@ var LocalStorage = {
 var Tier = Object.freeze({
   visible: 'visible',
   saved: 'saved',
-  all: ['visible', 'saved']
+  first: ['visible', 'saved']
 });
 
 var DocStorage = Object.freeze({
   // (string, string, ?Serializer<a>) ->
-  // {readByTier: string -> ?(a | string), readFirst: () -> ?(a | string)}
+  //  {readByTier: string -> ?(a | string),
+  //  writeByTier: (string, a | string) -> void}
   withDocKey: function(docID, key, convert) {
     var prefix = ['doc', docID, key].join('.');
-    function keyFor(tier) { return [prefix, tier].join('.'); }
+    function keyFor(tier) {
+      var postfix = (tier instanceof Array) ? tier[0] : tier;
+      return [prefix, postfix].join('.');
+    }
     var methods = {
       readByTier: function(tier) {
-        return LocalStorage.read(keyFor(tier), convert);
-      },
-      readFirst: function() {
-        return getFirst(methods.readByTier, Tier.all);
+        return (tier instanceof Array)
+          ? getFirst(methods.readByTier, tier)
+          : LocalStorage.read(keyFor(tier), convert);
       },
       writeByTier: function(tier, val) {
         return LocalStorage.write(keyFor(tier), val, convert);
@@ -78,17 +81,20 @@ function TMDocument(div, docID, sourceCode) {
   this.__divSel = div;
   this.id = docID;
   this.sourceCode = sourceCode;
-  this.__positionStorage = DocStorage.withDocKey(this.id, 'diagram.positions', positionFormat);
+  this.__sourceCodeStorage = DocStorage
+    .withDocKey(this.id, Prop.SourceCode);
+  this.__positionStorage = DocStorage
+    .withDocKey(this.id, Prop.Positions, positionFormat);
   try {
     this.loadPositions();
   } catch (e) { // ignore; not critical
   }
 }
 
-var positionFormat = {
+var positionFormat = Object.freeze({
   parse: Position.parsePositionTable,
   stringify: Position.stringifyPositionTable
-};
+});
 
 /**
  * Open an existing document by its ID.
@@ -99,23 +105,58 @@ var positionFormat = {
  * @return {?TMDocument}        the document if found, otherwise null
  */
 function openDocument(div, docID) {
-  var sourceCode = DocStorage.withDocKey(docID, 'diagram.sourceCode').readFirst()
+  // document exists iff its source code exists
+  var sourceCode = DocStorage.withDocKey(docID, 'diagram.sourceCode').readByTier(Tier.first)
     || (Examples.hasOwnProperty(docID) && Examples[docID]);
   return (sourceCode != null) ? new TMDocument(div, docID, sourceCode) : null;
 }
 
+var Prop = Object.freeze({
+  SourceCode: 'diagram.sourceCode',
+  Positions: 'diagram.positions'
+});
+
+// FIXME: handle case: missing/invalid source code
+// (Prop, ?Tier) -> void
+TMDocument.prototype.loadProp = function (prop, tier) {
+  tier = tier != null ? tier : Tier.first;
+  switch (prop) {
+    case Prop.SourceCode:
+      var code = this.__sourceCodeStorage.readByTier(tier);
+      if (code != null) { this.sourceCode = code; }
+      break;
+    case Prop.Positions:
+      var posTable = this.__positionStorage.readByTier(tier);
+      if (posTable) { this.machine.positionTable = posTable; }
+      break;
+    default:
+      throw new Error('TMDocument.loadProp: invalid prop: ' + prop);
+  }
+};
+
+// (Prop, ?Tier) -> void
+TMDocument.prototype.saveProp = function (prop, tier) {
+  tier = tier != null ? tier : Tier.first;
+  switch (prop) {
+    case Prop.SourceCode:
+      return this.__sourceCodeStorage.writeByTier(tier, this.sourceCode);
+    case Prop.Positions:
+      return this.__positionStorage.writeByTier(tier, this.machine.positionTable);
+    default:
+      throw new Error('TMDocument.saveProp: invalid prop: ' + prop);
+  }
+};
+
 TMDocument.prototype.savePositions = function () {
-  this.__positionStorage.writeByTier(Tier.saved, this.machine.positionTable);
+  this.saveProp(Prop.Positions, Tier.saved);
 };
 
 TMDocument.prototype.loadPositions = function () {
-  var posTable = this.__positionStorage.readFirst();
-  if (posTable) { this.machine.positionTable = posTable; }
+  this.loadProp(Prop.Positions, Tier.first);
 };
 
 TMDocument.prototype.loadSavedPositions = function () {
-  var posTable = this.__positionStorage.readByTier(Tier.saved);
-  if (posTable) { this.machine.positionTable = posTable; }
+  this.loadProp(Prop.Positions, Tier.saved);
 };
 
 // load a new spec, or update the current one (preserving node positions)
@@ -148,9 +189,11 @@ Object.defineProperty(TMDocument.prototype, 'sourceCode', {
   configurable: true
 });
 
+// TODO: reduce space usage: only stash if modified since save.
 // throws if stash fails
 TMDocument.prototype.stash = function () {
-  console.warn("TMDocument.stash: not yet implemented");
+  this.saveProp(Prop.Positions, Tier.visible);
+  this.saveProp(Prop.SourceCode, Tier.visible);
 };
 
 TMDocument.prototype.close = function () {
@@ -174,3 +217,5 @@ function listExampleDocuments() {
 
 exports.openDocument = openDocument;
 exports.listExampleDocuments = listExampleDocuments;
+exports.Prop = Prop;
+exports.Tier = Tier;
