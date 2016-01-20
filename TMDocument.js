@@ -1,147 +1,179 @@
-/* eslint-env browser */
-
-var TMViz = require('./TMViz'),
+'use strict';
+var Examples = require('./Examples'),
     Parser = require('./Parser'),
     Position = require('./Position'),
-    Examples = require('./Examples');
+    Storage = require('./Storage'),
+    SchemaStorage = Storage.SchemaStorage,
+    TMViz = require('./TMViz'),
+    util = require('./util');
 
-// Returns the first function result that is not null or undefined.
-// Otherwise, returns undefined.
-// ((a -> ?b), [a]) -> ?b
-function getFirst(f, xs) {
-  for (var i = 0; i < xs.length; ++i) {
-    var val = f(xs[i]);
-    if (val != null) {
-      return val;
-    }
+//////////////////////
+// Document Storage //
+//////////////////////
+
+// Storage Tiers
+
+var Tier = Object.freeze({
+  visible: ['visible'],
+  saved: ['saved'],
+  first: [['visible'], ['saved']]
+});
+
+// (?Tier, SchemaStorage) -> SchemaStorage
+function useTier(tier, store) {
+  tier = tier != null ? tier : Tier.first;
+  switch (tier) {
+    case Tier.visible: return store.withPath(Tier.visible);
+    case Tier.saved  : return store.withPath(Tier.saved);
+    case Tier.first  :
+      // write to 'visible', but read from first available tier
+      return Object.create(store.withPath(Tier.visible), {
+        read: {
+          value: function readFirstTier() {
+            return util.getFirst(
+              function (t) { return store.withPath(t).read(); },
+              Tier.first);
+          },
+          enumerable: true
+        }
+      });
+    default: throw new TypeError('invalid storage tier: ' + tier);
   }
 }
 
-/////////////
-// Storage //
-/////////////
+// Document Schema
 
-var LocalStorage = {
-  // type Serializer<a> = ?{parse: a -> string, stringify: string -> a}
-  // (string, ?Serializer) -> ?(a | string)
-  read: function(key, convert) {
-    var val = localStorage.getItem(key);
-    return (val && convert && convert.parse) ? convert.parse(val) : val;
-  },
-  write: function(key, val, convert) {
-    localStorage.setItem(
-      key,
-      (convert && convert.stringify) ? convert.stringify(val) : val);
-  },
-  remove: function(key) {
-    localStorage.removeItem(key);
-  }
+var tierSchema = {visible: null, saved: null};
+
+// TODO: include name in docSchema
+var docSchema = {
+  'diagram.positions': tierSchema,
+  'diagram.sourceCode': tierSchema
 };
 
-var Tier = Object.freeze({
-  visible: 'visible',
-  saved: 'saved',
-  first: ['visible', 'saved']
+// enum for prop key paths
+var Prop = Object.freeze({
+  SourceCode: ['diagram.sourceCode'],
+  Positions: ['diagram.positions']
 });
 
-var DocStorage = Object.freeze({
-  // (string, string, ?Serializer<a>) ->
-  //  {readByTier: string -> ?(a | string),
-  //  writeByTier: (string, a | string) -> void}
-  withDocKey: function(docID, key, convert) {
-    var prefix = ['doc', docID, key].join('.');
-    function keyFor(tier) {
-      var postfix = (tier instanceof Array) ? tier[0] : tier;
-      return [prefix, postfix].join('.');
+// Handling Example Documents
+
+function initDocumentStorage(docID) {
+  var prefix = 'doc.' + docID;
+  var kvStore = (function () {
+    if (isExampleID(docID)) {
+      // override read so that saved values, when missing, fall back to defaults
+      var defaults = {};
+      (function () {
+        var s = new SchemaStorage(prefix, docSchema);
+        function savedPath(prop) {
+          return useTier(Tier.saved, s.withPath(prop)).prefix;
+        }
+        defaults[savedPath(Prop.SourceCode)] = Examples[docID];
+        // TODO: defaults[savedPath(Prop.Positions)]
+        // TODO: get name
+      })();
+
+      return Object.create(Storage.KeyValueStorage, {
+        read: {
+          value: function read(key) {
+            return util.coalesce(Storage.KeyValueStorage.read(key), defaults[key]);
+          },
+          enumerable: true
+        }
+      });
+    } else {
+      return Storage.KeyValueStorage;
     }
-    var methods = {
-      readByTier: function(tier) {
-        return (tier instanceof Array)
-          ? getFirst(methods.readByTier, tier)
-          : LocalStorage.read(keyFor(tier), convert);
-      },
-      writeByTier: function(tier, val) {
-        return LocalStorage.write(keyFor(tier), val, convert);
-      },
-      removeByTier: function(tier) {
-        return LocalStorage.remove(keyFor(tier));
-      }
-    };
-    return methods;
-  }
-});
+  })();
+  return new SchemaStorage(prefix, docSchema, kvStore);
+}
+
+function getNameForExample(sourceCode) {
+  // sufficient for the hard-coded examples
+  var result = /^[^\S#]*name:\s*(.+)/m.exec(sourceCode);
+  return result ? result[1] : 'untitled';
+}
+
+function isExampleID(docID) {
+  return {}.hasOwnProperty.call(Examples, docID);
+}
+
+// type DocEntry = {id: DocID, name: string}
+// () -> [DocEntry]
+function listExampleDocuments() {
+  return Object.keys(Examples).map(function (key) {
+    return {id: key, name: getNameForExample(Examples[key])};
+  });
+}
 
 ////////////////
 // TMDocument //
 ////////////////
 
 // internal use. don't export this constructor.
+// throws if sourceCode is present but invalid.
 // (D3Selection, DocID, string) -> TMDocument
-function TMDocument(div, docID, sourceCode) {
+function TMDocument(div, docID) {
   this.__divSel = div;
   this.id = docID;
-  this.sourceCode = sourceCode;
-  this.__sourceCodeStorage = DocStorage
-    .withDocKey(this.id, Prop.SourceCode);
-  this.__positionStorage = DocStorage
-    .withDocKey(this.id, Prop.Positions, positionFormat);
+  this.storage = initDocumentStorage(docID);
+  // try loading data
+  this.loadProp(Prop.SourceCode, Tier.first);
   try {
     this.loadPositions();
   } catch (e) { // ignore; not critical
   }
 }
 
-var positionFormat = Object.freeze({
-  parse: Position.parsePositionTable,
-  stringify: Position.stringifyPositionTable
-});
+// TODO: handle load/saveProp for when this.machine is missing
 
 /**
- * Open an existing document by its ID.
- * @param  {D3Selection}  div   the D3 selection of a div to assign to this document
+ * Open or create a document by ID, and load it into the <div>.
+ *
+ * @param  {D3Selection}  div   the D3 selection of the div to assign to this document
  * @param  {string}       docID the document ID
- * @throws {YAMLException}      on YAML syntax parse error
- * @throws {TMSpecError}        on other error with the machine spec source code
- * @return {?TMDocument}        the document if found, otherwise null
+ * @return {TMDocument}         existing document with ID, or new one if not found
+ * @throws {YAMLException}      on YAML syntax parse error for existing source code
+ * @throws {TMSpecError}        on other error for existing source code
  */
 function openDocument(div, docID) {
-  // document exists iff its source code exists
-  var sourceCode = DocStorage.withDocKey(docID, 'diagram.sourceCode').readByTier(Tier.first)
-    || (Examples.hasOwnProperty(docID) && Examples[docID]);
-  return (sourceCode != null) ? new TMDocument(div, docID, sourceCode) : null;
+  return new TMDocument(div, docID);
 }
 
-var Prop = Object.freeze({
-  SourceCode: 'diagram.sourceCode',
-  Positions: 'diagram.positions'
-});
-
-// FIXME: handle case: missing/invalid source code
 // (Prop, ?Tier) -> void
 TMDocument.prototype.loadProp = function (prop, tier) {
-  tier = tier != null ? tier : Tier.first;
+  var read = function () {
+    return useTier(tier, this.storage.withPath(prop)).read();
+  }.bind(this);
   switch (prop) {
     case Prop.SourceCode:
-      var code = this.__sourceCodeStorage.readByTier(tier);
-      if (code != null) { this.sourceCode = code; }
+      var value = read();
+      if (value != null) { this.sourceCode = value; }
       break;
     case Prop.Positions:
-      var posTable = this.__positionStorage.readByTier(tier);
-      if (posTable) { this.machine.positionTable = posTable; }
+      value = read();
+      if (value) {
+        this.machine.positionTable = Position.parsePositionTable(value);
+      }
       break;
     default:
       throw new Error('TMDocument.loadProp: invalid prop: ' + prop);
   }
 };
 
+// throws if write fails (e.g. out of space)
 // (Prop, ?Tier) -> void
 TMDocument.prototype.saveProp = function (prop, tier) {
-  tier = tier != null ? tier : Tier.first;
+  var write = function (str) {
+    useTier(tier, this.storage.withPath(prop)).write(str);
+  }.bind(this);
   switch (prop) {
     case Prop.SourceCode:
-      return this.__sourceCodeStorage.writeByTier(tier, this.sourceCode);
+      return write(this.sourceCode);
     case Prop.Positions:
-      return this.__positionStorage.writeByTier(tier, this.machine.positionTable);
+      return write(Position.stringifyPositionTable(this.machine.positionTable));
     default:
       throw new Error('TMDocument.saveProp: invalid prop: ' + prop);
   }
@@ -192,28 +224,18 @@ Object.defineProperty(TMDocument.prototype, 'sourceCode', {
 // TODO: reduce space usage: only stash if modified since save.
 // throws if stash fails
 TMDocument.prototype.stash = function () {
-  this.saveProp(Prop.Positions, Tier.visible);
-  this.saveProp(Prop.SourceCode, Tier.visible);
+  if (this.machine) {
+    this.saveProp(Prop.Positions, Tier.visible);
+    this.saveProp(Prop.SourceCode, Tier.visible);
+  }
 };
 
 TMDocument.prototype.close = function () {
-  this.machine && (this.machine.isRunning = false);
-  this.stash();
-  console.log('TMDocument.close()');
-};
-
-// type DocEntry = {id: DocID, name: string}
-// () -> [DocEntry]
-function listExampleDocuments() {
-  function getName(sourceCode) {
-    // sufficient for the hard-coded examples
-    var result = /^[^\S#]*name:\s*(.+)/m.exec(sourceCode);
-    return result ? result[1] : 'untitled';
+  if (this.machine) {
+    this.machine.isRunning = false;
   }
-  return Object.keys(Examples).map(function(key) {
-    return {id: key, name: getName(Examples[key])};
-  });
-}
+  this.stash();
+};
 
 exports.openDocument = openDocument;
 exports.listExampleDocuments = listExampleDocuments;
