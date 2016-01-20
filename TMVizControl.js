@@ -5,6 +5,9 @@ var TMDocument = require('./TMDocument'),
 var YAMLException = require('js-yaml').YAMLException;
 var UndoManager = ace.require('ace/undomanager').UndoManager;
 
+// TODO: auto-fix paren spacing
+/* eslint space-before-function-paren: 0 */
+
 // TODO: prevent double-binding?
 // (HTMLButtonElement, HTMLButtonElement, TMVizData) -> void
 function bindStepRunButtons(stepButton, runButton, data) {
@@ -86,16 +89,32 @@ function TMVizControl(documentContainer, docID) {
   this.__buttons = addButtons(documentContainer);
 
   var self = this;
-  var editorContainer = documentContainer.append('div');
-  editorContainer
+  var editorContainer = documentContainer.append('div')
+    .style('position', 'relative');
+  this.__loadButton = editorContainer
     .append('button')
       .text('Load machine')
       .attr('class', 'tm-btn-loadmachine')
-      .on('click', function() { self.loadEditorSource(); });
+      .on('click', function() {
+        self.loadEditorSource();
+        self.editor.focus();
+      });
+  this.__revertButton = editorContainer
+    .append('button')
+      .text('Revert to diagram')
+      .attr('class', 'tm-btn-reverteditor')
+      .on('click', function() {
+        self.revertEditorSource();
+        self.editor.focus();
+      });
 
   var editor = ace.edit(
     editorContainer.append('div').attr('class', 'tm-editor').node()
   );
+  editor.setOptions({
+    minLines: 15,
+    maxLines: 50
+  });
   editor.session.setOptions({
     mode: 'ace/mode/yaml',
     tabSize: 2,
@@ -132,15 +151,20 @@ TMVizControl.prototype.loadDocumentById = function(docID) {
     .insert('div', ':first-child')
       .attr('class', diagramClass)
       .datum(function(id) {
-        return TMDocument.openDocument(d3.select(this), id);
+        // FIXME: handle/report errors
+        try {
+          return self.__document = TMDocument.openDocument(d3.select(this), id);
+        } catch (e) {
+          return null;
+        }
       })
       .each(function(doc) {
         self.__rebindButtons(doc);
         // TODO: also preserve cursor position?
         self.editor.setValue(doc.sourceCode, -1 /* put cursor at beginning */);
-        // prevent undo-ing to the previous document
+        // prevent undo-ing to the previous document. note: .reset() doesn't work
         self.editor.session.setUndoManager(new UndoManager());
-        // self.editor.session.getUndoManager().reset(); // note: this doesn't work
+        self.__loadedEditorSelection = null;
       });
 };
 
@@ -175,6 +199,9 @@ TMVizControl.prototype.loadEditorSource = function () {
       try {
         doc.sourceCode = self.editor.getValue();
         self.__rebindButtons(doc);
+        // .toJSON() is the only known way to preserve the cursor/selection(s)
+        self.__loadedEditorSelection = self.editor.session.selection.toJSON();
+        // TODO: disable/enable load machine / revert as editor changes
       } catch (e) {
         if (e instanceof YAMLException) {
           self.editor.session.setAnnotations([aceAnnotationFromYAMLException(e)]);
@@ -185,6 +212,15 @@ TMVizControl.prototype.loadEditorSource = function () {
         }
       }
     });
+};
+
+TMVizControl.prototype.revertEditorSource = function () {
+  if (this.__document.sourceCode) {
+    this.editor.setValue(this.__document.sourceCode, -1);
+  }
+  if (this.__loadedEditorSelection) {
+    this.editor.session.selection.fromJSON(this.__loadedEditorSelection);
+  }
 };
 
 exports.TMVizControl = TMVizControl;
