@@ -62,7 +62,7 @@ var Prop = Object.freeze({
 function initDocumentStorage(docID) {
   var prefix = 'doc.' + docID;
   var kvStore = (function () {
-    if (isExampleID(docID)) {
+    if (Examples.hasID(docID)) {
       // override read so that saved values, when missing, fall back to defaults
       var defaults = {};
       (function () {
@@ -70,7 +70,8 @@ function initDocumentStorage(docID) {
         function savedPath(prop) {
           return useTier(Tier.saved, s.withPath(prop)).prefix;
         }
-        defaults[savedPath(Prop.SourceCode)] = Examples[docID];
+        var example = Examples.get(docID);
+        defaults[savedPath(Prop.SourceCode)] = example.sourceCode;
         // TODO: defaults[savedPath(Prop.Positions)]
         // TODO: get name
       })();
@@ -90,31 +91,37 @@ function initDocumentStorage(docID) {
   return new SchemaStorage(prefix, docSchema, kvStore);
 }
 
-function getNameForExample(sourceCode) {
-  // sufficient for the hard-coded examples
-  var result = /^[^\S#]*name:\s*(.+)/m.exec(sourceCode);
-  return result ? result[1] : 'untitled';
+///////////////////
+// Document List //
+///////////////////
+
+/**
+ * @see TMDocument
+ */
+function openDocument(div, docID) {
+  return new TMDocument(div, docID);
 }
 
-function isExampleID(docID) {
-  return {}.hasOwnProperty.call(Examples, docID);
-}
+// () -> DocID
+function newDocID() { return String(Date.now()); }
 
-// type DocEntry = {id: DocID, name: string}
-// () -> [DocEntry]
-function listExampleDocuments() {
-  return Object.keys(Examples).map(function (key) {
-    return {id: key, name: getNameForExample(Examples[key])};
-  });
+function newBlankDocument(div) {
+  return new TMDocument(div, newDocID());
 }
 
 ////////////////
 // TMDocument //
 ////////////////
 
-// internal use. don't export this constructor.
-// throws if sourceCode is present but invalid.
-// (D3Selection, DocID, string) -> TMDocument
+/**
+ * Open or create a document by ID, and load it into the <div>.
+ *
+ * Internal use; don't export this constructor.
+ * @param  {D3Selection}  div   the D3 selection of the div to assign to this document
+ * @param  {string}       docID the document ID
+ * @throws {YAMLException}      if existing source code is not valid YAML
+ * @throws {TMSpecError}        if existing source code has some other error
+ */
 function TMDocument(div, docID) {
   this.__divSel = div;
   this.id = docID;
@@ -128,19 +135,6 @@ function TMDocument(div, docID) {
 }
 
 // TODO: handle load/saveProp for when this.machine is missing
-
-/**
- * Open or create a document by ID, and load it into the <div>.
- *
- * @param  {D3Selection}  div   the D3 selection of the div to assign to this document
- * @param  {string}       docID the document ID
- * @return {TMDocument}         existing document with ID, or new one if not found
- * @throws {YAMLException}      on YAML syntax parse error for existing source code
- * @throws {TMSpecError}        on other error for existing source code
- */
-function openDocument(div, docID) {
-  return new TMDocument(div, docID);
-}
 
 // (Prop, ?Tier) -> void
 TMDocument.prototype.loadProp = function (prop, tier) {
@@ -208,7 +202,8 @@ TMDocument.prototype.__setSpec = function (spec) {
   }
 };
 
-// eval a string and set the returned spec as the machine
+// eval a string and set the returned spec as the machine.
+// throws if the source code (string) is not a valid spec.
 Object.defineProperty(TMDocument.prototype, 'sourceCode', {
   get: function () { return this.__sourceCode; },
   set: function (sourceCode) {
@@ -238,6 +233,6 @@ TMDocument.prototype.close = function () {
 };
 
 exports.openDocument = openDocument;
-exports.listExampleDocuments = listExampleDocuments;
+exports.examplesList = Examples.list;
 exports.Prop = Prop;
 exports.Tier = Tier;

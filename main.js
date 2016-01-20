@@ -8,7 +8,7 @@ var TMVizControl = require('./TMVizControl'),
 // [DocEntry] -> HTMLSelectElement
 function menuFromDocumentListing(entries) {
   var select = document.createElement('select');
-  entries.forEach(function(entry) {
+  entries.forEach(function (entry) {
     var option = document.createElement('option');
     option.appendChild(document.createTextNode(entry.name));
     option.setAttribute('value', entry.id);
@@ -26,9 +26,9 @@ controller.editor.setTheme('ace/theme/chrome');
 
 // dropdown menu
 var picker = document.body.insertBefore(
-  menuFromDocumentListing(TMDocument.listExampleDocuments()),
+  menuFromDocumentListing(TMDocument.examplesList),
   document.body.firstChild);
-picker.addEventListener('change', function(ev) {
+picker.addEventListener('change', function (ev) {
   controller.loadDocumentById(ev.target.value);
 });
 

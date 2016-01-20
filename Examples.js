@@ -143,4 +143,34 @@ table:
   done:
 `;
 
-module.exports = exports = examples;
+// wrap each example in an object
+(function () {
+  function getNameForExample(sourceCode) {
+    // sufficient for the hard-coded examples
+    var result = /^[^\S#]*name:\s*(.+)/m.exec(sourceCode);
+    return result ? result[1] : 'untitled';
+  }
+
+  Object.keys(examples).forEach(function (key) {
+    examples[key] = {
+      id: key,
+      name: getNameForExample(examples[key]),
+      sourceCode: examples[key]
+    };
+  });
+})();
+// Object.freeze(examples);
+
+function isExampleID(docID) {
+  return {}.hasOwnProperty.call(examples, docID);
+}
+
+function get(docID) {
+  return isExampleID(docID) ? examples[docID] : null;
+}
+
+var list = Object.keys(examples).map(function (key) { return examples[key]; });
+
+exports.hasID = isExampleID;
+exports.get = get;
+exports.list = list;
