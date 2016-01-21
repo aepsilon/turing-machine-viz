@@ -12,7 +12,9 @@ var UndoManager = ace.require('ace/undomanager').UndoManager;
 // (HTMLButtonElement, HTMLButtonElement, TMVizData) -> void
 function bindStepRunButtons(stepButton, runButton, data) {
   function updateRunning(isRunning) {
-    runButton.textContent = (isRunning ? 'Pause' : 'Run');
+    runButton.innerHTML = isRunning
+      ? '<span class="glyphicon glyphicon-pause" aria-hidden="true"></span><br>Pause'
+      : '<span class="glyphicon glyphicon-play" aria-hidden="true"></span><br>Run';
     return isRunning;
   }
   function updateHalted(isHalted) {
@@ -36,24 +38,27 @@ function bindStepRunButtons(stepButton, runButton, data) {
 // div: the selection of the parent div of the .machine-diagram
 function addButtons(div) {
   // each step click corresponds to 1 machine step.
-  var stepButton = div.append('button')
-      .text('Step')
-      .attr('class', 'tm-btn-controldiagram btn-step')
+  var stepButton = div.select('.tm-step')
+  // var stepButton = div.append('button')
+      // .text('Step')
+      // .attr('class', 'tm-btn-controldiagram btn-step')
       .on('click', function(d) {
         d.machine.isRunning = false;
         d.machine.step();
       });
 
-  var runButton = div.append('button')
-      .text('Run')
-      .attr('class', 'tm-btn-controldiagram btn-run')
+  var runButton = div.select('.tm-run')
+  // var runButton = div.append('button')
+      // .text('Run')
+      // .attr('class', 'tm-btn-controldiagram btn-run')
       .on('click', function(d) {
         d.machine.isRunning = !d.machine.isRunning;
       });
 
-  div.append('button')
-      .text('Reset to start')
-      .attr('class', 'tm-btn-controldiagram btn-reset')
+  div.select('.tm-reset')
+  // div.append('button')
+      // .text('Reset to start')
+      // .attr('class', 'tm-btn-controldiagram btn-reset')
       .property('type', 'reset') // ?
       .on('click', function(d) { d.machine.reset(); });
 
@@ -62,23 +67,24 @@ function addButtons(div) {
    {label: 'Load positions', onClick: function(d) { d.loadSavedPositions(); }}
   ].forEach(function(obj) {
     div.append('button')
-        .attr('class', 'tm-btn-controldiagram btn-positioning')
+        .attr('class', 'tm-btn-diagram btn-positioning')
         .text(obj.label)
         .on('click', function(d) {
           obj.onClick(d);
         });
   });
   return {
-    all: div.selectAll('button.tm-btn-controldiagram'),
+    all: div.selectAll('button.tm-btn-diagram'),
     step: stepButton.node(),
     run: runButton.node()
   };
 }
 
 // Contains & provides controls for a TMDocument.
-// (HTMLDivElement, ?DocID) -> TMVizControl
-function TMVizControl(documentContainer, docID) {
+function TMVizControl(documentContainer, controlsContainer, editorContainer, docID) {
   documentContainer = d3.select(documentContainer);
+  controlsContainer = d3.select(controlsContainer);
+  editorContainer = d3.select(editorContainer);
   Object.defineProperty(this, 'documentContainer', {
     value: documentContainer,
     writable: false,
@@ -86,11 +92,11 @@ function TMVizControl(documentContainer, docID) {
     enumerable: true
   });
 
-  this.__buttons = addButtons(documentContainer);
+  this.__buttons = addButtons(controlsContainer);
 
   var self = this;
-  var editorContainer = documentContainer.append('div')
-    .style('position', 'relative');
+  // var editorContainer = documentContainer.append('div')
+    // .style('position', 'relative');
   this.__loadButton = editorContainer
     .append('button')
       .text('Load machine')
@@ -208,7 +214,8 @@ TMVizControl.prototype.loadEditorSource = function () {
         } else {
           // TODO: display error instead of re-throwing
           // also display error next to load button
-          throw e;
+          // throw e;
+          alert(e);
         }
       }
     });
