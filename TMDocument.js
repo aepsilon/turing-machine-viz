@@ -45,14 +45,15 @@ function useTier(tier, store) {
 
 var tierSchema = {visible: null, saved: null};
 
-// TODO: include name in docSchema
 var docSchema = {
+  'name': tierSchema,
   'diagram.positions': tierSchema,
   'diagram.sourceCode': tierSchema
 };
 
 // enum for prop key paths
 var Prop = Object.freeze({
+  Name: ['name'],
   SourceCode: ['diagram.sourceCode'],
   Positions: ['diagram.positions']
 });
@@ -71,9 +72,9 @@ function initDocumentStorage(docID) {
           return useTier(Tier.saved, s.withPath(prop)).prefix;
         }
         var example = Examples.get(docID);
+        defaults[savedPath(Prop.Name)] = example.name;
         defaults[savedPath(Prop.SourceCode)] = example.sourceCode;
         // TODO: defaults[savedPath(Prop.Positions)]
-        // TODO: get name
       })();
 
       return Object.create(Storage.KeyValueStorage, {
@@ -95,13 +96,77 @@ function initDocumentStorage(docID) {
 // Document List //
 ///////////////////
 
+var customDocumentList = new DocumentList(Storage.KeyValueStorage, 'tm.docIDs');
+
+// TODO: preserve document list order
+
+// ?[DocID] -> void
+// @throws {SyntaxError} if listing exists but is corrupt
+function DocumentList(storage, storageKey) {
+  Object.defineProperties(this, {
+    storage: { value: storage },
+    storageKey: { value: storageKey },
+    idSet: { value: {} }
+  });
+  var list = util.applyMaybe(JSON.parse, storage.read(storageKey));
+  list && list.forEach(function (id) { this.idSet[id] = true; }, this);
+}
+
+// [DocID]
+Object.defineProperty(DocumentList.prototype, 'list', {
+  get: function () { return Object.keys(this.idSet); },
+  enumerable: true
+});
+
+// document duplication.
+// set a new docID and copy all data over, but keep the displays.
+// mutates the document.
+DocumentList.prototype.duplicateDocument = function (doc) {
+  var newID = newDocID();
+  // copy data
+  var newStorage = initDocumentStorage(newID);
+  this.add(newID);
+  try {
+    newStorage.write(doc.storage.read());
+  } catch (e) {
+    // TODO: impl. transaction rollback
+    // newStorage.remove();
+    this.remove(newID);
+    throw e;
+  }
+  // update props to new ID
+  doc.id = newID;
+  doc.storage = newStorage;
+};
+
+// add a new blank document to the list.
+// remember to close the previous document if it shares the div.
+DocumentList.prototype.newBlankDocument = function (div) {
+  var newID = newDocID();
+  this.add(newID);
+  div.node().innerHTML = '';
+  return new TMDocument(div, newID);
+};
+
+// internal helper methods
+
+Object.defineProperties(DocumentList.prototype, {
+  // TODO: impl. transactions
+  add: { value: function (docID) {
+    this.idSet[docID] = true;
+    this.updateStorage();
+  }},
+  remove: { value: function (docID) {
+    delete this.idSet[docID];
+    this.updateStorage();
+  }},
+  updateStorage: { value: function () {
+    this.storage.write(this.storageKey, JSON.stringify(this.list));
+  }}
+});
 
 // () -> DocID
 function newDocID() { return String(Date.now()); }
-
-function newBlankDocument(div) {
-  return new TMDocument(div, newDocID());
-}
 
 ////////////////
 // TMDocument //
@@ -202,6 +267,11 @@ TMDocument.prototype.__setSpec = function (spec) {
   }
 };
 
+Object.defineProperty(TMDocument.prototype, 'name', {
+  get: function () { return this.__name; },
+  enumerable: true
+});
+
 // eval a string and set the returned spec as the machine.
 // throws if the source code (string) is not a valid spec.
 Object.defineProperty(TMDocument.prototype, 'sourceCode', {
@@ -236,3 +306,5 @@ exports.openDocument = openDocument;
 exports.examplesList = Examples.list;
 exports.Prop = Prop;
 exports.Tier = Tier;
+
+exports.customDocumentList = customDocumentList;
