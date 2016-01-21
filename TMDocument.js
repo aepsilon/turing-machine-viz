@@ -95,12 +95,6 @@ function initDocumentStorage(docID) {
 // Document List //
 ///////////////////
 
-/**
- * @see TMDocument
- */
-function openDocument(div, docID) {
-  return new TMDocument(div, docID);
-}
 
 // () -> DocID
 function newDocID() { return String(Date.now()); }
@@ -113,25 +107,31 @@ function newBlankDocument(div) {
 // TMDocument //
 ////////////////
 
+// TODO: check pre-condition: document exists
 /**
- * Open or create a document by ID, and load it into the <div>.
+ * Open an existing document by ID, and load it into the <div>.
  *
- * Internal use; don't export this constructor.
  * @param  {D3Selection}  div   the D3 selection of the div to assign to this document
  * @param  {string}       docID the document ID
- * @throws {YAMLException}      if existing source code is not valid YAML
- * @throws {TMSpecError}        if existing source code has some other error
+ * @throws {YAMLException}      if document's source code exists and is not valid YAML
+ * @throws {TMSpecError}        if document's source code exists and has some other error
  */
+function openDocument(div, docID) {
+  var doc = new TMDocument(div, docID);
+  // try loading data
+  doc.loadProp(Prop.SourceCode, Tier.first);
+  try {
+    doc.loadPositions();
+  } catch (e) { // ignore; not critical
+  }
+  return doc;
+}
+
+// internal use; don't export this constructor.
 function TMDocument(div, docID) {
   this.__divSel = div;
   this.id = docID;
   this.storage = initDocumentStorage(docID);
-  // try loading data
-  this.loadProp(Prop.SourceCode, Tier.first);
-  try {
-    this.loadPositions();
-  } catch (e) { // ignore; not critical
-  }
 }
 
 // TODO: handle load/saveProp for when this.machine is missing
