@@ -91,11 +91,6 @@ function addTape(div, spec) {
     spec.blank, spec.input ? spec.input.split('') : []);
 }
 
-// TODO: machine spec checker:
-// * typeof table should be object, not function.
-// * each non-halting state should cover all symbol cases
-
-
 /**
  * Construct a new state and tape visualization inside the `div` selection.
  * @param div       D3 selection of an HTML `div`
