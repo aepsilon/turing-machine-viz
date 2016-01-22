@@ -65,7 +65,7 @@ function parseSynonyms(val) {
     throw new TMSpecError('expected a mapping (object) for synonyms but got: ' +
       typeof val);
   }
-  return _(val).mapObject(function(actionVal, key) {
+  return _(val).mapObject(function (actionVal, key) {
     try {
       return parseAction(null, actionVal);
     } catch (e) {
@@ -86,7 +86,7 @@ function parseTable(synonyms, val) {
     throw new TMSpecError('expected a mapping (object) for table but got: ' +
       typeof val);
   }
-  return _(val).mapObject(function(stateObj, state) {
+  return _(val).mapObject(function (stateObj, state) {
     if (stateObj == null) {
       // case: halting state
       return null;
@@ -94,7 +94,7 @@ function parseTable(synonyms, val) {
     if (typeof stateObj !== 'object') {
       throw new TMSpecError('expected null or a mapping (object) for the transitions from state: ' + state);
     }
-    return _(stateObj).mapObject(function(actionVal, symbol) {
+    return _(stateObj).mapObject(function (actionVal, symbol) {
       try {
         return parseAction(synonyms, actionVal);
       } catch (e) {
@@ -112,7 +112,7 @@ function parseTable(synonyms, val) {
 // (?string, direction, ?string) -> {symbol?: string, move: direction, state?: string}
 function constructAction(symbol, move, state) {
   return Object.freeze(_.omit({symbol: symbol, move: move, state: state},
-    function(x) { return x == null; }));
+    function (x) { return x == null; }));
 }
 
 var leftAction = Object.freeze({move: TM.MoveHead.left});
@@ -173,8 +173,8 @@ function parseActionObject(val) {
 
 // throws if any transition goes to a non-existent (undeclared) state
 function checkTargetStates(table) {
-  _(table).forEach(function(stateObj, state) {
-    _(stateObj).forEach(function(action, symbol) {
+  _(table).forEach(function (stateObj, state) {
+    _(stateObj).forEach(function (action, symbol) {
       if (action.state != null && !(action.state in table)) {
         throw new TMSpecError('the transition for state ' + state +
         ' and symbol ' + symbol +
