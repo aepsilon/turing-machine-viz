@@ -2,12 +2,14 @@
 var TMDocument = require('./TMDocument'),
     watch = require('./watch.js'),
     d3 = require('d3');
+var TMSpecError = require('./Parser').TMSpecError;
 var YAMLException = require('js-yaml').YAMLException;
 var UndoManager = ace.require('ace/undomanager').UndoManager;
 
 // TODO: auto-fix paren spacing
 /* eslint space-before-function-paren: 0 */
 
+// TODO: also bind .disabled for 'Revert to diagram'
 // TODO: prevent double-binding?
 // (HTMLButtonElement, HTMLButtonElement, TMVizData) -> void
 function bindStepRunButtons(stepButton, runButton, data) {
@@ -39,18 +41,12 @@ function bindStepRunButtons(stepButton, runButton, data) {
 function addButtons(div) {
   // each step click corresponds to 1 machine step.
   var stepButton = div.select('.tm-step')
-  // var stepButton = div.append('button')
-      // .text('Step')
-      // .attr('class', 'tm-btn-controldiagram btn-step')
       .on('click', function(d) {
         d.machine.isRunning = false;
         d.machine.step();
       });
 
   var runButton = div.select('.tm-run')
-  // var runButton = div.append('button')
-      // .text('Run')
-      // .attr('class', 'tm-btn-controldiagram btn-run')
       .on('click', function(d) {
         d.machine.isRunning = !d.machine.isRunning;
       });
@@ -85,22 +81,31 @@ function TMVizControl(documentContainer, controlsContainer, editorContainer, doc
   documentContainer = d3.select(documentContainer);
   controlsContainer = d3.select(controlsContainer);
   editorContainer = d3.select(editorContainer);
+  // XXX: factor out hard-coding
+  var editorAlertsContainer = editorContainer.select('#editor-alerts-container');
   Object.defineProperty(this, 'documentContainer', {
     value: documentContainer,
     writable: false,
     configurable: false,
     enumerable: true
   });
+  Object.defineProperty(this, 'containers', {
+    value: {
+      document: documentContainer,
+      controls: controlsContainer,
+      editorAlerts: editorAlertsContainer,
+      editor: editorContainer
+    }
+  });
 
   this.__buttons = addButtons(controlsContainer);
 
   var self = this;
-  // var editorContainer = documentContainer.append('div')
-    // .style('position', 'relative');
+  // XXX: factor out these buttons as well.
   this.__loadButton = editorContainer
     .append('button')
       .text('Load machine')
-      .attr('class', 'tm-btn-loadmachine')
+      .attr('class', 'btn btn-primary tm-btn-loadmachine')
       .on('click', function() {
         self.loadEditorSource();
         self.editor.focus();
@@ -108,7 +113,7 @@ function TMVizControl(documentContainer, controlsContainer, editorContainer, doc
   this.__revertButton = editorContainer
     .append('button')
       .text('Revert to diagram')
-      .attr('class', 'tm-btn-reverteditor')
+      .attr('class', 'btn btn-default tm-btn-reverteditor')
       .on('click', function() {
         self.revertEditorSource();
         self.editor.focus();
@@ -174,6 +179,7 @@ TMVizControl.prototype.loadDocumentById = function(docID) {
       });
 };
 
+// TODO: disable/enable load machine / revert as editor changes
 // TMDocument -> void
 TMVizControl.prototype.__rebindButtons = function (doc) {
   var buttons = this.__buttons;
@@ -201,29 +207,66 @@ TMVizControl.prototype.loadEditorSource = function () {
     .selectAll('div.'+diagramClass)
     .each(function(doc) {
       // load to diagram, and report any errors
-      self.editor.session.clearAnnotations();
-      try {
-        doc.sourceCode = self.editor.getValue();
-        self.__rebindButtons(doc);
-        // .toJSON() is the only known way to preserve the cursor/selection(s)
-        self.__loadedEditorSelection = self.editor.session.selection.toJSON();
-        // TODO: disable/enable load machine / revert as editor changes
-      } catch (e) {
-        if (e instanceof YAMLException) {
-          self.editor.session.setAnnotations([aceAnnotationFromYAMLException(e)]);
-        } else {
-          // TODO: display error instead of re-throwing
-          // also display error next to load button
-          // throw e;
-          alert(e);
+      var errors = (function () {
+        try {
+          doc.sourceCode = self.editor.getValue();
+          self.__rebindButtons(doc);
+          // .toJSON() is the only known way to preserve the cursor/selection(s)
+          self.__loadedEditorSelection = self.editor.session.selection.toJSON();
+          return [];
+        } catch (e) {
+          return [e];
         }
-      }
+      })();
+      var alerts = self.containers.editorAlerts.selectAll('.alert')
+        .data(errors, function (e) { return String(e); }); // key by error description
+
+      alerts.exit().remove();
+
+      alerts.enter()
+        .append('div')
+          .attr('class', 'alert alert-danger')
+          .each(function (e) {
+            var div = d3.select(this);
+            if (e instanceof YAMLException) {
+              var annot = aceAnnotationFromYAMLException(e);
+              var lineNum = annot.row + 1; // annotation lines start at 0; editor starts at 1
+              var column = annot.column;
+              div.append('strong')
+                  .text('Syntax error on ')
+                .append('a')
+                  .text('line ' + lineNum)
+                  .on('click', function () {
+                    self.editor.gotoLine(lineNum, column, true);
+                    self.editor.focus();
+                    // prevent scrolling, especially href="#" scrolling to the top
+                    d3.event.preventDefault();
+                  })
+                  .attr('href', '#' + self.containers.editor.node().id);
+              div.append('br');
+              // aside: text nodes aren't elements so they need to be wrapped (e.g. in span)
+              // https://github.com/mbostock/d3/issues/94
+              div.append('span').text('Possible reason: ' + e.reason);
+            } else if (e instanceof TMSpecError) {
+              div.html(e.message);
+            } else {
+              div.html('<strong>Unexpected error</strong>: ' + e);
+            }
+          });
+      self.editor.session.setAnnotations(
+        errors
+        .map(function (e) {
+          return (e instanceof YAMLException) ? aceAnnotationFromYAMLException(e) : null;
+        })
+        .filter(function (x) { return x; })
+      );
     });
 };
 
 TMVizControl.prototype.revertEditorSource = function () {
   if (this.__document.sourceCode) {
     this.editor.setValue(this.__document.sourceCode, -1);
+    this.containers.editorAlerts.html('');
   }
   if (this.__loadedEditorSelection) {
     this.editor.session.selection.fromJSON(this.__loadedEditorSelection);
