@@ -2,8 +2,8 @@
 var TMDocument = require('./TMDocument'),
     watch = require('./watch.js'),
     d3 = require('d3');
-var TMSpecError = require('./Parser').TMSpecError;
-var YAMLException = require('js-yaml').YAMLException;
+var TMSpecError = TMDocument.TMSpecError;
+var YAMLException = TMDocument.YAMLException;
 var UndoManager = ace.require('ace/undomanager').UndoManager;
 
 // TODO: auto-fix paren spacing

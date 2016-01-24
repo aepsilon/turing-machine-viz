@@ -228,3 +228,5 @@ function parseInstructionObject(val) {
 
 exports.TMSpecError = TMSpecError;
 exports.parseSpec = parseSpec;
+// re-exports
+exports.YAMLException = jsyaml.YAMLException;

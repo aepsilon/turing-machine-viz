@@ -308,3 +308,7 @@ exports.Prop = Prop;
 exports.Tier = Tier;
 
 exports.customDocumentList = customDocumentList;
+
+// re-exports
+exports.TMSpecError = Parser.TMSpecError;
+exports.YAMLException = Parser.YAMLException;
