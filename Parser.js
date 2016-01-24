@@ -57,7 +57,7 @@ Object.defineProperty(TMSpecError.prototype, 'message', {
 // type TMSpec = {blank: string, input: ?string,
   // startState: string, table: TransitionTable}
 
-// TODO: check with flow type-checker
+// TODO: check with flow (flowtype.org)
 // throws YAMLException on YAML syntax error
 // throws TMSpecError for an invalid spec (eg. no start state, transitioning to an undefined state)
 // string -> TMSpec
@@ -89,7 +89,6 @@ function parseSpec(str) {
   if (!(obj.startState in obj.table)) {
     throw new TMSpecError('The start state has to be declared in the transition table');
   }
-  checkTargetStates(obj.table);
 
   return obj;
 }
@@ -106,7 +105,7 @@ function parseSynonyms(val, table) {
   }
   return _(val).mapObject(function (actionVal, key) {
     try {
-      return checkTarget(parseInstruction(null, actionVal), table);
+      return parseInstruction(null, table, actionVal);
     } catch (e) {
       if (e instanceof TMSpecError) {
         e.details.synonym = key;
@@ -116,7 +115,7 @@ function parseSynonyms(val, table) {
   });
 }
 
-// (?SynonymMap, any) -> TransitionTable
+// (?SynonymMap, {[key: string]: string}) -> TransitionTable
 function parseTable(synonyms, val) {
   if (val == null) {
     throw new TMSpecError('Missing transition table',
@@ -140,7 +139,7 @@ function parseTable(synonyms, val) {
     }
     return _(stateObj).mapObject(function (actionVal, symbol) {
       try {
-        return parseInstruction(synonyms, actionVal);
+        return parseInstruction(synonyms, val, actionVal);
       } catch (e) {
         if (e instanceof TMSpecError) {
           e.details.state = state;
@@ -159,19 +158,29 @@ function makeInstruction(symbol, move, state) {
     function (x) { return x == null; }));
 }
 
+function checkTarget(table, action) {
+  if (action.state != null && !(action.state in table)) {
+    throw new TMSpecError('Undeclared state <code>' + action.state + '</code>');
+  }
+  return action;
+}
+
+// throws if the target state is undeclared (not in the table)
+// type SynonymMap = {[key: string]: TMAction}
+// (SynonymMap?, Object, string | Object) -> TMAction
+function parseInstruction(synonyms, table, val) {
+  return checkTarget(table, function () {
+    switch (typeof val) {
+      case 'string': return parseInstructionString(synonyms, val);
+      case 'object': return parseInstructionObject(val);
+      default: throw new TMSpecError('Malformed instruction',
+        {info: 'Expected a string or an object but got type ' + typeof val});
+    }
+  }());
+}
+
 var leftAction = Object.freeze({move: TM.MoveHead.left});
 var rightAction = Object.freeze({move: TM.MoveHead.right});
-
-// type SynonymMap = {[key: string]: TMAction}
-// (SynonymMap?, string | Object) -> TMAction
-function parseInstruction(synonyms, val) {
-  switch (typeof val) {
-    case 'string': return parseInstructionString(synonyms, val);
-    case 'object': return parseInstructionObject(val);
-  }
-  throw new TMSpecError('Malformed instruction',
-  {info: 'Expected a string or an object but got type ' + typeof val});
-}
 
 // case: direction or synonym
 function parseInstructionString(synonyms, val) {
@@ -215,25 +224,6 @@ function parseInstructionObject(val) {
     }
   }
   return makeInstruction(symbol, move, state);
-}
-
-function checkTarget(action, table) {
-  if (action.state != null && !(action.state in table)) {
-    throw new TMSpecError('Undeclared state <code>' + action.state + '</code>');
-  }
-  return action;
-}
-
-// throws if any transition goes to a non-existent (undeclared) state
-function checkTargetStates(table) {
-  _(table).forEach(function (stateObj, state) {
-    _(stateObj).forEach(function (action, symbol) {
-      if (action.state != null && !(action.state in table)) {
-        throw new TMSpecError('Undeclared state <code>' + action.state + '</code>',
-        {state: state, symbol: symbol});
-      }
-    });
-  });
 }
 
 exports.TMSpecError = TMSpecError;
