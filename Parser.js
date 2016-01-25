@@ -78,8 +78,8 @@ function parseSpec(str) {
   obj.startState = obj['start state'];
   delete obj['start state'];
   if (obj.startState == null) {
-    throw new TMSpecError('No start state specified',
-    {suggestion: 'Assign one using <code>start start: </code>'});
+    throw new TMSpecError('No start state was specified',
+    {suggestion: 'Assign one using <code>start state: </code>'});
   }
   obj.startState = String(obj.startState);
   // parse synonyms and transition table
