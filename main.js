@@ -2,7 +2,7 @@
 // important: make sure to coordinate variables and elements between the HTML and JS
 
 /* eslint-env browser */
-var TMVizControl = require('./TMVizControl'),
+var TMDocumentController = require('./TMDocumentController'),
     TMDocument = require('./TMDocument');
     // d3 = require('d3');
 
@@ -37,7 +37,7 @@ var controller = function () {
   var editorContainer = document.getElementById('editor-container');
     // || machineContainer.appendChild(newEditorDiv());
 
-  return new TMVizControl.TMVizControl(
+  return new TMDocumentController(
     machineContainer, controlsContainer, editorContainer,
     'powersOfTwo');
 }();

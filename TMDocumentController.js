@@ -273,4 +273,4 @@ TMVizControl.prototype.revertEditorSource = function () {
   }
 };
 
-exports.TMVizControl = TMVizControl;
+module.exports = exports = TMVizControl;
