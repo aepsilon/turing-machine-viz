@@ -77,5 +77,7 @@ function watchInit(thisArg, prop, handler) {
   return desc;
 }
 
-// exports.watch = watch;
-// exports.watchInit = watchInit;
+if (typeof exports === 'object') {
+  exports.watch = watch;
+  exports.watchInit = watchInit;
+}
