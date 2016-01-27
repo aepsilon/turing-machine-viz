@@ -1,127 +1,70 @@
+'use strict';
+/* eslint consistent-this: [1, "self"] */
 /* global ace */ // requires the Ace editor (no-conflict version)
 var TMDocument = require('./TMDocument'),
-    watch = require('./watch.js'),
-    d3 = require('d3');
+    watchInit = require('./watch').watchInit,
+    d3 = require('d3'),
+    values = require('lodash-fp').values;
 var TMSpecError = TMDocument.TMSpecError;
 var YAMLException = TMDocument.YAMLException;
 var UndoManager = ace.require('ace/undomanager').UndoManager;
 
-// TODO: auto-fix paren spacing
-/* eslint space-before-function-paren: 0 */
-
-// TODO: also bind .disabled for 'Revert to diagram'
-// TODO: prevent double-binding?
-// (HTMLButtonElement, HTMLButtonElement, TMVizData) -> void
-function bindStepRunButtons(stepButton, runButton, data) {
-  function updateRunning(isRunning) {
-    runButton.innerHTML = isRunning
-      ? '<span class="glyphicon glyphicon-pause" aria-hidden="true"></span><br>Pause'
-      : '<span class="glyphicon glyphicon-play" aria-hidden="true"></span><br>Run';
-    return isRunning;
-  }
-  function updateHalted(isHalted) {
-    stepButton.disabled = isHalted;
-    runButton.disabled = isHalted;
-    return isHalted;
-  }
-  updateRunning(data.machine.isRunning);
-  updateHalted(data.machine.isHalted);
-  watch(data.machine, 'isRunning', function(prop, oldval, isRunning) {
-    return updateRunning(isRunning);
-  });
-  watch(data.machine, 'isHalted', function(prop, oldval, isHalted) {
-    return updateHalted(isHalted);
-  });
-}
-
-// Add controls (buttons) for a TMViz.
-// div.datum() can be null (missing), in which case the buttons will be disabled.
-// remember to rebind after loading/modifying a document.
-// div: the selection of the parent div of the .machine-diagram
-function addButtons(div) {
-  // each step click corresponds to 1 machine step.
-  var stepButton = div.select('.tm-step')
-      .on('click', function(d) {
-        d.machine.isRunning = false;
-        d.machine.step();
-      });
-
-  var runButton = div.select('.tm-run')
-      .on('click', function(d) {
-        d.machine.isRunning = !d.machine.isRunning;
-      });
-
-  div.select('.tm-reset')
-  // div.append('button')
-      // .text('Reset to start')
-      // .attr('class', 'tm-btn-controldiagram btn-reset')
-      .property('type', 'reset') // ?
-      .on('click', function(d) { d.machine.reset(); });
-
-  // use a plain Array to ease setup, then propagate the actual data
-  [{label: 'Save positions', onClick: function(d) { d.savePositions(); }},
-   {label: 'Load positions', onClick: function(d) { d.loadSavedPositions(); }}
-  ].forEach(function(obj) {
-    div.append('button')
-        .attr('class', 'tm-btn-diagram btn-positioning')
-        .text(obj.label)
-        .on('click', function(d) {
-          obj.onClick(d);
-        });
-  });
-  return {
-    all: div.selectAll('button.tm-btn-diagram'),
-    step: stepButton.node(),
-    run: runButton.node()
-  };
-}
-
-// Contains & provides controls for a TMDocument.
-function TMVizControl(documentContainer, controlsContainer, editorContainer, docID) {
-  documentContainer = d3.select(documentContainer);
-  controlsContainer = d3.select(controlsContainer);
-  editorContainer = d3.select(editorContainer);
-  // XXX: factor out hard-coding
-  var editorAlertsContainer = editorContainer.select('#editor-alerts-container');
-  Object.defineProperty(this, 'documentContainer', {
-    value: documentContainer,
-    writable: false,
-    configurable: false,
-    enumerable: true
-  });
-  Object.defineProperty(this, 'containers', {
-    value: {
-      document: documentContainer,
-      controls: controlsContainer,
-      editorAlerts: editorAlertsContainer,
-      editor: editorContainer
-    }
+/**
+ * Manages and responds to buttons for a TMDocument, and provides a source code editor.
+ *
+ * All container and button params are required.
+ * @param {Object} containers
+ *   Empty containers to use (contents will likely be replaced).
+ * @param {HTMLDivElement} containers.diagram
+ * @param {HTMLDivElement} containers.editorAlerts
+ * @param {HTMLDivElement} containers.editor
+ * @param {Object} buttons Buttons to use.
+ * @param {HTMLButtonElement} buttons.run
+ * @param {HTMLButtonElement} buttons.step
+ * @param {HTMLButtonElement} buttons.reset
+ * @param {HTMLButtonElement} buttons.load For loading the editor source
+ * @param {HTMLButtonElement} buttons.revert For reverting the editor source
+ * @param {?string} docID The document ID to open.
+ */
+function TMDocumentController(containers, buttons, docID) {
+  // FIXME: check for every container and button and throw if any are missing
+  Object.defineProperties(this, {
+    containers: { value: containers },
+    buttons: { value: buttons }
   });
 
-  this.__buttons = addButtons(controlsContainer);
-
+  // Set up button event listeners //
   var self = this;
-  // XXX: factor out these buttons as well.
-  this.__loadButton = editorContainer
-    .append('button')
-      .text('Load machine')
-      .attr('class', 'btn btn-primary tm-btn-loadmachine')
-      .on('click', function() {
+  var simButtons = buttons.simulator;
+  simButtons.step
+      .addEventListener('click', function () {
+        self.__document.machine.isRunning = false;
+        self.__document.machine.step(); // each step click corresponds to 1 machine step
+      });
+  simButtons.run
+      .addEventListener('click', function () {
+        self.__document.machine.isRunning = !self.__document.machine.isRunning;
+      });
+  simButtons.reset
+      .addEventListener('click', function () {
+        self.__document.machine.reset();
+      });
+  simButtons.all = values(simButtons);
+
+  var editorButtons = buttons.editor;
+  editorButtons.load
+      .addEventListener('click', function () {
         self.loadEditorSource();
         self.editor.focus();
       });
-  this.__revertButton = editorContainer
-    .append('button')
-      .text('Revert to diagram')
-      .attr('class', 'btn btn-default tm-btn-reverteditor')
-      .on('click', function() {
+  editorButtons.revert
+      .addEventListener('click', function () {
         self.revertEditorSource();
         self.editor.focus();
       });
 
-  var editor = ace.edit(
-    editorContainer.append('div').attr('class', 'tm-editor').node()
-  );
+  // Set up ace editor //
+  var editor = ace.edit(containers.editor);
   editor.setOptions({
     minLines: 15,
     maxLines: 50
@@ -136,60 +79,74 @@ function TMVizControl(documentContainer, controlsContainer, editorContainer, doc
   editor.$blockScrolling = Infinity;
   Object.defineProperty(this, 'editor', {
     value: editor,
-    writable: false,
-    configurable: false,
     enumerable: true
   });
 
-  if (docID != null) { this.loadDocumentById(docID); }
+  if (docID != null) { this.openDocumentById(docID); }
 }
 
 var diagramClass = 'machine-diagram';
 
-TMVizControl.prototype.loadDocumentById = function(docID) {
-  var divs = this.documentContainer
-    .selectAll('div.'+diagramClass)
-      .data([docID], function(d) { return d; });
+// FIXME: load editor even if diagram source was corrupted. display error.
+TMDocumentController.prototype.openDocumentById = function (docID) {
+  if (this.__document) {
+    if (this.__document.id === docID) { return; } // same document
+    this.containers.diagram.innerHTML = '';
+    this.__document.close();
+    this.__document = null;
+  }
 
-  // Exit
-  divs.exit()
-      .each(function(doc) { doc.close && doc.close(); })
-      .remove();
-
-  // Enter
   var self = this;
-  divs.enter()
-    .insert('div', ':first-child')
-      .attr('class', diagramClass)
-      .datum(function(id) {
-        // FIXME: handle/report errors
-        try {
-          return self.__document = TMDocument.openDocument(d3.select(this), id);
-        } catch (e) {
-          return null;
-        }
-      })
-      .each(function(doc) {
-        self.__rebindButtons(doc);
-        // TODO: also preserve cursor position?
-        self.editor.setValue(doc.sourceCode, -1 /* put cursor at beginning */);
-        // prevent undo-ing to the previous document. note: .reset() doesn't work
-        self.editor.session.setUndoManager(new UndoManager());
-        self.__loadedEditorSelection = null;
-      });
+  var diagram = d3.select(this.containers.diagram)
+    .append('div').attr('class', diagramClass);
+
+  // FIXME: handle/report errors
+  self.rebindButtons();
+  try {
+    self.__document = TMDocument.openDocument(diagram, docID);
+    self.rebindButtons();
+    // TODO: preserve cursor position between sessions?
+    self.editor.setValue(this.__document.sourceCode, -1 /* put cursor at beginning */);
+    // prevent undo-ing to the previous document. note: .reset() doesn't work
+    self.editor.session.setUndoManager(new UndoManager());
+    self.__loadedEditorSelection = null;
+  } catch (e) {
+    // XXX:
+    alert('Unexpected error: ' + e);
+  }
 };
 
-// TODO: disable/enable load machine / revert as editor changes
-// TMDocument -> void
-TMVizControl.prototype.__rebindButtons = function (doc) {
-  var buttons = this.__buttons;
-  buttons.all.datum(doc);
-  if (doc && doc.machine) {
-    buttons.all.attr('disabled', null);
-    bindStepRunButtons(buttons.step, buttons.run, doc);
-  } else {
-    buttons.all.attr('disabled', '');
+// bind: .disabled for Step and Run, and .innerHTML (Run/Pause) for Run
+function rebindStepRun(stepButton, runButton, doc) {
+  function onHaltedChange(isHalted) {
+    stepButton.disabled = isHalted;
+    runButton.disabled = isHalted;
+    return isHalted;
   }
+  function onRunningChange(isRunning) {
+    runButton.innerHTML = isRunning
+    // FIXME: no hard-coding
+      ? '<span class="glyphicon glyphicon-pause" aria-hidden="true"></span><br>Pause'
+      : '<span class="glyphicon glyphicon-play" aria-hidden="true"></span><br>Run';
+    return isRunning;
+  }
+  watchInit(doc.machine, 'isHalted', function (prop, oldval, isHalted) {
+    return onHaltedChange(isHalted);
+  });
+  watchInit(doc.machine, 'isRunning', function (prop, oldval, isRunning) {
+    return onRunningChange(isRunning);
+  });
+}
+
+// TODO: disable/enable load machine / revert as editor changes
+TMDocumentController.prototype.rebindButtons = function () {
+  var doc = this.__document;
+  var enable = Boolean(doc && doc.machine);
+  var buttons = this.buttons.simulator;
+  if (enable) {
+    rebindStepRun(buttons.step, buttons.run, doc);
+  }
+  buttons.all.forEach(function (b) { b.disabled = !enable; });
 };
 
 function aceAnnotationFromYAMLException(e) {
@@ -201,76 +158,99 @@ function aceAnnotationFromYAMLException(e) {
   };
 }
 
-TMVizControl.prototype.loadEditorSource = function () {
+TMDocumentController.prototype.setAlertErrors = function (errors) {
   var self = this;
-  this.documentContainer
-    .selectAll('div.'+diagramClass)
-    .each(function(doc) {
-      // load to diagram, and report any errors
-      var errors = (function () {
-        try {
-          doc.sourceCode = self.editor.getValue();
-          self.__rebindButtons(doc);
-          // .toJSON() is the only known way to preserve the cursor/selection(s)
-          self.__loadedEditorSelection = self.editor.session.selection.toJSON();
-          return [];
-        } catch (e) {
-          return [e];
+  var alerts = d3.select(self.containers.editorAlerts).selectAll('.alert')
+    .data(errors, function (e) { return String(e); }); // key by error description
+
+  alerts.exit().remove();
+
+  alerts.enter()
+    .append('div')
+      .attr('class', 'alert alert-danger')
+      .each(/** @this div */ function (e) {
+        var div = d3.select(this);
+        if (e instanceof YAMLException) {
+          var annot = aceAnnotationFromYAMLException(e);
+          var lineNum = annot.row + 1; // annotation lines start at 0; editor starts at 1
+          var column = annot.column;
+          div.append('strong')
+              .text('Syntax error on ')
+            .append('a')
+              .text('line ' + lineNum)
+              .on('click', function () {
+                self.editor.gotoLine(lineNum, column, true);
+                self.editor.focus();
+                // prevent scrolling, especially href="#" scrolling to the top
+                d3.event.preventDefault();
+              })
+              .attr('href', '#' + self.containers.editor.id);
+          div.append('br');
+          // aside: text nodes aren't elements so they need to be wrapped (e.g. in span)
+          // https://github.com/mbostock/d3/issues/94
+          div.append('span').text('Possible reason: ' + e.reason);
+        } else if (e instanceof TMSpecError) {
+          div.html(e.message);
+        } else {
+          div.html('<strong>Unexpected error</strong>: ' + e);
         }
-      })();
-      var alerts = self.containers.editorAlerts.selectAll('.alert')
-        .data(errors, function (e) { return String(e); }); // key by error description
-
-      alerts.exit().remove();
-
-      alerts.enter()
-        .append('div')
-          .attr('class', 'alert alert-danger')
-          .each(function (e) {
-            var div = d3.select(this);
-            if (e instanceof YAMLException) {
-              var annot = aceAnnotationFromYAMLException(e);
-              var lineNum = annot.row + 1; // annotation lines start at 0; editor starts at 1
-              var column = annot.column;
-              div.append('strong')
-                  .text('Syntax error on ')
-                .append('a')
-                  .text('line ' + lineNum)
-                  .on('click', function () {
-                    self.editor.gotoLine(lineNum, column, true);
-                    self.editor.focus();
-                    // prevent scrolling, especially href="#" scrolling to the top
-                    d3.event.preventDefault();
-                  })
-                  .attr('href', '#' + self.containers.editor.node().id);
-              div.append('br');
-              // aside: text nodes aren't elements so they need to be wrapped (e.g. in span)
-              // https://github.com/mbostock/d3/issues/94
-              div.append('span').text('Possible reason: ' + e.reason);
-            } else if (e instanceof TMSpecError) {
-              div.html(e.message);
-            } else {
-              div.html('<strong>Unexpected error</strong>: ' + e);
-            }
-          });
-      self.editor.session.setAnnotations(
-        errors
-        .map(function (e) {
-          return (e instanceof YAMLException) ? aceAnnotationFromYAMLException(e) : null;
-        })
-        .filter(function (x) { return x; })
-      );
-    });
+      });
+  self.editor.session.setAnnotations(
+    errors
+    .map(function (e) {
+      return (e instanceof YAMLException) ? aceAnnotationFromYAMLException(e) : null;
+    })
+    .filter(function (x) { return x; })
+  );
 };
 
-TMVizControl.prototype.revertEditorSource = function () {
+// This method can be overridden as necessary.
+// The default implementation toggles Bootstrap 3 classes.
+TMDocumentController.prototype.setLoadButtonSuccess = function (didSucceed) {
+  var classes = this.buttons.editor.load.classList;
+  classes.toggle('btn-success', didSucceed);
+  classes.toggle('btn-primary', !didSucceed);
+  // reset the button status after a change
+  if (didSucceed) {
+    var callback = function () {
+      this.setLoadButtonSuccess(false);
+      this.editor.removeListener('change', callback);
+    }.bind(this);
+    this.editor.on('change', callback);
+  }
+};
+
+TMDocumentController.prototype.loadEditorSource = function () {
+  // FIXME: ensure the controller always has a document. otherwise load/revert is broken.
+  var doc = this.__document;
+  if (doc) {
+    // load to diagram, and report any errors
+    var errors = function () {
+      try {
+        doc.sourceCode = this.editor.getValue();
+        this.rebindButtons();
+        // .toJSON() is the only known way to preserve the cursor/selection(s)
+        this.__loadedEditorSelection = this.editor.session.selection.toJSON();
+        this.setLoadButtonSuccess(true);
+        return [];
+      } catch (e) {
+        return [e];
+      }
+    }.bind(this)();
+    this.setLoadButtonSuccess(errors.length === 0);
+    this.setAlertErrors(errors);
+  }
+};
+
+TMDocumentController.prototype.revertEditorSource = function () {
   if (this.__document.sourceCode) {
     this.editor.setValue(this.__document.sourceCode, -1);
-    this.containers.editorAlerts.html('');
+    this.setAlertErrors([]);
+    this.setLoadButtonSuccess(true);
   }
   if (this.__loadedEditorSelection) {
     this.editor.session.selection.fromJSON(this.__loadedEditorSelection);
   }
 };
 
-module.exports = exports = TMVizControl;
+module.exports = exports = TMDocumentController;
