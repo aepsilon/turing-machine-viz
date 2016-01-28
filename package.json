@@ -12,7 +12,8 @@
     "webpack": "^1.12.9"
   },
   "scripts": {
-    "dotgraph": "madge -t . -x '(build|lib|node_modules)\/' > build/requiregraph.gv",
+    "depgraph": "madge -t . -x '(build|lib|node_modules)\/' > build/depgraph.gv",
+    "lint": "eslint --cache .",
     "watch": "webpack --watch --progress --colors --display-error-details",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
