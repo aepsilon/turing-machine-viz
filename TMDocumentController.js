@@ -1,7 +1,7 @@
 'use strict';
-/* global ace */ // requires the Ace editor (no-conflict version)
 var TMDocument = require('./TMDocument'),
     watchInit = require('./watch').watchInit,
+    ace = require('ace-builds/src-min-noconflict'),
     d3 = require('d3'),
     values = require('lodash-fp').values;
 var TMSpecError = TMDocument.TMSpecError;
