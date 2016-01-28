@@ -1,8 +1,9 @@
 // main entry point for index.html.
 // important: make sure to coordinate variables and elements between the HTML and JS
+'use strict';
 
 /* eslint-env browser */
-var TMVizControl = require('./TMVizControl'),
+var TMDocumentController = require('./TMDocumentController'),
     TMDocument = require('./TMDocument');
 
 // [DocEntry] -> HTMLSelectElement
@@ -17,20 +18,44 @@ function menuFromDocumentListing(entries) {
   return select;
 }
 
-// demo main
-var controller = new TMVizControl.TMVizControl(
-  document.getElementById('machine-container'),
-  'powersOfTwo');
+function getButton(container, type) {
+  return container.querySelector('button.tm-' + type);
+}
+
+var controller = function () {
+  var editor = document.getElementById('editor-container');
+  // button containers
+  var sim = document.getElementById('controls-container');
+  var ed = editor.parentNode;
+
+  return new TMDocumentController({
+    diagram: document.getElementById('machine-container'),
+    editorAlerts: document.getElementById('editor-alerts-container'),
+    editor: editor
+  }, {
+    simulator: {
+      run: getButton(sim, 'run'),
+      step: getButton(sim, 'step'),
+      reset: getButton(sim, 'reset')
+    },
+    editor: {
+      load: getButton(ed, 'editor-load'),
+      revert: getButton(ed, 'editor-revert')
+    }
+  }, 'powersOfTwo');
+}();
 
 controller.editor.setTheme('ace/theme/chrome');
 
 // dropdown menu
-var picker = document.body.insertBefore(
-  menuFromDocumentListing(TMDocument.examplesList),
-  document.body.firstChild);
+var picker = document.querySelector('nav .navbar-form').appendChild(
+  menuFromDocumentListing(TMDocument.examplesList));
+// picker.classList.add('navbar-text');
+picker.classList.add('form-control');
 picker.addEventListener('change', function (ev) {
-  controller.loadDocumentById(ev.target.value);
+  controller.openDocumentById(ev.target.value);
 });
 
 // XXX:
 exports.controller = controller;
+exports.customDocumentList = TMDocument.customDocumentList;

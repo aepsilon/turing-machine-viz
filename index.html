@@ -1,75 +1,213 @@
 <!DOCTYPE html>
-<html lang='en'>
-<head>
-<meta charset='utf-8'>
-<title>Turing machine visualization</title>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Turing machine visualization</title>
 
-<!--
-<script src='https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js' type='text/javascript'></script>
-<script src='https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js' charset='utf-8'></script>
--->
-<script src='lib/d3.js' charset='utf-8'></script>
-<script src='lib/lodash-fp.js'></script>
-<!-- TODO: refactor to all use lodash-fp -->
-<script src='lib/underscore.js' type='text/javascript'></script>
-<script type='text/javascript'>
-  var underscore = _.noConflict();
-</script>
-<script src='lib/js-yaml.min.js' charset='utf-8'></script>
-<script src='watch.js' charset='utf-8'></script>
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
 
-<script src='build/util.bundle.js' charset='utf-8'></script>
-<script src='build/TuringMachine.bundle.js' charset='utf-8'></script>
-<script src='build/TapeViz.bundle.js' charset='utf-8'></script>
-<script src='build/StateViz.bundle.js' charset='utf-8'></script>
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn"t work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.2/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
 
-<link href='StateViz.css' rel='stylesheet' />
-<link href='tape/tape.css' rel='stylesheet' />
-<style>
-.tm-btn-controldiagram {
-  padding: 0.5em 1em 0.6em 1em;
-  /*display: block;*/
-  margin: 1em;
-}
-.btn-reset {
-  float: left;
-}
-.btn-positioning {
-  float: right;
-}
-@media print {
-  button { visibility: hidden; }
-}
+    <!-- Turing machine visualization -->
+    <script src='lib/d3.js' charset='utf-8'></script>
+    <script src='lib/lodash-fp.js'></script>
+    <script src='lib/underscore.js' type='text/javascript'></script>
+    <script type='text/javascript'>
+    var underscore = _.noConflict();
+    </script>
+    <script src='lib/js-yaml.min.js' charset='utf-8'></script>
 
-.tm-btn-loadmachine {
-  margin: 3em auto 1em auto;
-  display: block;
-}
+    <script src='build/util.bundle.js' charset='utf-8'></script>
+    <script src='build/TuringMachine.bundle.js' charset='utf-8'></script>
+    <script src='build/TapeViz.bundle.js' charset='utf-8'></script>
+    <script src='build/StateViz.bundle.js' charset='utf-8'></script>
 
-.tm-btn-reverteditor {
-  position: absolute;
-  top: 0;
-  right: 1em;
-}
+    <link href='StateViz.css' rel='stylesheet' />
+    <link href='tape/tape.css' rel='stylesheet' />
+    <style>
+    /*
+    .btn-reset {
+      float: left;
+    }
+    .btn-positioning {
+      float: right;
+    }
+    */
+    body {
+      font-variant-ligatures: contextual;
+    }
+    .navbar-brand {
+      font-variant: small-caps;
+    }
+    button.tm-editor-revert {
+      position: absolute;
+      margin-top: 0;
+      margin-left: 4em;
+    }
+    .tm-editor.ace_editor {
+      height: 60em;
+      width: 40em;
+      border: 1px solid #DDD;
+      /*border: 1px solid #ccc;*/
+      border-radius: 4px;
+      margin: auto;
+      margin-top: 1em;
+      font-family: 'Source Code Pro', 'source-code-pro', 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+      text-align: left;
+    }
 
-.tm-editor.ace_editor {
-  height: 60em;
-  width: 40em;
-  border: 1px solid #DDD;
-  border-radius: 4px;
-  margin: auto;
-  /*margin-top: 3em;*/
-  font-family: 'Source Code Pro', 'source-code-pro', 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
-}
-</style>
-</head>
+    @media print {
+      button { visibility: hidden; }
+    }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+          <!-- <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button> -->
+          <span class="navbar-brand">Turing Machine Visualization</span>
+        </div>
+        <div class="navbar-form navbar-left"></div>
+      </div>
+    </nav>
+    <!-- Main Content -->
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-7 form-group text-center">
+          <!-- Diagram -->
+          <div id="machine-container"></div>
+          <!-- Simulator controls -->
+          <div id="controls-container" class="row text-center">
+            <div class="col-xs-1">
+              <button type="button" class="btn btn-warning btn-xs text-center tm-btn-diagram tm-reset">
+                <span class="glyphicon glyphicon-fast-backward" aria-hidden="true"></span><br>
+                Reset
+              </button>
+            </div>
+            <div class="col-xs-2 col-xs-offset-4 text-center">
+              <button type="button" class="btn btn-primary text-center tm-btn-diagram tm-step">
+                <span class="glyphicon glyphicon-step-forward" aria-hidden="true"></span><br>
+                Step
+              </button>
+            </div>
+            <div class="col-xs-1">
+              <button type="button" class="btn btn-default text-center tm-btn-diagram tm-run">
+                <span class="glyphicon glyphicon-play" aria-hidden="true"></span><br>
+                Run
+              </button>
+            </div>
+          </div>
+        </div>
 
-<body>
-<noscript><strong>Tip: to enable this visualization, enable JavaScript.</strong></noscript>
+        <!-- Code Editor -->
+        <div class="col-md-5 form-group text-center">
+          <div id="editor-alerts-container"></div>
+          <button type="button" class="btn btn-primary tm-editor-load">
+            Load machine
+          </button>
+          <button type="button" class="btn btn-default tm-editor-revert">
+            Revert to diagram
+          </button>
+          <div id="editor-container" class="tm-editor"></div>
+        </div>
+      </div>
 
-<div id='machine-container'></div>
-
-<script src='lib/ace-builds/src-min-noconflict/ace.js' type='text/javascript' charset='utf-8'></script>
-<script src='build/main.bundle.js' charset='utf-8'></script>
-
-</body></html>
+      <!-- Entry point -->
+      <script src='lib/ace-builds/src-min-noconflict/ace.js' charset='utf-8'></script>
+      <script src='build/main.bundle.js' charset='utf-8'></script>
+    </div>
+    <!-- Footer -->
+    <footer>
+      <div class="container-fluid">
+        <h2>Reference</h2>
+        <div class="row">
+          <div class="col-md-4 col-sm-6">
+            <h3>Format</h3>
+            <p>
+              <!-- <p>
+                At each step, a Turing machine looks up and carries out the <a href="#def-transition">transition</a>
+                for combination of its current state and the current symbol under the tape head.
+              </p> -->
+              <p>
+                At each step, a Turing machine takes its current state and current symbol under the tape head,
+                looks it up in its transition table, and carries out the resulting instruction.
+              </p>
+              Example:
+<pre>
+name: binary increment
+input: '1011'
+blank: ' '
+start state: right
+table:
+  right:
+    1  : R
+    0  : R
+    ' ': {L: inc}
+  inc:
+    1  : {write: 0, L}
+    0  : {write: 1, R: done}
+    ' ': {write: 1, R: done}
+  done:
+</pre>
+            <h4>Additional Info</h4>
+            The document format is <a href="https://en.wikipedia.org/wiki/YAML" target="_blank">YAML</abbr></a>.
+            <!-- <h4>N.B.</h4>
+            Numbers on the right side of a mapping (key: value) are automatically converted to strings, so
+            00101 becomes 101. To keep the leading zeros, use quotes: '00101' or "00101".
+            </p> -->
+          </div>
+          <div class="col-md-4 col-sm-6">
+            <h3>Instruction Format</h3>
+            <p>
+              Each <dfn id="def-tm-instruction">instruction</dfn>
+              writes a symbol to the tape,
+              then moves the tape head left (<code>L</code>) or right (<code>R</code>),
+              and finally sets the new state.
+            </p>
+            <p> <code>{write: <i>symbol</i>, <i>move</i>: <i>state</i>}</code> </p>
+            <p>For convenience and simplicity, you can omit any parts that aren't changed.</p>
+            <p>
+              <strong>TODO: write several different drafts and compare</strong>
+            </p>
+            <p>
+              <code>{<i>move</i>: <i>state</i>}</code> moves the tape head and goes to another state.
+              It writes back the same symbol that was read.
+            </p>
+            <p>
+              <code>L</code> or <code>R</code> only moves the tape head,
+              since it writes back the same symbol and stays in the same state.
+            </p>
+          </div>
+          <div class="col-md-3 col-sm-11">
+            <h3>Diagram</h3>
+            <p> <b>Drag</b> or click a state node to fix it in place. </p>
+            <p> <b>Double-click</b> a node to release it. </p>
+          </div>
+          <div class="col-sm-1">
+            GitHub link here.
+          </div>
+        </div>
+      </div>
+    </footer>
+    <!-- jQuery (necessary for Bootstrap"s JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+  </body>
+</html>

@@ -8,11 +8,14 @@
  * @module ./TMViz
  */
 
-var TM = require('./TuringMachine.js'),
-    TapeViz = require('./tape/TapeViz.js'),
-    StateViz = require('./StateViz.js'),
-    NodesLinks = require('./NodesLinks.js'),
-    Position = require('./Position.js'),
+/* eslint consistent-this: [1, "self"] */
+
+var TuringMachine = require('./TuringMachine').TuringMachine,
+    TapeViz = require('./tape/TapeViz'),
+    StateViz = require('./StateViz'),
+    NodesLinks = require('./NodesLinks'),
+    Position = require('./Position'),
+    util = require('./util'),
     d3 = require('d3');
 
 // StateMap -> State -> SymbolMap?
@@ -26,40 +29,30 @@ function lookupState(stateMap, s) {
   return stateObj.withSymbol;
 }
 
-function isHaltingState(stateMap, state) {
-  return lookupState(stateMap, state) == null;
+function interpretAction(state, symbol, instruct) {
+  return {
+    state: util.coalesce(instruct.state, state),
+    symbol: util.coalesce(instruct.symbol, symbol),
+    move: util.nonNull(instruct.move)
+  };
 }
-
-/**
- * Thrown when trying to transition from a final state.
- * @param state the halted state (one without any exiting transitions)
- */
-function HaltedError(state) {
-  this.name = 'HaltedError';
-  this.message = 'the machine has already reached a halting state: ' + String(state);
-  this.stack = (new Error()).stack;
-}
-HaltedError.prototype = Object.create(Error.prototype);
-HaltedError.prototype.constructor = HaltedError;
 
 // Animate each transition's edge
 // TODO: factor out
 // FIXME: missing null checks, like for .withSymbol
 // TODO: decompose into lookup edge
 function makeTransitionViz(stateMap, callback) {
-  return function(s, sym) {
+  return function (s, sym) {
     var symbolMap = lookupState(stateMap, s);
-    if (symbolMap == null) { throw new HaltedError(s); }
+    if (symbolMap == null) { return null; }
     var edgeObj = symbolMap[sym];
     // try wildcard if not matched
     // TODO: remove wildcards (deprecated)
     edgeObj = (edgeObj === undefined) ? symbolMap['_'] : edgeObj;
-    if (edgeObj == null) {
-      throw new Error('no transition is defined from state ' + String(s) + ' for symbol '+ String(sym));
-    }
+    if (edgeObj == null) { return null; }
 
     callback(edgeObj.edge);
-    return TM.interpretAction(s, sym, edgeObj.action);
+    return interpretAction(s, sym, edgeObj.action);
   };
 }
 
@@ -105,25 +98,25 @@ function TMViz(div, spec, posTable) {
   if (posTable != undefined) { this.positionTable = posTable; }
   StateViz.visualizeState(div.append('svg'), dataset.nodes, dataset.edges);
 
-  var viz = this; // bind 'this' to use inside callbacks
-  // FIXME: find a solution that doesn't require the edge animation to return the chained animation
   this.edgeAnimation = pulseEdge;
   this.stepInterval = 100;
+
+  var self = this; // for nested callbacks
   function edgeCallback(edge) {
-    var transition = viz.edgeAnimation(edge);
-    // check beforehand in case .isRunning changes to true during the transition
-    if (viz.isRunning) {
-      transition.transition().duration(viz.stepInterval).each('end', function() {
-        // check afterwards in case machine was paused during the transition
-        if (viz.isRunning) {
-          viz.step();
+    var transition = self.edgeAnimation(edge);
+    // if .isRunning, chain .step after .step until this.isRunning = false
+    if (self.isRunning) {
+      transition.transition().duration(self.stepInterval).each('end', function () {
+        // check in case machine was paused (.isRunning = false) during the animation
+        if (self.isRunning) {
+          self.step();
         }
       });
     }
   }
 
   // TODO: rewrite the transition. make it point to this.stateMap, this.etc so it stays in sync with the spec.
-  var machine = new TM.TuringMachine(makeTransitionViz(stateMap, edgeCallback), spec.startState, addTape(div, spec));
+  var machine = new TuringMachine(makeTransitionViz(stateMap, edgeCallback), spec.startState, addTape(div, spec));
   this.machine = machine;
   // intercept and animate when the state is set
   var state = machine.state;
@@ -137,7 +130,9 @@ function TMViz(div, spec, posTable) {
   });
   machine.state = state;
 
-  this.isHalted = isHaltingState(stateMap, state);
+  // Sidenote: each "Step" click evaluates the transition function once.
+  // Therefore, detecting halting always requires its own step (for consistency).
+  this.isHalted = false;
 
   var isRunning = false;
   Object.defineProperty(this, 'isRunning', {
@@ -156,20 +151,10 @@ function TMViz(div, spec, posTable) {
 }
 
 // .step() immediately advances the machine and interrupts any transitions
-TMViz.prototype.step = function() {
-  if (this.isHalted) {
-    console.error('Logic error: tried to step a halted machine');
-    this.isRunning = false;
-    return;
-  }
-  try {
-    this.machine.step();
-  } catch (e) {
+TMViz.prototype.step = function () {
+  if (!this.machine.step()) {
     this.isRunning = false;
     this.isHalted = true;
-    if (!(e instanceof HaltedError)) {
-      throw e;
-    }
   }
 };
 
