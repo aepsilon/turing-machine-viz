@@ -1,3 +1,5 @@
+'use strict';
+
 var TM = require('./TuringMachine'),
     jsyaml = require('js-yaml'),
     _ = require('underscore'); // lodash-fp's .mapValues doesn't pass the key

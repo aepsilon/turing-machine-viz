@@ -27,6 +27,9 @@ rules:
     - builtinGlobals: true
   no-shadow-restricted-names: 2
   no-unexpected-multiline: 2
+  strict:
+    - 2
+    - global
 env:
   commonjs: true
 extends: eslint:recommended

@@ -1,4 +1,4 @@
-
+'use strict';
 /**
  * Construct a Turing machine.
  * @param {(state, symbol) -> ?{state: state, symbol: symbol, move: direction}}

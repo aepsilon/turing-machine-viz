@@ -1,3 +1,4 @@
+'use strict';
 /* eslint-env es6 */
 // enable es6 for template literals, since per-file ecmaFeatures aren't available.
 // https://github.com/eslint/eslint/issues/2950
