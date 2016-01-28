@@ -15,21 +15,21 @@ function Tape(blank, input) {
   this.tape = {
     before: [],
     after: (input == null || input.length == 0) ? [blank] : input.slice().reverse(),
-    toString: function() {
+    toString: function () {
       return this.before.join('') + '🔎' + this.after.slice().reverse().join('');
     }
   };
 }
 
 // Read the value at the tape head.
-Tape.prototype.read = function() {
+Tape.prototype.read = function () {
   return _.last(this.tape.after);
 };
-Tape.prototype.write = function(symbol) {
+Tape.prototype.write = function (symbol) {
   this.tape.after[this.tape.after.length - 1] = symbol;
 };
 
-Tape.prototype.headRight = function() {
+Tape.prototype.headRight = function () {
   var before = this.tape.before,
       after = this.tape.after;
   before.push(after.pop());
@@ -37,7 +37,7 @@ Tape.prototype.headRight = function() {
     after.push(this.blank);
   }
 };
-Tape.prototype.headLeft = function() {
+Tape.prototype.headLeft = function () {
   var before = this.tape.before,
       after = this.tape.after;
   if (_.isEmpty(before)) {
@@ -46,14 +46,14 @@ Tape.prototype.headLeft = function() {
   after.push(before.pop());
 };
 
-Tape.prototype.toString = function() {
+Tape.prototype.toString = function () {
   return this.tape.toString();
 };
 
 // for tape visualization. not part of TM definition.
 // Read the value at an offset from the tape head.
 // 0 is the tape head. + is to the right, - to the left.
-Tape.prototype.readOffset = function(i) {
+Tape.prototype.readOffset = function (i) {
   var tape = this.tape;
   if (i >= 0) {
     // right side: offset [0..length-1] ↦ array index [length-1..0]
@@ -66,8 +66,8 @@ Tape.prototype.readOffset = function(i) {
 
 // for tape visualization.
 // Read the values from an offset range (inclusive of start and end).
-Tape.prototype.readRange = function(start, end) {
-  return _.range(start, end+1).map(function(i) {
+Tape.prototype.readRange = function (start, end) {
+  return _.range(start, end+1).map(function (i) {
     return this.readOffset(i);
   }, this);
 };

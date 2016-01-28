@@ -13,14 +13,14 @@ function initTapeCells(selection) {
       .attr({'width': cellWidth,
              'height': cellHeight});
   selection.append('text')
-      .text(function(d) { return d; })
+      .text(function (d) { return d; })
       .attr({'x': cellWidth/2, 'y': cellHeight/2 + 8});
   return selection;
 }
 
 function positionCells(selection, offset) {
   offset = (offset == null) ? 0 : offset;
-  selection.attr('transform', function(d, i) {
+  selection.attr('transform', function (d, i) {
     return 'translate(' + (-cellWidth+10 + cellWidth*(i+offset)) + ')';
   });
   return selection;
@@ -58,7 +58,7 @@ function TapeViz(svg, lookaround, blank, input) {
       .attr('class', 'wrapper')
       .call(repositionWrapper);
 
-  var tapeHead = svg.append('rect')
+  svg.append('rect')
       .attr({'id': 'tape-head',
              'width': (1+1/5) * cellWidth,
              'height': (1+1/5) * cellHeight,
@@ -66,7 +66,7 @@ function TapeViz(svg, lookaround, blank, input) {
              'y': 10/2
            });
 
-  var cells = this.wrapper.selectAll('.tape-cell')
+  this.wrapper.selectAll('.tape-cell')
       .data(this.readRange(-lookaround, lookaround))
     .enter()
     .append('g')
@@ -80,7 +80,7 @@ TapeViz.prototype.constructor = TapeViz;
 
 // TODO: concurrently fade out old value and fade in new value
 // TODO: chain headLeft/Right to wait for write()?
-TapeViz.prototype.write = function(symbol) {
+TapeViz.prototype.write = function (symbol) {
   // don't animate if symbol stays the same
   if (Tape.prototype.read.call(this) === symbol) {
     return;
@@ -101,7 +101,7 @@ TapeViz.prototype.write = function(symbol) {
       .attr('fill-opacity', '0.4')
       .attr('stroke-opacity', '0.1')
     .transition()
-      .text(function(d) { return d; })
+      .text(function (d) { return d; })
       .attr('fill-opacity', '1')
       .attr('stroke-opacity', '1')
     .transition()
@@ -126,7 +126,7 @@ function moveHead(wrapper, enter, exit, wOffset, cOffset) {
       .call(repositionWrapper);
 }
 
-TapeViz.prototype.headRight = function() {
+TapeViz.prototype.headRight = function () {
   Tape.prototype.headRight.call(this);
   // remove leftover .exiting in case animation was interrupted.
   // Important: call-by-value evaluates the selection argument(s) of 'moveHead' before
@@ -141,7 +141,7 @@ TapeViz.prototype.headRight = function() {
     1, -1);
 };
 
-TapeViz.prototype.headLeft = function() {
+TapeViz.prototype.headLeft = function () {
   Tape.prototype.headLeft.call(this);
   this.wrapper.selectAll('.exiting').remove();
   moveHead(this.wrapper,

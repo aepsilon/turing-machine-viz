@@ -1,26 +1,28 @@
-"use strict";
-var path = require("path"),
-    webpack = require("webpack");
+'use strict';
+/* eslint-env node */
+var path = require('path'),
+    webpack = require('webpack');
 
 module.exports = {
   // split libraries into multiple chunks for more readable compiled code
   entry: {
-    util: ["./util.js"],
-    TuringMachine: ["./TuringMachine.js"],
-    TapeViz: ["./tape/TapeViz.js"],
-    StateViz: ["./StateViz.js"],
-    main: "./main.js"
+    util: ['./util.js'],
+    TuringMachine: ['./TuringMachine.js'],
+    TapeViz: ['./tape/TapeViz.js'],
+    StateViz: ['./StateViz.js'],
+    main: './main.js'
   },
   output: {
-    library: "[name]", // allow console interaction
-    path: path.join(__dirname, "build"),
-    filename: "[name].bundle.js"
+    library: '[name]', // allow console interaction
+    path: path.join(__dirname, 'build'),
+    filename: '[name].bundle.js'
   },
   externals: {
-    "d3": "d3",
-    "lodash-fp": "_",
-    "underscore": "underscore",
-    "js-yaml": "jsyaml"
+    'd3': 'd3',
+    'lodash-fp': '_',
+    'underscore': 'underscore',
+    'js-yaml': 'jsyaml',
+    'ace-builds/src-min-noconflict': 'ace'
   },
   plugins: [
     new webpack.optimize.CommonsChunkPlugin({
@@ -28,7 +30,7 @@ module.exports = {
       // Each "commons chunk" takes modules shared with any previous chunks,
       // including other commons. Later commons therefore contain the fewest dependencies.
       // For clarity, reverse this to be consistent with browser include order.
-      names: ["util", "TuringMachine", "TapeViz", "StateViz"].reverse()
+      names: ['util', 'TuringMachine', 'TapeViz', 'StateViz'].reverse()
     })
   ],
   module: {
@@ -44,4 +46,4 @@ module.exports = {
       }
     ]
   }
-}
+};

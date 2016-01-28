@@ -20,6 +20,9 @@ rules:
     - 1
     - anonymous: always
       named: never
+  consistent-this:
+    - 1
+    - self
   ## Semantic ##
   no-invalid-this: 2  # prevent gotcha: closures inside methods don't inherit 'this'
   no-shadow:

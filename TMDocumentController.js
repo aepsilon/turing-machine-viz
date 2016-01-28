@@ -1,5 +1,4 @@
 'use strict';
-/* eslint consistent-this: [1, "self"] */
 /* global ace */ // requires the Ace editor (no-conflict version)
 var TMDocument = require('./TMDocument'),
     watchInit = require('./watch').watchInit,

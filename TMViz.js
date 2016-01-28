@@ -9,8 +9,6 @@
  * @module ./TMViz
  */
 
-/* eslint consistent-this: [1, "self"] */
-
 var TuringMachine = require('./TuringMachine').TuringMachine,
     TapeViz = require('./tape/TapeViz'),
     StateViz = require('./StateViz'),
@@ -75,7 +73,9 @@ function pulseEdge(edge) {
       .style('stroke-width', '1')
     .transition()
       .duration(0)
-      .each('start', function() { d3.select(this).classed('active-edge', false); })
+      .each('start', /* @this edge */ function () {
+        d3.select(this).classed('active-edge', false);
+      })
       .style('stroke', null)
       .style('stroke-width', null);
 }
@@ -122,8 +122,8 @@ function TMViz(div, spec, posTable) {
   // intercept and animate when the state is set
   var state = machine.state;
   Object.defineProperty(machine, 'state', {
-    get: function() { return state; },
-    set: function(s) {
+    get: function () { return state; },
+    set: function (s) {
       d3.select(stateMap[state].domNode).classed('current-state', false);
       state = s;
       d3.select(stateMap[s].domNode).classed('current-state', true);
@@ -138,8 +138,8 @@ function TMViz(div, spec, posTable) {
   var isRunning = false;
   Object.defineProperty(this, 'isRunning', {
     configurable: true,
-    get: function() { return isRunning; },
-    set: function(value) {
+    get: function () { return isRunning; },
+    set: function (value) {
       if (isRunning !== value) {
         isRunning = value;
         if (isRunning) { this.step(); }
@@ -159,7 +159,7 @@ TMViz.prototype.step = function () {
   }
 };
 
-TMViz.prototype.reset = function() {
+TMViz.prototype.reset = function () {
   this.isRunning = false;
   this.isHalted = false;
   this.machine.state = this.__spec.startState;
@@ -169,8 +169,8 @@ TMViz.prototype.reset = function() {
 
 // FIXME: also call force.tick / force.start
 Object.defineProperty(TMViz.prototype, 'positionTable', {
-  get: function() { return Position.getPositionTable(this.__stateMap); },
-  set: function(posTable) {
+  get: function () { return Position.getPositionTable(this.__stateMap); },
+  set: function (posTable) {
     Position.setPositionTable(posTable, this.__stateMap);
     // FIXME: refactor StateViz as object, then call this.__stateviz.force.tick();
   }

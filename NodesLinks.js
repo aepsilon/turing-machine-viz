@@ -24,19 +24,19 @@ function labelFor(symbol, action) {
 function deriveNodesLinks(obj) {
   var edges = [];
 
-  var stateMap = _(obj).mapObject(function(symbolMap, state) {
+  var stateMap = _(obj).mapObject(function (symbolMap, state) {
     // create the nodes.
     return {
       label: state,
       // create the edges.
       // defer evaluation until after nodes are created,
       // since edge.target is potentially another node's object.
-      withSymbol: function(thisObj) {
+      withSymbol: function (thisObj) {
         var edgeTo = {};
-        return (symbolMap == null) ? null : _(symbolMap).mapObject(function(action, symbol) {
+        return (symbolMap == null) ? null : _(symbolMap).mapObject(function (action, symbol) {
           return {
             action: action,
-            edge: (function() {
+            edge: (function () {
               var target = coalesce(action.state, state);
               var label = labelFor(symbol, action);
               // create only one edge per source-target pair
@@ -44,9 +44,9 @@ function deriveNodesLinks(obj) {
               return (edge != null)
                 ? _.constant(edge)(edge.labels.push(label))
                 : _(edgeTo[target] = {
-                    source: thisObj,
-                    target: stateMap[target],
-                    labels: [label]
+                  source: thisObj,
+                  target: stateMap[target],
+                  labels: [label]
                 }).tap(Array.prototype.push.bind(edges));
             })()
           };
@@ -55,8 +55,8 @@ function deriveNodesLinks(obj) {
     };
   });
   // evaluate the deferred values
-  _(stateMap).mapObject(function(o) { o.withSymbol = o.withSymbol(o); });
-  
+  _(stateMap).mapObject(function (o) { o.withSymbol = o.withSymbol(o); });
+
   return {
     nodes: _(stateMap).values(),
     edges: edges,

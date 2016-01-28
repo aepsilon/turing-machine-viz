@@ -22,7 +22,7 @@ function truncatePoint2D(decimalPlaces) {
 // type HasXY = {x: number, y: number, ...};
 // number -> HasXY -> HasXY
 function truncateXY(decimalPlaces) {
-  return function(val) {
+  return function (val) {
     var info =  _(val).pick(['x','y','px','py'])
       .mapValues(_.partial(truncate, decimalPlaces))
       .value();
@@ -68,7 +68,7 @@ var getNodePositions = _.mapValues(getNodePosition);
 // {[key: State]: PositionInfo} -> {[key: State]: Node} -> void
 // TODO: rename to setPositionTable to match the getter
 function setPositionTable(posTable, stateMap) {
-  _.forEach(function(node, state) {
+  _.forEach(function (node, state) {
     var posinfo = posTable[state];
     if (posinfo !== undefined) {
       _.assign(posinfo, node);
@@ -113,16 +113,16 @@ var stringifyNodePositions = _.flow(getNodePositions, stringifyPositions);
 
 // saved manual positioning
 var posPowersOfTwoAlt = _.mapValues(tupleToPoint2D,
-  {"q1":[147.59,199.38],"q2":[331.75,199.36],"q3":[533.52,200.36],"q4":[532.53,352.87],
-  "q5":[445.27,123.98],"accept":[332.16,289],"reject":[145.58,352.18]}
+  {'q1':[147.59,199.38],'q2':[331.75,199.36],'q3':[533.52,200.36],'q4':[532.53,352.87],
+  'q5':[445.27,123.98],'accept':[332.16,289],'reject':[145.58,352.18]}
 );
 
 var posPowersOfTwo = _.mapValues(
   // _.flow(_.map(function(n) { return 100*n; }), tupleToPoint2D), {
-  function(p) { return {x: 100*p[0], y: 100*p[1] - 70}; }, {
-  q1: [1,2], q2: [3,2], q3: [5,2], q5: [4,1.3],
-  reject: [1,3.7], accept: [3,2.9], q4: [5,3.7]
-});
+  function (p) { return {x: 100*p[0], y: 100*p[1] - 70}; }, {
+    q1: [1,2], q2: [3,2], q3: [5,2], q5: [4,1.3],
+    reject: [1,3.7], accept: [3,2.9], q4: [5,3.7]
+  });
 
 exports.getNodePosition = getNodePosition;
 

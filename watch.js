@@ -38,12 +38,12 @@ function watch(thisArg, prop, handler) {
     return; // no-op since property can't change without reconfiguration
   }
 
-  var accessors = (function() {
+  var accessors = (function () {
     if (desc.set) {
       // case: .get/.set
       return {
         get: desc.get,
-        set: function(newval) {
+        set: function (newval) {
           return desc.set.call(thisArg, handler.call(thisArg, prop, thisArg[prop], newval));
         }
       };
@@ -51,10 +51,10 @@ function watch(thisArg, prop, handler) {
       // case: .value
       var val = desc.value;
       return {
-        get: function() {
+        get: function () {
           return val;
         },
-        set: function(newval) {
+        set: function (newval) {
           return val = handler.call(thisArg, prop, val, newval);
         }
       };
