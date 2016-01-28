@@ -1,6 +1,16 @@
+# Node
+# https://github.com/github/gitignore/blob/master/Node.gitignore
+logs
+*.log
+npm-debug.log*
 
-.eslintcache
-build/
 node_modules/
+.npm/
+.node_repl_history
 
+# ESLint
+.eslintcache
+
+# Custom
+build/
 lib/ace-builds/
