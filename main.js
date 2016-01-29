@@ -56,6 +56,11 @@ picker.addEventListener('change', function (ev) {
   controller.openDocumentById(ev.target.value);
 });
 
+// XXX: confirm if save fails
+window.addEventListener('beforeunload', function () {
+  controller.closeCurrentDocument();
+});
+
 // XXX:
 exports.controller = controller;
 exports.customDocumentList = TMDocument.customDocumentList;

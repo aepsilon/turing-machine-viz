@@ -172,6 +172,7 @@ function newDocID() { return String(Date.now()); }
 // TMDocument //
 ////////////////
 
+// FIXME: provide for opening and editing a document with corrupted source code
 // TODO: check pre-condition: document exists
 /**
  * Open an existing document by ID, and load it into the <div>.

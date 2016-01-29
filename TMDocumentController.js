@@ -1,6 +1,7 @@
 'use strict';
 var TMDocument = require('./TMDocument'),
     watchInit = require('./watch').watchInit,
+    Storage = require('./Storage'),
     ace = require('ace-builds/src-min-noconflict'),
     d3 = require('d3'),
     values = require('lodash-fp').values;
@@ -84,55 +85,89 @@ function TMDocumentController(containers, buttons, docID) {
   if (docID != null) { this.openDocumentById(docID); }
 }
 
+//////////////////
+// Open & Close //
+//////////////////
+
 var diagramClass = 'machine-diagram';
 
 // FIXME: load editor even if diagram source was corrupted. display error.
 TMDocumentController.prototype.openDocumentById = function (docID) {
-  if (this.__document) {
-    if (this.__document.id === docID) { return; } // same document
-    this.containers.diagram.innerHTML = '';
-    this.__document.close();
-    this.__document = null;
-  }
+  if (this._document && this.__document.id === docID) { return; } // same document
+  this.closeCurrentDocument();
 
-  var self = this;
   var diagram = d3.select(this.containers.diagram)
     .append('div').attr('class', diagramClass);
 
   // FIXME: handle/report errors
-  self.rebindButtons();
   try {
-    self.__document = TMDocument.openDocument(diagram, docID);
-    self.rebindButtons();
+    // restore diagram
+    this.__document = TMDocument.openDocument(diagram, docID);
+    this.rebindButtons();
+    // restore editor
+    // FIXME: use tiers. don't use internals.
+    var editorSchema = {editor: {sourceCode: null}};
+    var store = new Storage.SchemaStorage(this.__document.storage.prefix, editorSchema)
+      .withPath(['editor', 'sourceCode']);
+    this.__editorStore = store;
+    var editorSrc = store.read();
+    var isSynced = (editorSrc == null);
+    if (isSynced) { editorSrc = this.__document.sourceCode; }
     // TODO: preserve cursor position between sessions?
-    self.editor.setValue(this.__document.sourceCode, -1 /* put cursor at beginning */);
+    this.editor.setValue(editorSrc, -1 /* put cursor at beginning */);
+    this.isSynced = isSynced; // important: editor.setValue first so change doesn't trigger desync
     // prevent undo-ing to the previous document. note: .reset() doesn't work
-    self.editor.session.setUndoManager(new UndoManager());
-    self.__loadedEditorSelection = null;
+    this.editor.session.setUndoManager(new UndoManager());
+    this.__loadedEditorSelection = null;
   } catch (e) {
-    // XXX:
-    alert('Unexpected error: ' + e);
+    // XXX: handle document/diagram source corruption
+    throw e;
   }
 };
 
+// TODO: confirm exit if save fails
+// XXX: this allows an inconsistent state of having no active document.
+// internal method.
+TMDocumentController.prototype.closeCurrentDocument = function () {
+  // stash data
+  if (this.__document) {
+    if (!this.isSynced) {
+      this.__editorStore.write(this.editor.getValue());
+    }
+    this.__document.close();
+  }
+  // clean up after stashing
+  this.rebindButtons();
+  this.setAlertErrors([]);
+  this.__document = null;
+  this.containers.diagram.innerHTML = '';
+};
+
+/////////////
+// Buttons //
+/////////////
+
+// these default values can be overridden.
+TMDocumentController.prototype.htmlForRunButton =
+  '<span class="glyphicon glyphicon-play" aria-hidden="true"></span><br>Run';
+TMDocumentController.prototype.htmlForPauseButton =
+  '<span class="glyphicon glyphicon-pause" aria-hidden="true"></span><br>Pause';
+
 // bind: .disabled for Step and Run, and .innerHTML (Run/Pause) for Run
-function rebindStepRun(stepButton, runButton, doc) {
+function rebindStepRun(stepButton, runButton, runHTML, pauseHTML, machine) {
   function onHaltedChange(isHalted) {
     stepButton.disabled = isHalted;
     runButton.disabled = isHalted;
     return isHalted;
   }
   function onRunningChange(isRunning) {
-    runButton.innerHTML = isRunning
-    // FIXME: no hard-coding
-      ? '<span class="glyphicon glyphicon-pause" aria-hidden="true"></span><br>Pause'
-      : '<span class="glyphicon glyphicon-play" aria-hidden="true"></span><br>Run';
+    runButton.innerHTML = isRunning ? pauseHTML : runHTML;
     return isRunning;
   }
-  watchInit(doc.machine, 'isHalted', function (prop, oldval, isHalted) {
+  watchInit(machine, 'isHalted', function (prop, oldval, isHalted) {
     return onHaltedChange(isHalted);
   });
-  watchInit(doc.machine, 'isRunning', function (prop, oldval, isRunning) {
+  watchInit(machine, 'isRunning', function (prop, oldval, isRunning) {
     return onRunningChange(isRunning);
   });
 }
@@ -143,10 +178,15 @@ TMDocumentController.prototype.rebindButtons = function () {
   var enable = Boolean(doc && doc.machine);
   var buttons = this.buttons.simulator;
   if (enable) {
-    rebindStepRun(buttons.step, buttons.run, doc);
+    rebindStepRun(buttons.step, buttons.run,
+      this.htmlForRunButton, this.htmlForPauseButton, doc.machine);
   }
   buttons.all.forEach(function (b) { b.disabled = !enable; });
 };
+
+/////////////////////////
+// Error/Alert Display //
+/////////////////////////
 
 function aceAnnotationFromYAMLException(e) {
   return {
@@ -203,21 +243,49 @@ TMDocumentController.prototype.setAlertErrors = function (errors) {
   );
 };
 
+/////////////////
+// Sync Status //
+/////////////////
+
 // This method can be overridden as necessary.
 // The default implementation toggles Bootstrap 3 classes.
 TMDocumentController.prototype.setLoadButtonSuccess = function (didSucceed) {
   var classes = this.buttons.editor.load.classList;
   classes.toggle('btn-success', didSucceed);
   classes.toggle('btn-primary', !didSucceed);
-  // reset the button status after a change
-  if (didSucceed) {
-    var callback = function () {
-      this.setLoadButtonSuccess(false);
-      this.editor.removeListener('change', callback);
-    }.bind(this);
-    this.editor.on('change', callback);
-  }
 };
+
+// internal. whether the editor and diagram source code are in sync.
+// Updates 'load' button display. Updates storage when sync turns true.
+// Doesn't update storage when initializing isSynced.
+Object.defineProperty(TMDocumentController.prototype, 'isSynced', {
+  set: function (isSynced) {
+    isSynced = Boolean(isSynced);
+    if (this.__isSynced !== isSynced) {
+      var afterInit = this.__isSynced != undefined;
+      this.__isSynced = isSynced;
+      this.setLoadButtonSuccess(isSynced);
+      if (isSynced) {
+        // update storage
+        if (afterInit) {
+          this.__document.stash();
+          this.__editorStore.remove();
+        }
+        // changes cause desync
+        var onChange = function () {
+          this.isSynced = false;
+          this.editor.removeListener('change', onChange);
+        }.bind(this);
+        this.editor.on('change', onChange);
+      }
+    }
+  },
+  get: function () { return this.__isSynced; }
+});
+
+///////////////////
+// Load & Revert //
+///////////////////
 
 TMDocumentController.prototype.loadEditorSource = function () {
   // FIXME: ensure the controller always has a document. otherwise load/revert is broken.
@@ -230,13 +298,13 @@ TMDocumentController.prototype.loadEditorSource = function () {
         this.rebindButtons();
         // .toJSON() is the only known way to preserve the cursor/selection(s)
         this.__loadedEditorSelection = this.editor.session.selection.toJSON();
-        this.setLoadButtonSuccess(true);
+        this.isSynced = true;
         return [];
       } catch (e) {
         return [e];
       }
     }.bind(this)();
-    this.setLoadButtonSuccess(errors.length === 0);
+    this.isSynced = (errors.length === 0);
     this.setAlertErrors(errors);
   }
 };
@@ -245,7 +313,7 @@ TMDocumentController.prototype.revertEditorSource = function () {
   if (this.__document.sourceCode) {
     this.editor.setValue(this.__document.sourceCode, -1);
     this.setAlertErrors([]);
-    this.setLoadButtonSuccess(true);
+    this.isSynced = true;
   }
   if (this.__loadedEditorSelection) {
     this.editor.session.selection.fromJSON(this.__loadedEditorSelection);
