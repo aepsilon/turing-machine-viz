@@ -86,11 +86,15 @@ SchemaStorage.prototype.withPath = function (keyPath) {
 };
 
 SchemaStorage.prototype.read = function () {
-  return recread(this.storage, this.prefix, this.schema);
+  return mapLeaves(this.storage.read.bind(this.storage), this.prefix, this.schema);
 };
 
 SchemaStorage.prototype.write = function (value) {
   recwrite(this.storage, this.prefix, this.schema, value);
+};
+
+SchemaStorage.prototype.remove = function () {
+  mapLeaves(this.storage.remove.bind(this.storage), this.prefix, this.schema);
 };
 
 // (Object, [string]) -> any
@@ -110,16 +114,17 @@ function subtree(schema, keyPath) {
   }
 }
 
-// recursive helper. reads and returns the value rooted at 'schema'.
-function recread(storage, prefix, schema) {
+// structural map (similar to functor map)
+// ((string -> a), string, {[key: string]: Object}) -> {[key: string]: a}
+function mapLeaves(f, prefix, schema) {
   if (schema != null && typeof schema === 'object') {
     // inductive case
     return _.mapObject(schema, function (subschema, propName) {
-      return recread(storage, prefix + '.' + propName, subschema);
+      return mapLeaves(f, prefix + '.' + propName, subschema);
     });
   } else {
     // base case
-    return storage.read(prefix);
+    return f(prefix);
   }
 }
 
