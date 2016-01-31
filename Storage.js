@@ -33,9 +33,9 @@ var RAMStorage = (function () {
 var KeyValueStorage = (function () {
   var s = canUseLocalStorage ? localStorage : RAMStorage;
   return {
-    read  : function (key) { return s.getItem(key); },
-    write : function (key, val) { return s.setItem(key, val); },
-    remove: function (key) { return s.removeItem(key); }
+    read  : s.getItem.bind(s),
+    write : s.setItem.bind(s),
+    remove: s.removeItem.bind(s)
   };
 })();
 
