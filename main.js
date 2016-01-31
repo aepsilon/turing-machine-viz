@@ -3,8 +3,10 @@
 'use strict';
 
 /* eslint-env browser */
-var TMDocumentController = require('./TMDocumentController'),
-    TMDocument = require('./TMDocument');
+var TMControllerShared = require('./TMController');
+var TMController = TMControllerShared.TMController,
+    TMDocument = TMControllerShared.TMDocument,
+    Examples = require('./Examples');
 
 // [DocEntry] -> HTMLSelectElement
 function menuFromDocumentListing(entries) {
@@ -28,8 +30,8 @@ var controller = function () {
   var sim = document.getElementById('controls-container');
   var ed = editor.parentNode;
 
-  return new TMDocumentController({
-    diagram: document.getElementById('machine-container'),
+  return new TMController({
+    simulator: document.getElementById('machine-container'),
     editorAlerts: document.getElementById('editor-alerts-container'),
     editor: editor
   }, {
@@ -42,25 +44,25 @@ var controller = function () {
       load: getButton(ed, 'editor-load'),
       revert: getButton(ed, 'editor-revert')
     }
-  }, 'powersOfTwo');
+  }, new TMDocument('powersOfTwo'));
 }();
 
 controller.editor.setTheme('ace/theme/chrome');
 
 // dropdown menu
 var picker = document.querySelector('nav .navbar-form').appendChild(
-  menuFromDocumentListing(TMDocument.examplesList));
+  menuFromDocumentListing(Examples.list));
 // picker.classList.add('navbar-text');
 picker.classList.add('form-control');
-picker.addEventListener('change', function (ev) {
-  controller.openDocumentById(ev.target.value);
+picker.addEventListener('change', function (e) {
+  controller.openDocument(new TMDocument(e.target.value));
 });
 
 // XXX: confirm if save fails
 window.addEventListener('beforeunload', function () {
-  controller.closeCurrentDocument();
+  controller.save();
 });
 
 // XXX:
 exports.controller = controller;
-exports.customDocumentList = TMDocument.customDocumentList;
+// exports.customDocumentList = TMDocument.customDocumentList;
