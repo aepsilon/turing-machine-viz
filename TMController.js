@@ -418,5 +418,73 @@ TMDocument.prototype.path = function (path) {
   });
 })();
 
+///////////////////
+// Document List //
+///////////////////
+
+// TODO: impl. transactions
+
+// for custom documents.
+function DocumentList(storageKey) {
+  this.storageKey = storageKey;
+  this.readList();
+}
+
+DocumentList.newID = function () {
+  return Date.now();
+};
+
+// internal methods.
+DocumentList.prototype.add = function (docID) {
+  this.__list.push({id: docID});
+  this.writeList();
+};
+DocumentList.prototype.readList = function () {
+  this.__list = JSON.parse(Storage.KeyValueStorage.read(this.storageKey)) || [];
+};
+DocumentList.prototype.writeList = function () {
+  Storage.KeyValueStorage.write(this.storageKey, JSON.stringify(this.__list));
+};
+
+// TODO: bypass unnecessary parse & stringify cycle for positions
+DocumentList.prototype.duplicate = function (doc) {
+  var newID = DocumentList.newID();
+  var newDoc = new TMDocument(newID);
+  this.add(newID);
+  Object.keys(doc).forEach(function (key) {
+    newDoc[key] = doc[key];
+  });
+  return newDoc;
+};
+
+DocumentList.prototype.deleteById = function (docID) {
+  this.__list = removeOn(function (item) { return item.id; }, docID);
+  this.writeList();
+};
+
+Object.defineProperties(DocumentList.prototype, {
+  list: {
+    get: function () { return this.__list; },
+    enumerable: true
+  }
+});
+
+// using the comparator, return a copy of the list with the first occurrence of x removed.
+function removeBy(cmp, list, x) {
+  if (!(list && list.length)) { return; }
+  var i = 0;
+  for (; i < list.length && !cmp(list[i], x); ++i)
+    ;
+  return list.slice(0, i).concat(list.slice(i+1));
+}
+
+// 'removeBy' by comparing with strict equality (===) on values from a key function.
+function removeOn(f, list, x) {
+  return removeBy(function (a, b) {
+    return f(a) === f(b);
+  }, list, x);
+}
+
 exports.TMController = TMController;
 exports.TMDocument = TMDocument;
+exports.DocumentList = DocumentList;
