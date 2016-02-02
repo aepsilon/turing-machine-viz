@@ -144,6 +144,16 @@ table:
   done:
 `;
 
+var blankTemplate =
+`name: \${1:untitled}
+input: '\${2}'
+blank: '\${3: }'
+start state: \${4:start}
+table:
+  \${4}:
+    \${5}
+`;
+
 // wrap each example in an object
 (function () {
   function getNameForExample(sourceCode) {
@@ -175,3 +185,4 @@ var list = Object.keys(examples).map(function (key) { return examples[key]; });
 exports.hasID = isExampleID;
 exports.get = get;
 exports.list = list;
+exports.blankTemplate = blankTemplate;

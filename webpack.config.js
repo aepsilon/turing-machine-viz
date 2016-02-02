@@ -22,7 +22,8 @@ module.exports = {
     'lodash-fp': '_',
     'underscore': 'underscore',
     'js-yaml': 'jsyaml',
-    'ace-builds/src-min-noconflict': 'ace'
+    'ace-builds/src-min-noconflict': 'ace',
+    'jquery': 'jQuery'
   },
   plugins: [
     new webpack.optimize.CommonsChunkPlugin({

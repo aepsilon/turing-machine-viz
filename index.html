@@ -73,19 +73,50 @@
   <body>
     <nav class="navbar navbar-default">
       <div class="container-fluid">
-        <!-- Brand and toggle get grouped for better mobile display -->
         <div class="navbar-header">
-          <!-- <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button> -->
           <span class="navbar-brand">Turing Machine Visualization</span>
         </div>
-        <div class="navbar-form navbar-left"></div>
+
+        <div class="navbar-form navbar-left">
+          <!-- Document Menu (added dynamically) -->
+          <!-- Edit Menu -->
+          <div class="btn-group" data-target="#renameDialog">
+            <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Edit <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+              <li><a href="#" id="tm-doc-duplicate">Duplicate document</a></li>
+              <li><a href="#" id="tm-doc-newblank">New blank document</a></li>
+              <li role="separator" class="divider"></li>
+              <li><a href="#" id="tm-doc-rename"
+                data-toggle="modal" data-target="#renameDialog">Rename&hellip;</a></li>
+              <li role="separator" class="divider"></li>
+              <li><a href="#" id="tm-doc-delete">Delete&hellip;</a></li>
+            </ul>
+          </div>
+        </div>
+
       </div>
     </nav>
+    <!-- Dialog for Rename -->
+    <div id="renameDialog" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="renameDialogHeader">
+      <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="renameDialogHeader">Rename</h4>
+          </div>
+          <div class="modal-body">
+            <input type="text" class="form-control" placeholder="document name">
+              <!-- <button type="button" class="btn btn-primary">Save</button> -->
+          </div>
+          <!-- <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+          </div> -->
+        </div>
+      </div>
+    </div>
+
     <!-- Main Content -->
     <div class="container-fluid">
       <div class="row">
@@ -128,6 +159,9 @@
         </div>
       </div>
 
+      <!-- jQuery (necessary for Bootstrap plugins) -->
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+      
       <!-- Entry point -->
       <script src='lib/ace-builds/src-min-noconflict/ace.js' charset='utf-8'></script>
       <script src='build/main.bundle.js' charset='utf-8'></script>
@@ -205,8 +239,7 @@ table:
         </div>
       </div>
     </footer>
-    <!-- jQuery (necessary for Bootstrap"s JavaScript plugins) -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
   </body>

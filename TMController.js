@@ -385,7 +385,7 @@ TMDocument.prototype.path = function (path) {
     }
   };
   // var remove = store.remove.bind(store);
-  function propDescriptor(path) {
+  function stringProp(path) {
     return {
       get: function () { return read(this.path(path)); },
       set: function (val) { write(this.path(path), val); },
@@ -393,8 +393,8 @@ TMDocument.prototype.path = function (path) {
     };
   }
 
-  Object.defineProperties(TMDocument.prototype, {
-    sourceCode: propDescriptor('diagram.sourceCode'),
+  var propDescriptors = {
+    sourceCode: stringProp('diagram.sourceCode'),
     positionTable: {
       get: function () {
         return util.applyMaybe(Position.parsePositionTable,
@@ -406,16 +406,11 @@ TMDocument.prototype.path = function (path) {
       },
       enumerable: true
     },
-    editorSourceCode: {
-      get: function () {
-        return read(this.path('editor.sourceCode'));
-      },
-      set: function (val) {
-        write(this.path('editor.sourceCode'), val);
-      },
-      enumerable: true
-    }
-  });
+    editorSourceCode: stringProp('editor.sourceCode'),
+    name: stringProp('name')
+  };
+  Object.defineProperties(TMDocument.prototype, propDescriptors);
+  TMDocument.prototype.dataKeys = Object.keys(propDescriptors);
 })();
 
 ///////////////////
@@ -436,7 +431,7 @@ DocumentList.newID = function () {
 
 // internal methods.
 DocumentList.prototype.add = function (docID) {
-  this.__list.push({id: docID});
+  this.__list.unshift({id: docID});
   this.writeList();
 };
 DocumentList.prototype.readList = function () {
@@ -446,12 +441,16 @@ DocumentList.prototype.writeList = function () {
   Storage.KeyValueStorage.write(this.storageKey, JSON.stringify(this.__list));
 };
 
+DocumentList.prototype.newDocument = function () {
+  var newID = DocumentList.newID();
+  this.add(newID);
+  return new TMDocument(newID);
+};
+
 // TODO: bypass unnecessary parse & stringify cycle for positions
 DocumentList.prototype.duplicate = function (doc) {
-  var newID = DocumentList.newID();
-  var newDoc = new TMDocument(newID);
-  this.add(newID);
-  Object.keys(doc).forEach(function (key) {
+  var newDoc = this.newDocument();
+  doc.dataKeys.forEach(function (key) {
     newDoc[key] = doc[key];
   });
   return newDoc;
