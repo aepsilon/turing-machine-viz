@@ -90,20 +90,26 @@ function newBlankDocument() {
 // Rename
 var renameDialog = document.getElementById('renameDialog');
 var renameBox = renameDialog.querySelector('input[type="text"]');
-$(renameDialog).on('show.bs.modal', function () {
-  renameBox.value = menu.currentOption.text;
-});
-$(renameDialog).on('shown.bs.modal', function () {
-  renameBox.select();
-});
-$(renameDialog).on('hide.bs.modal', function () {
-  var newName = renameBox.value;
-  if (menu.currentOption.text !== newName) {
-    menu.rename(newName);
-  }
-});
-$(renameDialog).on('hidden.bs.modal', function () {
-  renameBox.value = '';
+$(renameDialog)
+  .on('show.bs.modal', function () {
+    renameBox.value = menu.currentOption.text;
+  })
+  .on('shown.bs.modal', function () {
+    renameBox.select();
+  })
+  // NB. saves when closed, so use data-keyboard="false" to prevent closing with Esc
+  .on('hide.bs.modal', function () {
+    var newName = renameBox.value;
+    if (menu.currentOption.text !== newName) {
+      menu.rename(newName);
+    }
+  })
+  .on('hidden.bs.modal', function () {
+    renameBox.value = '';
+  });
+document.getElementById('renameDialogForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+  $(renameDialog).modal('hide');
 });
 
 // Delete

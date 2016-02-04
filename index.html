@@ -89,7 +89,9 @@
               <li><a href="#" id="tm-doc-action-duplicate">Duplicate document</a></li>
               <li><a href="#" id="tm-doc-action-newblank">New blank document</a></li>
               <li role="separator" class="divider"></li>
-              <li><a href="#" data-toggle="modal" data-target="#renameDialog">Rename&hellip;</a></li>
+              <!-- "Rename" saves when closed, so don't allow closing with Esc -->
+              <li><a href="#" data-toggle="modal" data-keyboard="false"
+                data-target="#renameDialog">Rename&hellip;</a></li>
               <li role="separator" class="divider"></li>
               <li><a href="#" data-toggle="modal" data-target="#deleteDialog">Delete&hellip;</a></li>
             </ul>
@@ -107,12 +109,11 @@
             <h4 class="modal-title" id="renameDialogHeader">Rename</h4>
           </div>
           <div class="modal-body">
-            <input type="text" class="form-control" placeholder="document name">
-              <!-- <button type="button" class="btn btn-primary">Save</button> -->
+            <form id="renameDialogForm">
+              <label class="sr-only" for="renameDialogName">Document Name</label>
+              <input type="text" class="form-control" id="renameDialogName" placeholder="document name">
+            </form>
           </div>
-          <!-- <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-          </div> -->
         </div>
       </div>
     </div>
