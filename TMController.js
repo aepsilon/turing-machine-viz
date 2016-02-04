@@ -40,11 +40,11 @@ Object.defineProperties(TMSim.prototype, {
     },
     // throws if sourceCode has errors
     set: function (sourceCode) {
+      if (this.machine) {
+        this.machine.isRunning = false; // important
+      }
       if (sourceCode == null) {
         // clear display
-        if (this.machine) {
-          this.machine.isRunning = false; // important
-        }
         this.machine = null;
         this.container.innerHTML = '';
       } else {
@@ -184,16 +184,38 @@ function TMController(containers, buttons, document) {
         self.editor.focus();
       });
 
-  this.document = {editor: {}}; // dummy document that gets replaced
+  Object.defineProperties(this, {
+    __document: {
+      value: {editor: {}}, // dummy document that gets replaced
+      writable: true
+    }
+  });
   this.openDocument(document);
 }
 
-TMController.prototype.openDocument = function (doc) {
-  if (this.document.id == doc.id) { return; } // same document
-  // save current document
+TMController.prototype.getDocument = function () {
+  return this.__document;
+};
+
+// duplicate and switch storage while not affecting the views
+TMController.prototype.duplicateTo = function (doc) {
   this.save();
-  // open new document
-  this.document = doc;
+  this.__document = doc;
+  this.save();
+};
+
+// save the current document, then open another one.
+// does nothing if the document ID is the same.
+TMController.prototype.openDocument = function (doc) {
+  if (this.getDocument().id === doc.id) { return; } // same document
+  this.save();
+  return this.forceLoadDocument(doc);
+};
+
+// (low-level) load the document. current data is discarded without saving.
+// this can be used to switch from a deleted document or reload a document.
+TMController.prototype.forceLoadDocument = function (doc) {
+  this.__document = doc;
   var diagramSource = doc.sourceCode;
   // FIXME: catch and report errors in a panel
   this.simulator.sourceCode = diagramSource;
@@ -209,7 +231,7 @@ TMController.prototype.openDocument = function (doc) {
 };
 
 TMController.prototype.save = function () {
-  var doc = this.document;
+  var doc = this.getDocument();
   // sidenote: if space runs out, this save order lets syncing free up space for another try
   doc.editorSourceCode = this.isSynced ? undefined : this.editor.getValue();
   doc.sourceCode = this.simulator.sourceCode;
@@ -355,17 +377,33 @@ TMController.prototype.revertEditorSource = function () {
 /////////////////////////////
 
 var Storage = require('./Storage'),
+    Examples = require('./Examples'),
     Position = require('./Position'),
     util = require('./util');
 
-// important: all own enumerable properties are data (via getters and setters).
-// therefore to make a copy, simply copy the own enumerable properties.
-// FIXME: fall-back to presets for example documents
 function TMDocument(docID) {
   Object.defineProperties(this, {
     id:     { value: docID },
     prefix: { value: 'doc.' + docID }
   });
+  // fall back to reading presets for example documents
+  var preset = Examples.get(docID);
+  if (preset) {
+    Object.defineProperties(this, {
+      sourceCode: useFallbackGet(preset, this, 'sourceCode'),
+      name: useFallbackGet(preset, this, 'name')
+    });
+  }
+}
+
+function useFallbackGet(preset, obj, prop) {
+  var proto = Object.getPrototypeOf(obj);
+  var desc = Object.getOwnPropertyDescriptor(proto, prop);
+  var get = desc.get;
+  desc.get = function () {
+    return util.coalesce(get.call(obj), preset[prop]);
+  };
+  return desc;
 }
 
 // internal method.
@@ -413,6 +451,20 @@ TMDocument.prototype.path = function (path) {
   TMDocument.prototype.dataKeys = Object.keys(propDescriptors);
 })();
 
+// TODO: bypass unnecessary parse & stringify cycle for positions
+TMDocument.prototype.copyFrom = function (other) {
+  other.dataKeys.forEach(function (key) {
+    this[key] = other[key];
+  }, this);
+  return this;
+};
+
+TMDocument.prototype.delete = function () {
+  this.dataKeys.forEach(function (key) {
+    this[key] = null;
+  }, this);
+};
+
 ///////////////////
 // Document List //
 ///////////////////
@@ -425,8 +477,9 @@ function DocumentList(storageKey) {
   this.readList();
 }
 
+// () -> string
 DocumentList.newID = function () {
-  return Date.now();
+  return String(Date.now());
 };
 
 // internal methods.
@@ -447,18 +500,19 @@ DocumentList.prototype.newDocument = function () {
   return new TMDocument(newID);
 };
 
-// TODO: bypass unnecessary parse & stringify cycle for positions
 DocumentList.prototype.duplicate = function (doc) {
-  var newDoc = this.newDocument();
-  doc.dataKeys.forEach(function (key) {
-    newDoc[key] = doc[key];
-  });
-  return newDoc;
+  return this.newDocument().copyFrom(doc);
 };
 
-DocumentList.prototype.deleteById = function (docID) {
-  this.__list = removeOn(function (item) { return item.id; }, docID);
+/**
+ * Behaves like list.splice(index, 1).
+ * @param  {number} index index of the element to delete
+ * @return {boolean} true if an element was removed, false otherwise (index out of bounds)
+ */
+DocumentList.prototype.deleteIndex = function (index) {
+  var deleted = this.__list.splice(index, 1);
   this.writeList();
+  return (deleted.length > 0);
 };
 
 Object.defineProperties(DocumentList.prototype, {
@@ -467,22 +521,6 @@ Object.defineProperties(DocumentList.prototype, {
     enumerable: true
   }
 });
-
-// using the comparator, return a copy of the list with the first occurrence of x removed.
-function removeBy(cmp, list, x) {
-  if (!(list && list.length)) { return; }
-  var i = 0;
-  for (; i < list.length && !cmp(list[i], x); ++i)
-    ;
-  return list.slice(0, i).concat(list.slice(i+1));
-}
-
-// 'removeBy' by comparing with strict equality (===) on values from a key function.
-function removeOn(f, list, x) {
-  return removeBy(function (a, b) {
-    return f(a) === f(b);
-  }, list, x);
-}
 
 exports.TMController = TMController;
 exports.TMDocument = TMDocument;

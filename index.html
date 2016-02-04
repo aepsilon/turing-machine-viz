@@ -78,20 +78,20 @@
         </div>
 
         <div class="navbar-form navbar-left">
-          <!-- Document Menu (added dynamically) -->
+          <!-- Document Menu -->
+          <select id="tm-doc-menu" class="form-control"></select>
           <!-- Edit Menu -->
           <div class="btn-group" data-target="#renameDialog">
             <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               Edit <span class="caret"></span>
             </button>
             <ul class="dropdown-menu">
-              <li><a href="#" id="tm-doc-duplicate">Duplicate document</a></li>
-              <li><a href="#" id="tm-doc-newblank">New blank document</a></li>
+              <li><a href="#" id="tm-doc-action-duplicate">Duplicate document</a></li>
+              <li><a href="#" id="tm-doc-action-newblank">New blank document</a></li>
               <li role="separator" class="divider"></li>
-              <li><a href="#" id="tm-doc-rename"
-                data-toggle="modal" data-target="#renameDialog">Rename&hellip;</a></li>
+              <li><a href="#" data-toggle="modal" data-target="#renameDialog">Rename&hellip;</a></li>
               <li role="separator" class="divider"></li>
-              <li><a href="#" id="tm-doc-delete">Delete&hellip;</a></li>
+              <li><a href="#" data-toggle="modal" data-target="#deleteDialog">Delete&hellip;</a></li>
             </ul>
           </div>
         </div>
@@ -113,6 +113,26 @@
           <!-- <div class="modal-footer">
             <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
           </div> -->
+        </div>
+      </div>
+    </div>
+    <!-- Dialog for Delete -->
+    <div id="deleteDialog" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="deleteDialogHeader">
+      <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="deleteDialogHeader">Delete this document?</h4>
+          </div>
+          <div class="modal-body">
+            This will erase the document and remove it from the menu.
+            You can’t undo this action.
+          </div>
+          <div class="modal-footer">
+            <button id="tm-doc-action-delete" type="button"
+              class="btn btn-danger pull-left" data-dismiss="modal">Delete</button>
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          </div>
         </div>
       </div>
     </div>
@@ -173,7 +193,7 @@
 
       <!-- jQuery (necessary for Bootstrap plugins) -->
       <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-      
+
       <!-- Entry point -->
       <script src='lib/ace-builds/src-min-noconflict/ace.js' charset='utf-8'></script>
       <script src='build/main.bundle.js' charset='utf-8'></script>
