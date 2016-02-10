@@ -7,24 +7,14 @@ var TMControllerShared = require('./TMController');
 var TMController = TMControllerShared.TMController,
     TMDocument = TMControllerShared.TMDocument,
     DocumentMenu = require('./DocumentMenu'),
-    Examples = require('./Examples');
+    Examples = require('./Examples'),
+    toDocFragment = require('./util').toDocFragment;
 var ace = require('ace-builds/src-min-noconflict');
 var $ = require('jquery'); // for Bootstrap modal dialog events
 
 // load up front so going offline doesn't break anything
 // (for snippet placeholders, used by "New blank document")
 ace.config.loadModule('ace/ext/language_tools');
-
-///////////////////////////////
-// General-purpose Utilities //
-///////////////////////////////
-
-// [Node] -> DocumentFragment
-function toDocFragment(array) {
-  var result = document.createDocumentFragment();
-  array.forEach(result.appendChild.bind(result));
-  return result;
-}
 
 //////////
 // Main //

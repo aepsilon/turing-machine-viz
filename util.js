@@ -38,7 +38,26 @@ function getFirst(f, xs) {
   }
 }
 
+/////////
+// DOM //
+/////////
+
+/* global document */
+
+/**
+ * Concat an array of DOM Nodes into a DocumentFragment.
+ * @param  {[Node]} array
+ * @return {DocumentFragment}
+ */
+function toDocFragment(array) {
+  var result = document.createDocumentFragment();
+  array.forEach(result.appendChild.bind(result));
+  return result;
+}
+
 exports.nonNull = nonNull;
 exports.coalesce = coalesce;
 exports.applyMaybe = applyMaybe;
 exports.getFirst = getFirst;
+
+exports.toDocFragment = toDocFragment;
