@@ -197,11 +197,9 @@ TMController.prototype.getDocument = function () {
   return this.__document;
 };
 
-// duplicate and switch storage while not affecting the views
-TMController.prototype.duplicateTo = function (doc) {
-  this.save();
+// set the backing document, without saving/loading or affecting the views.
+TMController.prototype.setBackingDocument = function (doc) {
   this.__document = doc;
-  this.save();
 };
 
 // save the current document, then open another one.
@@ -215,7 +213,7 @@ TMController.prototype.openDocument = function (doc) {
 // (low-level) load the document. current data is discarded without saving.
 // this can be used to switch from a deleted document or reload a document.
 TMController.prototype.forceLoadDocument = function (doc) {
-  this.__document = doc;
+  this.setBackingDocument(doc);
   var diagramSource = doc.sourceCode;
   // FIXME: catch and report errors in a panel
   this.simulator.sourceCode = diagramSource;
@@ -382,16 +380,23 @@ var Storage = require('./Storage'),
     util = require('./util');
 
 function TMDocument(docID) {
+  var preset = Examples.get(docID);
   Object.defineProperties(this, {
     id:     { value: docID },
-    prefix: { value: 'doc.' + docID }
+    prefix: { value: 'doc.' + docID },
+    isExample: { value: preset ? true : false }
   });
   // fall back to reading presets for example documents
-  var preset = Examples.get(docID);
   if (preset) {
     Object.defineProperties(this, {
       sourceCode: useFallbackGet(preset, this, 'sourceCode'),
-      name: useFallbackGet(preset, this, 'name')
+      // names are read-only
+      positionTable: useFallbackGet(preset, this, 'positionTable'),
+      name: {
+        get: function () { return preset.name; },
+        set: function () {}, // don't err when removing (set = null)
+        enumerable: true
+      }
     });
   }
 }

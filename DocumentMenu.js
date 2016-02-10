@@ -2,10 +2,12 @@
 // Sub-controller that manages the document list (view) and document objects (model)
 
 /* global document */
-var TMDocument = require('./TMController').TMDocument;
+var TMDocument = require('./TMController').TMDocument,
+    toDocFragment = require('./util').toDocFragment;
 
-// ({menu: HTMLSelectElement, ?group: Node}, DocumentList, ?number) -> void
-function DocumentMenu(nodes, doclist, selectedIndex) {
+// ({menu: HTMLSelectElement, ?group: Node}, DocumentList, ?number,
+//    ?(TMDocument -> HTMLOptionElement)) -> void
+function DocumentMenu(nodes, doclist, selectedIndex, makeOption) {
   var menu = nodes.menu;
   var group = nodes.group || menu;
   if (!menu) {
@@ -14,22 +16,21 @@ function DocumentMenu(nodes, doclist, selectedIndex) {
   if (!doclist) {
     throw new TypeError('DocumentMenu: missing parameter: document list');
   }
-  var self = this;
+  if (makeOption) {
+    this.optionFromDocument = makeOption;
+  }
+  group.appendChild(toDocFragment(doclist.list.map(function (entry) {
+    return this.optionFromDocument(new TMDocument(entry.id));
+  }, this)));
 
   this.menu = menu;
   this.menu.selectedIndex = selectedIndex || 0;
   this.group = group;
   this.doclist = doclist;
-  this.__refreshCurrent();
-  // this.__currentDocument = (function () {
-    // var option = self.menu.options[selectedIndex] || self.menu.options[0];
-    // return option ? new TMDocument(option.value) : null;
-    // var option = self.getCurrentOption();
-    // return option ? new TMDocument(option.value) : null;
-  // })();
   // Events
+  var self = this;
   this.menu.addEventListener('change', function () {
-    self.__refreshCurrent();
+    // TODO: put into refreshCurrent, rename to onSelectedChange
     self.onChange(self.currentDocument);
   });
 }
@@ -40,7 +41,10 @@ Object.defineProperties(DocumentMenu.prototype, {
     enumerable: true
   },
   currentDocument: {
-    get: function () { return this.__currentDocument; },
+    get: function () {
+      var opt = this.currentOption;
+      return opt ? new TMDocument(opt.value) : null;
+    },
     enumerable: true
   }
 });
@@ -63,31 +67,25 @@ DocumentMenu.prototype.onChange = function () {
 // Internal Helpers
 
 // prepend then select
-DocumentMenu.prototype.__prepend = function (doc) {
-  this.__refreshCurrent(doc);
+DocumentMenu.prototype.__prepend = function (doc, opts) {
   var option = this.optionFromDocument(doc);
   this.group.insertBefore(option, this.group.firstChild);
-  option.selected = true;
+  if (opts && opts.select) {
+    option.selected = true;
+  }
   return doc;
-};
-
-// update .currentDocument
-// ?TMDocument -> void
-DocumentMenu.prototype.__refreshCurrent = function (doc) {
-  doc = doc || new TMDocument(this.menu.value);
-  this.__currentDocument = doc;
 };
 
 // Methods not about Current Document
 
-DocumentMenu.prototype.newDocument = function () {
-  return this.__prepend(this.doclist.newDocument());
+DocumentMenu.prototype.newDocument = function (opts) {
+  return this.__prepend(this.doclist.newDocument(), opts);
 };
 
 // Methods about Current Document
 
-DocumentMenu.prototype.duplicate = function () {
-  return this.__prepend(this.doclist.duplicate(this.currentDocument));
+DocumentMenu.prototype.duplicate = function (opts) {
+  return this.__prepend(this.doclist.duplicate(this.currentDocument), opts);
 };
 
 DocumentMenu.prototype.rename = function (name) {
@@ -104,7 +102,6 @@ DocumentMenu.prototype.delete = function () {
   if (status) {
     this.currentOption.remove();
     this.menu.selectedIndex = index;
-    this.__refreshCurrent();
   }
   return status;
 };

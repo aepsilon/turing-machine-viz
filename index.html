@@ -53,6 +53,10 @@
       margin-top: 0;
       margin-left: 4em;
     }
+    .btn-wide-save {
+      padding-left: 1.3em;
+      padding-right:1.3em;
+    }
     .tm-editor.ace_editor {
       height: 60em;
       width: 40em;
@@ -81,7 +85,7 @@
           <!-- Document Menu -->
           <select id="tm-doc-menu" class="form-control"></select>
           <!-- Edit Menu -->
-          <div class="btn-group" data-target="#renameDialog">
+          <div class="btn-group">
             <button type="button" class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               Edit <span class="caret"></span>
             </button>
@@ -133,6 +137,29 @@
             <button id="tm-doc-action-delete" type="button"
               class="btn btn-danger pull-left" data-dismiss="modal">Delete</button>
             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Dialog for Resetting an Example -->
+    <div id="resetExampleDialog" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="resetExampleDialogHeader">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="resetExampleDialogHeader">Save a copy of your changes?</h4>
+          </div>
+          <div class="modal-body">
+            <p>Resetting this example will erase any changes.</p>
+            You can save your changes into a duplicate document, or simply discard them.
+            You can’t undo this action.
+          </div>
+          <div class="modal-footer">
+            <button id="tm-doc-action-resetdiscard" type="button"
+              class="btn btn-danger pull-left" data-dismiss="modal">Discard</button>
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+            <button id="tm-doc-action-resetsave" type="button"
+              class="btn btn-primary btn-wide-save" data-dismiss="modal">Save</button>
           </div>
         </div>
       </div>
