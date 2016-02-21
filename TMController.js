@@ -216,6 +216,7 @@ TMController.prototype.forceLoadDocument = function (doc) {
   this.setBackingDocument(doc);
   var diagramSource = doc.sourceCode;
   // FIXME: catch and report errors in a panel
+  this.simulator.clear();
   this.simulator.sourceCode = diagramSource;
   this.simulator.positionTable = doc.positionTable;
 
