@@ -15,12 +15,13 @@ module.exports = {
   output: {
     library: '[name]', // allow console interaction
     path: path.join(__dirname, 'build'),
-    filename: '[name].bundle.js'
+    filename: '[name].bundle.js',
+    pathinfo: true
   },
   externals: {
     'd3': 'd3',
-    'lodash-fp': '_',
-    'underscore': 'underscore',
+    'lodash': 'lodash',
+    'lodash/fp': '_',
     'js-yaml': 'jsyaml',
     'ace-builds/src-min-noconflict': 'ace',
     'jquery': 'jQuery'

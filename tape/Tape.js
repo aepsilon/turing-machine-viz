@@ -1,5 +1,5 @@
 'use strict';
-var _ = require('lodash-fp');
+var _ = require('lodash/fp');
 
 // Bidirectional infinite tape
 function Tape(blank, input) {

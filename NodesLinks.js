@@ -1,6 +1,6 @@
 'use strict';
 var util = require('./util.js'),
-    _ = require('underscore');
+    _ = require('lodash');
 
 var coalesce = util.coalesce;
 
@@ -24,7 +24,7 @@ function labelFor(symbol, action) {
 function deriveNodesLinks(obj) {
   var edges = [];
 
-  var stateMap = _(obj).mapObject(function (symbolMap, state) {
+  var stateMap = _.mapValues(obj, function (symbolMap, state) {
     // create the nodes.
     return {
       label: state,
@@ -33,7 +33,7 @@ function deriveNodesLinks(obj) {
       // since edge.target is potentially another node's object.
       withSymbol: function (thisObj) {
         var edgeTo = {};
-        return (symbolMap == null) ? null : _(symbolMap).mapObject(function (action, symbol) {
+        return (symbolMap == null) ? null : _.mapValues(symbolMap, function (action, symbol) {
           return {
             action: action,
             edge: (function () {
@@ -43,11 +43,11 @@ function deriveNodesLinks(obj) {
               var edge = edgeTo[target];
               return (edge != null)
                 ? _.constant(edge)(edge.labels.push(label))
-                : _(edgeTo[target] = {
+                : _.tap(edgeTo[target] = {
                   source: thisObj,
                   target: stateMap[target],
                   labels: [label]
-                }).tap(Array.prototype.push.bind(edges));
+                }, Array.prototype.push.bind(edges));
             })()
           };
         });
@@ -55,10 +55,10 @@ function deriveNodesLinks(obj) {
     };
   });
   // evaluate the deferred values
-  _(stateMap).mapObject(function (o) { o.withSymbol = o.withSymbol(o); });
+  _.mapValues(stateMap, function (o) { o.withSymbol = o.withSymbol(o); });
 
   return {
-    nodes: _(stateMap).values(),
+    nodes: _.values(stateMap),
     edges: edges,
     stateMap: stateMap
   };

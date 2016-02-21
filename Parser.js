@@ -2,7 +2,7 @@
 
 var TM = require('./TuringMachine'),
     jsyaml = require('js-yaml'),
-    _ = require('underscore'); // lodash-fp's .mapValues doesn't pass the key
+    _ = require('lodash');
 
 /**
  * Thrown when parsing a string that is valid as YAML but invalid
@@ -123,7 +123,7 @@ function parseSynonyms(val, table) {
       info: 'Synonyms should be a mapping from string abbreviations to instructions'
         + ' (e.g. <code>accept: {R: accept}</code>)'});
   }
-  return _(val).mapObject(function (actionVal, key) {
+  return _.mapValues(val, function (actionVal, key) {
     try {
       return parseInstruction(null, table, actionVal);
     } catch (e) {
@@ -140,7 +140,7 @@ function parseSynonyms(val, table) {
 
 // (?SynonymMap, {[key: string]: string}) -> TransitionTable
 function parseTable(synonyms, val) {
-  return _(val).mapObject(function (stateObj, state) {
+  return _.mapValues(val, function (stateObj, state) {
     if (stateObj == null) {
       // case: halting state
       return null;
@@ -150,7 +150,7 @@ function parseTable(synonyms, val) {
       {problemValue: typeof stateObj, state: state,
       info: 'Each state should map symbols to instructions. An empty map signifies a halting state.'});
     }
-    return _(stateObj).mapObject(function (actionVal, symbol) {
+    return _.mapValues(stateObj, function (actionVal, symbol) {
       try {
         return parseInstruction(synonyms, val, actionVal);
       } catch (e) {
@@ -167,7 +167,7 @@ function parseTable(synonyms, val) {
 // omits null/undefined properties
 // (?string, direction, ?string) -> {symbol?: string, move: direction, state?: string}
 function makeInstruction(symbol, move, state) {
-  return Object.freeze(_.omit({symbol: symbol, move: move, state: state},
+  return Object.freeze(_.omitBy({symbol: symbol, move: move, state: state},
     function (x) { return x == null; }));
 }
 

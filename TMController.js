@@ -2,7 +2,7 @@
 
 var Parser = require('./Parser'),
     TMViz = require('./TMViz'),
-    values = require('lodash-fp').values;
+    values = require('lodash/fp').values;
 var d3 = require('d3');
 var watchInit = require('./watch').watchInit;
 

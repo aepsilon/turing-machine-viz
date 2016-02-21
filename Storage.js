@@ -1,5 +1,5 @@
 'use strict';
-var _ = require('underscore'); // lodash-fp's mapValues doesn't pass the key
+var _ = require('lodash');
 /* global localStorage */
 
 ///////////////////////
@@ -119,7 +119,7 @@ function subtree(schema, keyPath) {
 function mapLeaves(f, prefix, schema) {
   if (schema != null && typeof schema === 'object') {
     // inductive case
-    return _.mapObject(schema, function (subschema, propName) {
+    return _.mapValues(schema, function (subschema, propName) {
       return mapLeaves(f, prefix + '.' + propName, subschema);
     });
   } else {
