@@ -2,7 +2,9 @@
 var _ = require('lodash/fp'),
     assign = require('lodash').assign; // need mutable assign()
 
-// ** Misc Utilities **
+///////////////////////
+// Truncate decimals //
+///////////////////////
 
 /**
  * Round x to n decimal places.
@@ -15,8 +17,7 @@ function truncate(n, x) {
   return Math.round(x * factor)/factor;
 }
 
-// type HasXY = {x: number, y: number, px: number, py: number};
-// number -> HasXY -> HasXY
+// number -> PositionInfo -> PositionInfo
 function truncateXY(decimalPlaces) {
   return function (val) {
     var result =  _(val).pick(['x','y','px','py'])
@@ -27,23 +28,20 @@ function truncateXY(decimalPlaces) {
   };
 }
 
-// ** Node, {State: Node} Functions **
-
-// type PositionInfo = {x: number, y: number, px: number, py: number, fixed: boolean}
-// Node -> PositionInfo
-function getNodePositionInfo(node) {
-  return _.pick(['x', 'y', 'px', 'py', 'fixed'], node);
-}
+////////////////////////////
+// Get/Set Position Table //
+////////////////////////////
 
 // type State = string
+// type PositionInfo = {x: number, y: number, px: number, py: number, fixed: boolean}
 // type PositionTable = { [key: State]: PositionInfo }
 
-// {State: Node} -> PositionTable
-var getPositionTable = _.mapValues(getNodePositionInfo);
+// {[key: State]: Node} -> PositionTable
+var getPositionTable = _.mapValues(_.pick(['x', 'y', 'px', 'py', 'fixed']));
 
 // tag w/ positions. mutates the node map.
 // remember to call force.start() afterwards.
-// {[key: State]: PositionInfo} -> {[key: State]: Node} -> void
+// PositionTable -> {[key: State]: Node} -> void
 function setPositionTable(posTable, stateMap) {
   _.forEach(function (node, state) {
     var position = posTable[state];
@@ -53,7 +51,9 @@ function setPositionTable(posTable, stateMap) {
   }, stateMap);
 }
 
-// ** Serialization **
+///////////////////
+// Serialization //
+///////////////////
 
 // PositionTable -> JSON
 var stringifyPositionTable = _.flow(
