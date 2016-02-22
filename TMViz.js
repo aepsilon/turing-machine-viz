@@ -1,12 +1,14 @@
 'use strict';
 /**
- * Turing Machine Visualization component.
+ * Turing machine visualization component.
  *
- * Concerns:
- * 	* Keeping state & tape diagram in sync with TM
- * 	* TM running/reset
- * (controls not included)
- * @module ./TMViz
+ * Displays a state diagram and tape diagram,
+ * and provides running & reset.
+ * (UI controls are not included)
+ *
+ * Internally, the machine's state property is overridden
+ * with a setter that updates the state diagram.
+ * @module
  */
 
 var TuringMachine = require('./TuringMachine').TuringMachine,
@@ -86,13 +88,14 @@ function addTape(div, spec) {
 }
 
 /**
- * Construct a new state and tape visualization inside the `div` selection.
- * @param div       D3 selection of an HTML `div`
+ * Construct a new state and tape visualization inside a &lt;div&gt;.
+ * @constructor
+ * @param {HTMLDivElement} div div to take over and use.
  * @param spec      machine specification
  * @param posTable  position table for the state nodes
- * @alias module:./TMViz.TMViz
  */
 function TMViz(div, spec, posTable) {
+  div = d3.select(div);
   var dataset = NodesLinks.deriveNodesLinks(spec.table);
   var stateMap = dataset.stateMap;
   this.__stateMap = stateMap;
@@ -136,6 +139,9 @@ function TMViz(div, spec, posTable) {
   this.isHalted = false;
 
   var isRunning = false;
+  /**
+   * Set isRunning to true to run the machine, and false to stop it.
+   */
   Object.defineProperty(this, 'isRunning', {
     configurable: true,
     get: function () { return isRunning; },
@@ -151,7 +157,9 @@ function TMViz(div, spec, posTable) {
   this.__spec = spec;
 }
 
-// .step() immediately advances the machine and interrupts any transitions
+/**
+ * Step the machine immediately and interrupt any animations.
+ */
 TMViz.prototype.step = function () {
   if (!this.machine.step()) {
     this.isRunning = false;
@@ -159,6 +167,9 @@ TMViz.prototype.step = function () {
   }
 };
 
+/**
+ * Reset the Turing machine to its starting configuration.
+ */
 TMViz.prototype.reset = function () {
   this.isRunning = false;
   this.isHalted = false;
@@ -176,4 +187,4 @@ Object.defineProperty(TMViz.prototype, 'positionTable', {
   }
 });
 
-exports.TMViz = TMViz;
+module.exports = TMViz;

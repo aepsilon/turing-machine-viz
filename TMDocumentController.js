@@ -1,57 +1,65 @@
 'use strict';
-var TMDocument = require('./TMDocument'),
-    watchInit = require('./watch').watchInit,
-    Storage = require('./Storage'),
+var TMSimulator = require('./TMSimulator'),
+    Parser = require('./Parser'),
+    util = require('./util'),
     ace = require('ace-builds/src-min-noconflict'),
-    d3 = require('d3'),
-    values = require('lodash/fp').values;
-var TMSpecError = TMDocument.TMSpecError;
-var YAMLException = TMDocument.YAMLException;
+    d3 = require('d3');
+var TMSpecError = Parser.TMSpecError;
+var YAMLException = Parser.YAMLException;
 var UndoManager = ace.require('ace/undomanager').UndoManager;
 
 /**
- * Manages and responds to buttons for a TMDocument, and provides a source code editor.
+ * For editing and displaying a TMDocument.
+ * The controller coordinates the interactions between
+ *   1. simulator
+ *   2. code editor
+ *   3. storage
  *
  * All container and button params are required.
  * @param {Object} containers
  *   Empty containers to use (contents will likely be replaced).
- * @param {HTMLDivElement} containers.diagram
+ * @param {HTMLDivElement} containers.simulator
  * @param {HTMLDivElement} containers.editorAlerts
  * @param {HTMLDivElement} containers.editor
  * @param {Object} buttons Buttons to use.
- * @param {HTMLButtonElement} buttons.run
- * @param {HTMLButtonElement} buttons.step
- * @param {HTMLButtonElement} buttons.reset
- * @param {HTMLButtonElement} buttons.load For loading the editor source
- * @param {HTMLButtonElement} buttons.revert For reverting the editor source
- * @param {?string} docID The document ID to open.
+ * @param {HTMLButtonElement} buttons.simulator.run
+ * @param {HTMLButtonElement} buttons.simulator.step
+ * @param {HTMLButtonElement} buttons.simulator.reset
+ * @param {HTMLButtonElement} buttons.editor.load For loading the editor source
+ * @param {HTMLButtonElement} buttons.editor.revert For reverting the editor source
+ * @param {TMDocument} document The document to load from and save to.
  */
-function TMDocumentController(containers, buttons, docID) {
+function TMDocumentController(containers, buttons, document) {
   // FIXME: check for every container and button and throw if any are missing
+  // TODO: check that document param is present
   Object.defineProperties(this, {
     containers: { value: containers },
     buttons: { value: buttons }
   });
 
-  // Set up button event listeners //
-  var self = this;
-  var simButtons = buttons.simulator;
-  simButtons.step
-      .addEventListener('click', function () {
-        self.__document.machine.isRunning = false;
-        self.__document.machine.step(); // each step click corresponds to 1 machine step
-      });
-  simButtons.run
-      .addEventListener('click', function () {
-        self.__document.machine.isRunning = !self.__document.machine.isRunning;
-      });
-  simButtons.reset
-      .addEventListener('click', function () {
-        self.__document.machine.reset();
-      });
-  simButtons.all = values(simButtons);
+  this.simulator = new TMSimulator(containers.simulator, buttons.simulator);
+
+  // Set up ace editor //
+  var editor = ace.edit(containers.editor);
+  Object.defineProperty(this, 'editor', {
+    value: editor,
+    enumerable: true
+  });
+  editor.session.setOptions({
+    mode: 'ace/mode/yaml',
+    tabSize: 2,
+    useSoftTabs: true
+  });
+  editor.setOptions({
+    minLines: 15,
+    maxLines: 50
+  });
+  // suppress warning about
+  // "Automatically scrolling cursor into view after selection change"
+  editor.$blockScrolling = Infinity;
 
   var editorButtons = buttons.editor;
+  var self = this;
   editorButtons.load
       .addEventListener('click', function () {
         self.loadEditorSource();
@@ -63,125 +71,62 @@ function TMDocumentController(containers, buttons, docID) {
         self.editor.focus();
       });
 
-  // Set up ace editor //
-  var editor = ace.edit(containers.editor);
-  editor.setOptions({
-    minLines: 15,
-    maxLines: 50
-  });
-  editor.session.setOptions({
-    mode: 'ace/mode/yaml',
-    tabSize: 2,
-    useSoftTabs: true
-  });
-  // suppress warning about
-  // "Automatically scrolling cursor into view after selection change"
-  editor.$blockScrolling = Infinity;
-  Object.defineProperty(this, 'editor', {
-    value: editor,
-    enumerable: true
-  });
-
-  if (docID != null) { this.openDocumentById(docID); }
-}
-
-//////////////////
-// Open & Close //
-//////////////////
-
-var diagramClass = 'machine-diagram';
-
-// FIXME: load editor even if diagram source was corrupted. display error.
-TMDocumentController.prototype.openDocumentById = function (docID) {
-  if (this._document && this.__document.id === docID) { return; } // same document
-  this.closeCurrentDocument();
-
-  var diagram = d3.select(this.containers.diagram)
-    .append('div').attr('class', diagramClass);
-
-  // FIXME: handle/report errors
-  try {
-    // restore diagram
-    this.__document = TMDocument.openDocument(diagram, docID);
-    this.rebindButtons();
-    // restore editor
-    // FIXME: use tiers. don't use internals.
-    var editorSchema = {editor: {sourceCode: null}};
-    var store = new Storage.SchemaStorage(this.__document.storage.prefix, editorSchema)
-      .withPath(['editor', 'sourceCode']);
-    this.__editorStore = store;
-    var editorSrc = store.read();
-    var isSynced = (editorSrc == null);
-    if (isSynced) { editorSrc = this.__document.sourceCode; }
-    // TODO: preserve cursor position between sessions?
-    this.editor.setValue(editorSrc, -1 /* put cursor at beginning */);
-    this.isSynced = isSynced; // important: editor.setValue first so change doesn't trigger desync
-    // prevent undo-ing to the previous document. note: .reset() doesn't work
-    this.editor.session.setUndoManager(new UndoManager());
-    this.__loadedEditorSelection = null;
-  } catch (e) {
-    // XXX: handle document/diagram source corruption
-    throw e;
-  }
-};
-
-// TODO: confirm exit if save fails
-// XXX: this allows an inconsistent state of having no active document.
-// internal method.
-TMDocumentController.prototype.closeCurrentDocument = function () {
-  // stash data
-  if (this.__document) {
-    if (!this.isSynced) {
-      this.__editorStore.write(this.editor.getValue());
+  Object.defineProperties(this, {
+    __document: {
+      value: {editor: {}}, // dummy document that gets replaced
+      writable: true
     }
-    this.__document.close();
-  }
-  // clean up after stashing
-  this.rebindButtons();
-  this.setAlertErrors([]);
-  this.__document = null;
-  this.containers.diagram.innerHTML = '';
-};
-
-/////////////
-// Buttons //
-/////////////
-
-// these default values can be overridden.
-TMDocumentController.prototype.htmlForRunButton =
-  '<span class="glyphicon glyphicon-play" aria-hidden="true"></span><br>Run';
-TMDocumentController.prototype.htmlForPauseButton =
-  '<span class="glyphicon glyphicon-pause" aria-hidden="true"></span><br>Pause';
-
-// bind: .disabled for Step and Run, and .innerHTML (Run/Pause) for Run
-function rebindStepRun(stepButton, runButton, runHTML, pauseHTML, machine) {
-  function onHaltedChange(isHalted) {
-    stepButton.disabled = isHalted;
-    runButton.disabled = isHalted;
-    return isHalted;
-  }
-  function onRunningChange(isRunning) {
-    runButton.innerHTML = isRunning ? pauseHTML : runHTML;
-    return isRunning;
-  }
-  watchInit(machine, 'isHalted', function (prop, oldval, isHalted) {
-    return onHaltedChange(isHalted);
   });
-  watchInit(machine, 'isRunning', function (prop, oldval, isRunning) {
-    return onRunningChange(isRunning);
-  });
+  this.openDocument(document);
 }
 
-// TODO: disable/enable load machine / revert as editor changes
-TMDocumentController.prototype.rebindButtons = function () {
-  var doc = this.__document;
-  var enable = Boolean(doc && doc.machine);
-  var buttons = this.buttons.simulator;
-  if (enable) {
-    rebindStepRun(buttons.step, buttons.run,
-      this.htmlForRunButton, this.htmlForPauseButton, doc.machine);
-  }
-  buttons.all.forEach(function (b) { b.disabled = !enable; });
+TMDocumentController.prototype.getDocument = function () {
+  return this.__document;
+};
+
+// set the backing document, without saving/loading or affecting the views.
+TMDocumentController.prototype.setBackingDocument = function (doc) {
+  this.__document = doc;
+};
+
+// save the current document, then open another one.
+// does nothing if the document ID is the same.
+TMDocumentController.prototype.openDocument = function (doc) {
+  if (this.getDocument().id === doc.id) { return; } // same document
+  this.save();
+  return this.forceLoadDocument(doc);
+};
+
+// (low-level) load the document. current data is discarded without saving.
+// this can be used to switch from a deleted document or reload a document.
+TMDocumentController.prototype.forceLoadDocument = function (doc) {
+  this.setBackingDocument(doc);
+  var diagramSource = doc.sourceCode;
+  // FIXME: catch and report errors in a panel
+  this.simulator.clear();
+  this.simulator.sourceCode = diagramSource;
+  this.simulator.positionTable = doc.positionTable;
+
+  var editorSource = doc.editorSourceCode;
+  var isSynced = (editorSource == null);
+  this.setEditorValue(isSynced ? diagramSource : editorSource);
+  this.isSynced = isSynced;
+  // prevent undo-ing to the previous document. note: .reset() doesn't work
+  this.editor.session.setUndoManager(new UndoManager());
+};
+
+TMDocumentController.prototype.save = function () {
+  var doc = this.getDocument();
+  // sidenote: if space runs out, this save order lets syncing free up space for another try
+  doc.editorSourceCode = this.isSynced ? undefined : this.editor.getValue();
+  doc.sourceCode = this.simulator.sourceCode;
+  doc.positionTable = this.simulator.positionTable;
+};
+
+// replace null with '', since ace crashes for .setValue(null).
+// ?string -> void
+TMDocumentController.prototype.setEditorValue = function (str) {
+  this.editor.setValue(util.coalesce(str, ''), -1 /* put cursor at start */);
 };
 
 /////////////////////////
@@ -266,17 +211,15 @@ Object.defineProperty(TMDocumentController.prototype, 'isSynced', {
       this.__isSynced = isSynced;
       this.setLoadButtonSuccess(isSynced);
       if (isSynced) {
-        // update storage
-        if (afterInit) {
-          this.__document.stash();
-          this.__editorStore.remove();
-        }
         // changes cause desync
         var onChange = function () {
           this.isSynced = false;
           this.editor.removeListener('change', onChange);
         }.bind(this);
         this.editor.on('change', onChange);
+      }
+      if (afterInit) {
+        this.save();
       }
     }
   },
@@ -288,36 +231,29 @@ Object.defineProperty(TMDocumentController.prototype, 'isSynced', {
 ///////////////////
 
 TMDocumentController.prototype.loadEditorSource = function () {
-  // FIXME: ensure the controller always has a document. otherwise load/revert is broken.
-  var doc = this.__document;
-  if (doc) {
-    // load to diagram, and report any errors
-    var errors = function () {
-      try {
-        doc.sourceCode = this.editor.getValue();
-        this.rebindButtons();
-        // .toJSON() is the only known way to preserve the cursor/selection(s)
-        this.__loadedEditorSelection = this.editor.session.selection.toJSON();
-        this.isSynced = true;
-        return [];
-      } catch (e) {
-        return [e];
-      }
-    }.bind(this)();
-    this.isSynced = (errors.length === 0);
-    this.setAlertErrors(errors);
-  }
+  // load to diagram, and report any errors
+  var errors = function () {
+    try {
+      this.simulator.sourceCode = this.editor.getValue();
+      // .toJSON() is the only known way to preserve the cursor/selection(s)
+      this.__loadedEditorSelection = this.editor.session.selection.toJSON();
+      this.isSynced = true;
+      return [];
+    } catch (e) {
+      return [e];
+    }
+  }.bind(this)();
+  this.isSynced = (errors.length === 0);
+  this.setAlertErrors(errors);
 };
 
 TMDocumentController.prototype.revertEditorSource = function () {
-  if (this.__document.sourceCode) {
-    this.editor.setValue(this.__document.sourceCode, -1);
-    this.setAlertErrors([]);
-    this.isSynced = true;
-  }
+  this.setEditorValue(this.simulator.sourceCode);
+  this.setAlertErrors([]);
+  this.isSynced = true;
   if (this.__loadedEditorSelection) {
     this.editor.session.selection.fromJSON(this.__loadedEditorSelection);
   }
 };
 
-module.exports = exports = TMDocumentController;
+module.exports = TMDocumentController;

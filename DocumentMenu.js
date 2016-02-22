@@ -1,30 +1,40 @@
 'use strict';
-// Sub-controller that manages the document list (view) and document objects (model)
 
 /* global document */
-var TMDocument = require('./TMController').TMDocument,
+var TMDocument = require('./TMDocument'),
     toDocFragment = require('./util').toDocFragment;
 
-// ({menu: HTMLSelectElement, ?group: Node}, DocumentList, ?number,
-//    ?(TMDocument -> HTMLOptionElement)) -> void
-function DocumentMenu(nodes, doclist, selectedIndex, makeOption) {
-  var menu = nodes.menu;
-  var group = nodes.group || menu;
+/**
+ * Document menu controller.
+ * @constructor
+ * @param {Object}  args argument object
+ * @param {HTMLSelectElement}
+ *                  args.menu
+ * @param {?Node}  [args.group=args.menu] Node to add documents to.
+ * @param {string}  args.storageKey
+ * @param {number} [args.selectedIndex=0] Start with this item selected.
+ * @param {?(TMDocument -> HTMLOptionElement)}
+ *                  args.makeOption Customize rendering for each document entry.
+ */
+function DocumentMenu(args) {
+  var menu = args.menu;
+  var storageKey = args.storageKey;
   if (!menu) {
     throw new TypeError('DocumentMenu: missing parameter: menu element');
+  } else if (!storageKey) {
+    throw new TypeError('DocumentMenu: missing parameter: storage key');
   }
-  if (!doclist) {
-    throw new TypeError('DocumentMenu: missing parameter: document list');
+  var doclist = new DocumentList(storageKey);
+  if (args.makeOption) {
+    this.optionFromDocument = args.makeOption;
   }
-  if (makeOption) {
-    this.optionFromDocument = makeOption;
-  }
+  var group = args.group || menu;
   group.appendChild(toDocFragment(doclist.list.map(function (entry) {
     return this.optionFromDocument(new TMDocument(entry.id));
   }, this)));
 
   this.menu = menu;
-  this.menu.selectedIndex = selectedIndex || 0;
+  this.menu.selectedIndex = args.selectedIndex || 0;
   this.group = group;
   this.doclist = doclist;
   // Events
@@ -105,5 +115,65 @@ DocumentMenu.prototype.delete = function () {
   }
   return status;
 };
+
+/////////////////////
+// Document List   //
+// (model/storage) //
+/////////////////////
+
+var Storage = require('./Storage');
+
+// TODO: impl. transactions
+
+// for custom documents.
+function DocumentList(storageKey) {
+  this.storageKey = storageKey;
+  this.readList();
+}
+
+// () -> string
+DocumentList.newID = function () {
+  return String(Date.now());
+};
+
+// internal methods.
+DocumentList.prototype.add = function (docID) {
+  this.__list.unshift({id: docID});
+  this.writeList();
+};
+DocumentList.prototype.readList = function () {
+  this.__list = JSON.parse(Storage.KeyValueStorage.read(this.storageKey)) || [];
+};
+DocumentList.prototype.writeList = function () {
+  Storage.KeyValueStorage.write(this.storageKey, JSON.stringify(this.__list));
+};
+
+DocumentList.prototype.newDocument = function () {
+  var newID = DocumentList.newID();
+  this.add(newID);
+  return new TMDocument(newID);
+};
+
+DocumentList.prototype.duplicate = function (doc) {
+  return this.newDocument().copyFrom(doc);
+};
+
+/**
+ * Behaves like list.splice(index, 1).
+ * @param  {number} index index of the element to delete
+ * @return {boolean} true if an element was removed, false otherwise (index out of bounds)
+ */
+DocumentList.prototype.deleteIndex = function (index) {
+  var deleted = this.__list.splice(index, 1);
+  this.writeList();
+  return (deleted.length > 0);
+};
+
+Object.defineProperties(DocumentList.prototype, {
+  list: {
+    get: function () { return this.__list; },
+    enumerable: true
+  }
+});
 
 module.exports = DocumentMenu;

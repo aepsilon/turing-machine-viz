@@ -3,8 +3,7 @@
 'use strict';
 
 /* eslint-env browser */
-var TMControllerShared = require('./TMController');
-var TMController = TMControllerShared.TMController,
+var TMDocumentController = require('./TMDocumentController'),
     DocumentMenu = require('./DocumentMenu'),
     Examples = require('./Examples'),
     toDocFragment = require('./util').toDocFragment;
@@ -30,7 +29,6 @@ var menu = (function () {
   var docGroup = document.createElement('optgroup');
   docGroup.label = 'Documents';
   select.appendChild(docGroup);
-  var docList = new TMControllerShared.DocumentList('tm.docs');
   // Group: Examples
   var exampleGroup = document.createElement('optgroup');
   exampleGroup.label = 'Examples';
@@ -38,7 +36,12 @@ var menu = (function () {
     DocumentMenu.prototype.optionFromDocument)));
   select.appendChild(exampleGroup);
 
-  return new DocumentMenu({menu: select, group: docGroup}, docList, docIndex);
+  return new DocumentMenu({
+    menu: select,
+    group: docGroup,
+    storageKey: 'tm.docs',
+    selectedIndex: docIndex
+  });
 })();
 
 function openDocument(doc) {
@@ -164,7 +167,7 @@ var controller = function () {
   var sim = document.getElementById('controls-container');
   var ed = editor.parentNode;
 
-  return new TMController({
+  return new TMDocumentController({
     simulator: document.getElementById('machine-container'),
     editorAlerts: document.getElementById('editor-alerts-container'),
     editor: editor
