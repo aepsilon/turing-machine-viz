@@ -9,11 +9,12 @@
     "babel-loader": "^6.2.0",
     "babel-plugin-transform-es2015-template-literals": "^6.3.13",
     "babel-plugin-transform-strict-mode": "^6.3.13",
+    "file-loader": "^0.8.5",
     "webpack": "^1.12.9"
   },
   "scripts": {
-    "depgraph": "madge -t . -x '(build|lib|node_modules)\/' > build/depgraph.gv",
-    "lint": "eslint --cache .",
+    "depgraph": "mkdir -p build/ && madge -t src/ -x '(build|lib|node_modules)/' > build/depgraph.gv",
+    "lint": "eslint --cache src/",
     "watch": "webpack --watch --progress --colors --display-error-details",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

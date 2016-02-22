@@ -142,6 +142,7 @@ function noop() {}
 // }
 
 // *** D3 diagram ***
+require('./StateViz.css');
 
 // TODO: allow multiple diagrams per page? as is, some element IDs would collide.
 

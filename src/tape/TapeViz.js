@@ -1,6 +1,7 @@
 'use strict';
 var Tape = require('./Tape.js'),
     d3   = require('d3');
+require('./tape.css');
 
 var cellWidth = 50;
 var cellHeight = 50;

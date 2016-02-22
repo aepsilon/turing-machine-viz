@@ -3,11 +3,13 @@
 var path = require('path'),
     webpack = require('webpack');
 
+var srcRoot = './src/';
+
 module.exports = {
   // split libraries into multiple chunks for more readable compiled code
   entry: {
-    TMViz: ['./TMViz.js'],
-    main: './main.js'
+    TMViz: [srcRoot + 'TMViz.js'],
+    main: srcRoot + 'main.js'
   },
   output: {
     library: '[name]', // allow console interaction
@@ -43,6 +45,14 @@ module.exports = {
           plugins: ['babel-plugin-transform-es2015-template-literals', 'transform-strict-mode']
         },
         cacheDirectory: true
+      },
+      // copy files verbatim
+      { test: /\.css$/,
+        loader: 'file',
+        query: {
+          name: '[path][name].[ext]',
+          context: srcRoot
+        }
       }
     ]
   }
