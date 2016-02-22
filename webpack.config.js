@@ -6,10 +6,7 @@ var path = require('path'),
 module.exports = {
   // split libraries into multiple chunks for more readable compiled code
   entry: {
-    util: ['./util.js'],
-    TuringMachine: ['./TuringMachine.js'],
-    TapeViz: ['./tape/TapeViz.js'],
-    StateViz: ['./StateViz.js'],
+    TMViz: ['./TMViz.js'],
     main: './main.js'
   },
   output: {
@@ -32,7 +29,8 @@ module.exports = {
       // Each "commons chunk" takes modules shared with any previous chunks,
       // including other commons. Later commons therefore contain the fewest dependencies.
       // For clarity, reverse this to be consistent with browser include order.
-      names: ['util', 'TuringMachine', 'TapeViz', 'StateViz'].reverse()
+      // names: ['util', 'TuringMachine', 'TapeViz', 'StateViz'].reverse()
+      names: ['TMViz'].reverse()
     })
   ],
   module: {
