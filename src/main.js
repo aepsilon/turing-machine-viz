@@ -6,6 +6,7 @@
 var TMDocumentController = require('./TMDocumentController'),
     DocumentMenu = require('./DocumentMenu'),
     Examples = require('./Examples'),
+    download = require('./download'),
     toDocFragment = require('./util').toDocFragment;
 var ace = require('ace-builds/src-min-noconflict');
 var $ = require('jquery'); // for Bootstrap modal dialog events
@@ -13,6 +14,85 @@ var $ = require('jquery'); // for Bootstrap modal dialog events
 // load up front so going offline doesn't break anything
 // (for snippet placeholders, used by "New blank document")
 ace.config.loadModule('ace/ext/language_tools');
+
+// https://github.com/Modernizr/Modernizr/blob/master/feature-detects/a/download.js
+var canUseDownloadAttribute =
+  !window.externalHost && 'download' in document.createElement('a');
+
+// https://bl.ocks.org/mbostock/6466603
+function pngFromSvg(svg) {
+  var canvas = document.createElement('canvas');
+  var context = canvas.getContext('2d');
+
+  var image = new Image();
+  image.src = download.dataURIFromSVG(document.querySelector('svg'));
+  context.drawImage(image, 0, 0);
+  return canvas.toDataURL('image/png');
+}
+
+// FIXME: this is an experiment
+// FIXME: factor out into download-dialog.js, pass in container params.
+if (canUseDownloadAttribute) {
+  // var sharingDialog = document.getElementById('sharingDialog');
+  var container = document.querySelector('#sharingDialog .modal-body');
+  (function () {
+    var link = document.createElement('a');
+    link.className = 'btn btn-default';
+    link.href = '#';
+    link.textContent = 'Download SVG';
+    link.addEventListener('click', function () {
+      link.href = download.dataURIFromSVG(document.querySelector('svg'));
+      link.download = menu.currentOption.text;
+      link.target = '_blank';
+      setTimeout(function () {
+        link.href = '#'; // release memory after download
+        // XXX:
+        // link.removeAttribute('target');
+      }, 0);
+    });
+    container.appendChild(link);
+  })();
+  container.appendChild(document.createTextNode(' '));
+  (function () {
+    var link = document.createElement('a');
+    link.className = 'btn btn-default';
+    link.href = '#';
+    link.textContent = 'Download PNG';
+    link.addEventListener('click', function () {
+      link.href = pngFromSvg(document.querySelector('svg'));
+      link.download = menu.currentOption.text;
+      link.target = '_blank';
+      setTimeout(function () {
+        link.href = '#'; // release memory after download
+        // XXX:
+        // link.removeAttribute('target');
+      }, 0);
+    });
+    container.appendChild(link);
+  })();
+  container.appendChild(document.createTextNode(' '));
+  (function () {
+    var link = document.createElement('a');
+    link.href = '#';
+    link.className = 'btn btn-default';
+    link.textContent = 'Download Document';
+    link.addEventListener('click', function () {
+      link.href = 'data:application/x-yaml;,' +
+        encodeURIComponent(download.stringifyDocument(menu.currentDocument));
+      link.download = menu.currentOption.text + '.yaml';
+      setTimeout(function () {
+        link.href = '#'; // release memory after download
+        link.removeAttribute('download');
+      }, 0);
+    });
+    container.appendChild(link);
+  })();
+
+} else {
+  var div = document.createElement('div');
+  div.textContent = 'Error: a[download] not supported';
+  document.body.appendChild(div);
+}
 
 //////////
 // Main //
@@ -193,3 +273,5 @@ window.addEventListener('beforeunload', function () {
 
 // For interaction/debugging
 exports.controller = controller;
+
+exports.download = download;

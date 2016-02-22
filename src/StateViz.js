@@ -160,8 +160,13 @@ function visualizeState(svg, nodeArray, linkArray) {
 
   var colors = d3.scale.category10();
 
-  svg.attr({'width': w,
-            'height': h});
+  svg.attr({
+    'width': w,
+    'height': h,
+    'version': '1.1',
+    ':xmlns': 'http://www.w3.org/2000/svg',
+    ':xmlns:xlink': 'http://www.w3.org/1999/xlink'
+  });
 
   // Force Layout
 
