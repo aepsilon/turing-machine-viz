@@ -15,6 +15,10 @@ var $ = require('jquery'); // for Bootstrap modal dialog events
 // (for snippet placeholders, used by "New blank document")
 ace.config.loadModule('ace/ext/language_tools');
 
+/////////////////////
+// Import & Export //
+/////////////////////
+
 // https://github.com/Modernizr/Modernizr/blob/master/feature-detects/a/download.js
 var canUseDownloadAttribute =
   !window.externalHost && 'download' in document.createElement('a');
@@ -25,73 +29,99 @@ function pngFromSvg(svg) {
   var context = canvas.getContext('2d');
 
   var image = new Image();
-  image.src = download.dataURIFromSVG(document.querySelector('svg'));
+  image.src = download.dataURIFromSVG(svg);
   context.drawImage(image, 0, 0);
   return canvas.toDataURL('image/png');
 }
 
 // FIXME: this is an experiment
 // FIXME: factor out into download-dialog.js, pass in container params.
-if (canUseDownloadAttribute) {
-  // var sharingDialog = document.getElementById('sharingDialog');
-  var container = document.querySelector('#sharingDialog .modal-body');
-  (function () {
-    var link = document.createElement('a');
-    link.className = 'btn btn-default';
-    link.href = '#';
-    link.textContent = 'Download SVG';
-    link.addEventListener('click', function () {
-      link.href = download.dataURIFromSVG(document.querySelector('svg'));
-      link.download = menu.currentOption.text;
-      link.target = '_blank';
-      setTimeout(function () {
-        link.href = '#'; // release memory after download
-        // XXX:
-        // link.removeAttribute('target');
-      }, 0);
-    });
-    container.appendChild(link);
-  })();
-  container.appendChild(document.createTextNode(' '));
-  (function () {
-    var link = document.createElement('a');
-    link.className = 'btn btn-default';
-    link.href = '#';
-    link.textContent = 'Download PNG';
-    link.addEventListener('click', function () {
-      link.href = pngFromSvg(document.querySelector('svg'));
-      link.download = menu.currentOption.text;
-      link.target = '_blank';
-      setTimeout(function () {
-        link.href = '#'; // release memory after download
-        // XXX:
-        // link.removeAttribute('target');
-      }, 0);
-    });
-    container.appendChild(link);
-  })();
-  container.appendChild(document.createTextNode(' '));
-  (function () {
-    var link = document.createElement('a');
-    link.href = '#';
-    link.className = 'btn btn-default';
-    link.textContent = 'Download Document';
-    link.addEventListener('click', function () {
-      link.href = 'data:application/x-yaml;,' +
-        encodeURIComponent(download.stringifyDocument(menu.currentDocument));
-      link.download = menu.currentOption.text + '.yaml';
-      setTimeout(function () {
-        link.href = '#'; // release memory after download
-        link.removeAttribute('download');
-      }, 0);
-    });
-    container.appendChild(link);
-  })();
+(function () {
+  if (canUseDownloadAttribute) {
+    // var sharingDialog = document.getElementById('sharingDialog');
+    var container = document.querySelector('#sharingDialog .modal-body');
+    (function () {
+      var link = document.createElement('a');
+      link.className = 'btn btn-default';
+      link.href = '#';
+      link.textContent = 'Download SVG';
+      link.addEventListener('click', function () {
+        link.href = download.dataURIFromSVG(document.querySelector('svg'));
+        link.download = menu.currentOption.text;
+        link.target = '_blank';
+        setTimeout(function () {
+          link.href = '#'; // release memory after download
+          // XXX:
+          // link.removeAttribute('target');
+        }, 0);
+      });
+      container.appendChild(link);
+    })();
+    container.appendChild(document.createTextNode(' '));
+    (function () {
+      var link = document.createElement('a');
+      link.className = 'btn btn-default';
+      link.href = '#';
+      link.textContent = 'Download PNG';
+      link.addEventListener('click', function () {
+        link.href = pngFromSvg(document.querySelector('svg'));
+        link.download = menu.currentOption.text;
+        link.target = '_blank';
+        setTimeout(function () {
+          link.href = '#'; // release memory after download
+          // XXX:
+          // link.removeAttribute('target');
+        }, 0);
+      });
+      container.appendChild(link);
+    })();
+    container.appendChild(document.createTextNode(' '));
+    (function () {
+      var link = document.createElement('a');
+      link.href = '#';
+      link.className = 'btn btn-default';
+      link.textContent = 'Download Document';
+      link.addEventListener('click', function () {
+        // TODO: save upon opening the menu instead?
+        controller.save();
+        link.href = 'data:application/x-yaml;,' +
+          encodeURIComponent(download.stringifyDocument(menu.currentDocument));
+        link.download = menu.currentOption.text + '.yaml';
+        setTimeout(function () {
+          link.href = '#'; // release memory after download
+          link.removeAttribute('download');
+        }, 0);
+      });
+      container.appendChild(link);
+    })();
 
-} else {
-  var div = document.createElement('div');
-  div.textContent = 'Error: a[download] not supported';
-  document.body.appendChild(div);
+  } else {
+    var div = document.createElement('div');
+    div.textContent = 'Error: a[download] not supported';
+    document.body.appendChild(div);
+  }
+
+  window.addEventListener('load', function () {
+    var textarea = document.getElementById('importBox');
+    var button = document.getElementById('importButton');
+    button.addEventListener('click', function () {
+      try {
+        importDocument(download.parseDocument(textarea.value));
+      } catch (error) {
+        alert('Could not import document. An error occurred: ' + error);
+        throw error;
+      }
+    });
+  });
+}());
+
+// throws if missing .sourceCode or .sourceCode is invalid
+function importDocument(obj) {
+  if (obj == null || obj.sourceCode == null) {
+    throw new TypeError('missing source code');
+  }
+  controller.openDocument(menu.duplicate(obj, {select: true}));
+  refreshEditMenu();
 }
 
 //////////
