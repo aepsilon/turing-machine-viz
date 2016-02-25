@@ -168,7 +168,8 @@ refreshEditMenu();
 // only swap out the storage backing; don't affect views or undo history
 function duplicateDocument() {
   controller.save();
-  controller.setBackingDocument(menu.duplicate({select: true}));
+  controller.setBackingDocument(
+    menu.duplicate(menu.currentDocument, {select: true}));
   refreshEditMenu();
 }
 
@@ -230,7 +231,7 @@ document.getElementById('tm-doc-action-delete').addEventListener('click', delete
 // Reset Example
 var discardReset = deleteDocument;
 function saveReset() {
-  menu.duplicate({select: false});
+  menu.duplicate(menu.currentDocument, {select: false});
   menu.delete();
   controller.forceLoadDocument(menu.currentDocument);
 }

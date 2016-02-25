@@ -94,8 +94,8 @@ DocumentMenu.prototype.newDocument = function (opts) {
 
 // Methods about Current Document
 
-DocumentMenu.prototype.duplicate = function (opts) {
-  return this.__prepend(this.doclist.duplicate(this.currentDocument), opts);
+DocumentMenu.prototype.duplicate = function (doc, opts) {
+  return this.__prepend(this.doclist.duplicate(doc), opts);
 };
 
 DocumentMenu.prototype.rename = function (name) {
