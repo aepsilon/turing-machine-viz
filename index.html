@@ -26,6 +26,8 @@
     </script>
     <script src='lib/lodash.fp.js'></script>
     <script src='lib/js-yaml.min.js' charset='utf-8'></script>
+    <script src="https://cdn.jsdelivr.net/es6-promise/3.1.2/es6-promise.min.js"
+    crossorigin="anonymous" integrity="sha256-ISoFmwQtUj8LXr8rJvXbSEX2Z76LgRxRa+F6Rh6OMRA="></script>
 
     <script src='build/TMViz.bundle.js' charset='utf-8'></script>
     <link href='build/StateViz.css' rel='stylesheet' />
@@ -433,19 +435,38 @@ table:
           GitHub link here.
         </div>
       </div>
+      <hr>
       <div class="row">
         <div class="col-sm-6">
-        <div class="form-group">
-          <label for="importBox">Import Document</label>
-          <textarea id="importBox" class="form-control" rows="30" cols="60"></textarea>
-          <p class="help-block">Copy &amp; paste the document here.</p>
-        </div>
-        <button id="importButton" class="btn btn-default" type="button" name="button">Import</button>
+          <div class="form-group">
+            <label for="importBox">Import Document</label>
+            <textarea id="importBox" class="form-control" rows="30" cols="60"
+            placeholder="Copy &amp; paste the document here."></textarea>
+          </div>
+          <button id="importButton" class="btn btn-default" type="button" name="button">Import</button>
         </div>
       </div>
     </div>
 
     <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+
+    <!-- Dialog for Import -->
+    <div id="importDialog" class="modal fade" tabindex="-1" role="dialog"
+    aria-labelledby="importDialogHeader">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="importDialogHeader">Importing document</h4>
+          </div>
+          <div class="modal-body">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

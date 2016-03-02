@@ -11,6 +11,10 @@ var TMDocumentController = require('./TMDocumentController'),
 var ace = require('ace-builds/src-min-noconflict');
 var $ = require('jquery'); // for Bootstrap modal dialog events
 
+require('./sharing').init({
+  importDocument: importDocument
+});
+
 // load up front so going offline doesn't break anything
 // (for snippet placeholders, used by "New blank document")
 ace.config.loadModule('ace/ext/language_tools');
@@ -118,7 +122,7 @@ function pngFromSvg(svg) {
 // throws if missing .sourceCode or .sourceCode is invalid
 function importDocument(obj) {
   if (obj == null || obj.sourceCode == null) {
-    throw new TypeError('missing source code');
+    throw new TypeError('missing "source code" value');
   }
   controller.openDocument(menu.duplicate(obj, {select: true}));
   refreshEditMenu();
