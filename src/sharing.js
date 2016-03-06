@@ -1,11 +1,16 @@
 'use strict';
 
+// XXX: temporary while WIP
+/* eslint no-unused-vars: 1 */
 /* eslint-env browser */
 /* global Promise */
 var download = require('./download');
-var $ = require('jquery'),
-    _ = require('lodash/fp');
-    // d3 = require('d3');
+var $ = require('jquery');
+var _ = require('lodash/fp');
+var d3 = require('d3');
+var YAMLException = require('./Parser').YAMLException;
+
+var CheckboxTable = require('./CheckboxTable');
 
 function decodeFormURLComponent(str) {
   return decodeURIComponent(str.replace('+', ' '));
@@ -61,11 +66,6 @@ ImportError.prototype.constructor = ImportError;
 // Prototype 1 //
 /////////////////
 
-/**
- * This iteration:
- * import 1 file, setTimeout simulate delay,
- * cancellable dialog, show errors (404)
- */
 function resetURL() {
   try {
     history.replaceState(null, null, '/');
@@ -78,20 +78,136 @@ function showImportDialog() {
   return $('#importDialog').modal({keyboard: false});
 }
 
-// TODO: limit file size
-var getFiles = _.flow(
-  _.property('files'),
-  _.filter(function (file) {
-    return file.language === 'YAML' && !file.truncated;
-  })
-);
-
-// from http://exploringjs.com/es6/ch_promises.html
-function delay(ms) {
-  return new Promise(function (resolve) {
-    setTimeout(resolve, ms);
+function delayCancellable(ms) {
+  var cancel;
+  var result = new Promise(function (resolve, reject) {
+    var id = setTimeout(resolve, ms);
+    cancel = function () {
+      clearTimeout(id);
+      reject();
+    };
   });
+  result.cancel = cancel;
+  return result;
 }
+
+// throws if "source code" attribute is missing or not a string
+// string -> TMData
+function parseDocument(str) {
+  var obj = download.parseDocument(str);
+  if (obj == null || obj.sourceCode == null) {
+    throw new TypeError('missing "source code" value');
+  } else if (!_.isString(obj.sourceCode)) {
+    throw new TypeError('"source code" value needs to be of type string');
+  }
+  return obj;
+}
+
+// type TMData = {source code: string}
+// type GistFile = {filename: string, size: number, content: string}
+// type GistDoc = {filename: string, size: number, document: TMData}
+// [GistFile] -> {documents: [GistDoc], other: GistFile}
+function parseFiles(files, sizelimit) {
+  // return file.language === 'YAML' && !file.truncated;
+  var documents = [];
+  var invalid = {wrongType: [], tooLarge: [], badYAML: [], badDoc: [], otherError: []};
+  files.forEach(function (file) {
+    var name = file.filename; // eslint-disable-line no-shadow
+    if (file.language !== 'YAML') {
+      invalid.wrongType.push(name);
+    } else if (file.truncated || file.size > sizelimit) {
+      invalid.tooLarge.push(name);
+    } else {
+      try {
+        documents.push({
+          filename: name,
+          size: file.size,
+          document: parseDocument(file.content)
+        });
+      } catch (e) {
+        if (e instanceof YAMLException) {
+          invalid.badYAML.push(name);
+        } else if (invalid instanceof TypeError) {
+          invalid.badDoc.push(name);
+        } else {
+          invalid.otherError.push(name);
+        }
+      }
+    }
+  });
+  // TODO: d3 nest by error key. {reason: 'Not YAML'}, {reason: 'Too large'}..
+  return {documentFiles: documents, invalid: invalid};
+}
+
+// 12.0 KB
+function showSizeKB(n) {
+  return (Math.ceil(10*n/1024)/10).toFixed(1) + ' KB';
+}
+
+function listNondocuments(nondocs, div) {
+  if (nondocs.wrongType.length) {
+    var typediv = div.append('div');
+    typediv.append('h5').text('Not YAML files (.yaml or .yml):');
+    typediv.append('span').text(nondocs.wrongType.join(', '));
+  }
+  // TODO: other errors
+}
+
+/*
+ v0. SYNChronous import.
+ FIXME: filter & parse before switch case; don't have empty or 1-element tables
+ */
+function pickMultiple0(args) {
+  var docFiles = args.documentFiles, nondocs = args.nondocuments, dialog = args.dialog; //, callback = args.callback;
+
+  var tabledata = docFiles.map(function (doc) {
+    return [doc.filename, showSizeKB(doc.size)];
+  });
+  // Dialog body
+  var dialogBody = dialog.select('.modal-body')
+      .html('');
+  dialogBody.append('p')
+    .append('strong').text('Select documents to import');
+  var table = dialogBody.append('table')
+    .attr({class: 'table table-hover'});
+  var ctable = new CheckboxTable({
+    table: table,
+    headers: ['Filename', 'Size'],
+    data: tabledata
+  });
+  listNondocuments(nondocs, dialogBody.append('div'));
+  // Dialog "Import" button
+  dialog.select('.modal-footer')
+    .append('button')
+      .attr({
+        type: 'button',
+        class: 'btn btn-success'
+      })
+      .text('List checked')
+      .on('click', function () {
+        dialogBody.append('pre')
+          .text(ctable.getCheckedValues().join('\n'));
+      });
+  dialog.select('.modal-footer')
+    .append('button')
+      .attr({
+        type: 'button',
+        class: 'btn btn-primary'
+      })
+      .text('Import')
+      .on('click', function () {
+        importDocuments(docFiles.map(_.property('document')));
+      });
+}
+
+var MAX_FILESIZE = 400 * 1000;
+
+function importDocuments(docs) {
+  docs.concat().reverse().map(importDocument);
+}
+
+// FIXME: remove this hack
+var importDocument;
 
 // TODO: bring up dialog for multiple files
 // FIXME: handle and report 404, no YAML files, etc.
@@ -99,7 +215,7 @@ function delay(ms) {
 // Could not import gist. An error occurred:
 // [object Object]
 function init(imports) {
-  var importDocument = _.flow(download.parseDocument, imports.importDocument);
+  importDocument = imports.importDocument;
 
   $(function () {
     // Read Gist ID
@@ -110,11 +226,12 @@ function init(imports) {
     }
     // Fetch Gist
     // FIXME:
-    var req = delay(5000).then(_.constant(getGist(gistID)));
-    // var req = getGist(gistID);
+    var delayed = delayCancellable(4000);
+    // var req = delayed.then(_.constant(getGist(gistID)));
+    var req = getGist(gistID);
     function cancel() {
-      // req.xhr.abort();
       try {
+        delayed.cancel();
         req.xhr.abort();
       } catch (e) {
         // do nothing
@@ -139,19 +256,25 @@ function init(imports) {
     setDialogHTML('Retrieving ' + linkHTML + '&hellip;');
     // Process request
     req.then(function pickFiles(data) {
-      var files = getFiles(data);
-      switch (files.length) {
+      var parsed = parseFiles(_.values(data.files), MAX_FILESIZE);
+      var docFiles = parsed.documentFiles;
+      switch (docFiles.length) {
         case 0:
           throw new ImportError('no suitable files');
         case 1:
-          importDocument(files[0].content);
+          importDocument(docFiles[0].document);
           dialog.modal('hide');
           return;
         default:
-          throw new ImportError('importing multiple files simulatneously is not yet supported.');
+          pickMultiple0({
+            documentFiles: docFiles,
+            nondocuments: parsed.invalid,
+            dialog: d3.select(dialog[0])
+          });
+          // throw new ImportError('importing multiple files at once is not yet supported.');
       }
     })
-    .then(cleanup)
+    // .then(cleanup)
     .catch(function (reason) {
       // console.warn(reason);
       var xhr = reason.xhr;

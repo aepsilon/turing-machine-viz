@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>proving grounds</title>
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+  </head>
+  <body>
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+
+    <!-- Dialog for Import -->
+    <div id="importDialog" class="modal fade" tabindex="-1" role="dialog"
+    aria-labelledby="importDialogHeader">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="importDialogHeader">Importing document</h4>
+          </div>
+          <div class="modal-body">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <button type="button" class="btn btn-default"
+      data-toggle="modal" data-target="#importDialog">
+        Open modal
+      </button>
+
+      <script src='lib/d3.js' charset='utf-8'></script>
+      <script src='lib/lodash.js'></script>
+      <script>
+        var lodash = _;
+      </script>
+      <script src='lib/lodash.fp.js'></script>
+      <script src='lib/js-yaml.min.js' charset='utf-8'></script>
+
+      <script src='lib/ace-builds/src-min-noconflict/ace.js' charset='utf-8'></script>
+
+      <script src="build/TMViz.bundle.js" charset="utf-8"></script>
+      <script src="build/CheckboxTable.bundle.js" charset="utf-8"></script>
+
+      <style>
+        tr > :first-child {
+          text-align: right
+        }
+        tr > :last-child {
+          text-align: right;
+        }
+        tbody tr, input[type="checkbox"] {
+          cursor: pointer;
+        }
+        textarea {
+          font-family: 'Source Code Pro', Consolas, Menlo, Courier New, monospace;
+        }
+      </style>
+      <script type="text/javascript">
+      $(function() {
+        'use strict';
+        // Dialog
+        $('#importDialog').find('.modal-body').html(
+          '<p><strong>No GitHub gist exists with that ID.</strong>'
+          + '<br>It’s possible the ID is incorrect, or the gist was deleted.</p>'
+          + '<br>Requested URL: ' + '<a href="#">https://gist.github.com/example</a>'
+        );
+        // Table
+        function demo() {
+          var demoheaders = ['Filename', 'Size'];
+          var demodata = [
+            ['div3.yaml', '342 KB'],
+            ['match.yaml', '8 KB'],
+            ['palindrome.yaml', '20 KB']
+          ];
+
+          var container = d3.select('div.container');
+          var table = container.append('table')
+              .attr('class', 'table table-hover');
+          var button = container.append('button')
+              .attr('class', 'btn btn-default')
+              .text('Display in table')
+              .on('click', function () {
+                // var data = jsyaml.safeLoad(textarea.property('value'));
+                var data = jsyaml.safeLoad(editor.getValue());
+                if (!(data instanceof Array)) {
+                  alert('Data needs to be an array');
+                  return;
+                }
+                ctable.setData(data);
+              });
+          // var textarea = container.append('textarea')
+          //     .attr({
+          //       cols: 60
+          //       // class: 'form-control'
+          //     });
+          // textarea.property('value', jsyaml.safeDump(demodata));
+          var editor = ace.edit(container
+            .append('div').attr('class', 'form-control').node()
+          );
+          editor.setValue(jsyaml.safeDump(demodata));
+          editor.session.setOptions({
+            mode: 'ace/mode/yaml',
+            tabSize: 2,
+            useSoftTabs: true
+          });
+          editor.setOptions({
+            minLines: 15,
+            maxLines: 50
+          });
+
+          var ctable = new CheckboxTable({
+            table: table,
+            headers: demoheaders,
+            data: demodata
+          });
+        }
+        demo();
+      });
+      </script>
+    </div>
+  </body>
+</html>
