@@ -33,14 +33,6 @@
     <link href='build/StateViz.css' rel='stylesheet' />
     <link href='build/tape/tape.css' rel='stylesheet' />
     <style>
-    /*
-    .btn-reset {
-      float: left;
-    }
-    .btn-positioning {
-      float: right;
-    }
-    */
     body {
       font-variant-ligatures: contextual;
     }
@@ -452,6 +444,34 @@ table:
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
 
     <!-- Dialog for Import -->
+    <style>
+      .checkbox-table tr > :first-child {
+        text-align: right
+      }
+      .checkbox-table tr > :last-child {
+        text-align: right;
+      }
+      .checkbox-table tbody tr, input[type="checkbox"] {
+        cursor: pointer;
+      }
+
+      a.disclosure-triangle {
+        cursor: pointer;
+        text-decoration: none;
+      }
+      a.disclosure-triangle:before {
+        content: '▸';
+        transform: rotate(90deg);
+        transform-origin: center;
+        transition: transform 0.1s linear;
+        display: inline-block;
+        font-size: larger;
+        margin-right: 0.2em;
+      }
+      a.disclosure-triangle.collapsed:before {
+        transform: none;
+      }
+    </style>
     <div id="importDialog" class="modal fade" tabindex="-1" role="dialog"
     aria-labelledby="importDialogHeader">
       <div class="modal-dialog" role="document">

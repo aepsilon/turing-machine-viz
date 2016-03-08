@@ -52,19 +52,278 @@
       <script src="build/CheckboxTable.bundle.js" charset="utf-8"></script>
 
       <style>
-        tr > :first-child {
+        .checkbox-table tr > :first-child {
           text-align: right
         }
-        tr > :last-child {
+        .checkbox-table tr > :last-child {
           text-align: right;
         }
-        tbody tr, input[type="checkbox"] {
+        .checkbox-table tbody tr, input[type="checkbox"] {
           cursor: pointer;
         }
         textarea {
           font-family: 'Source Code Pro', Consolas, Menlo, Courier New, monospace;
         }
       </style>
+      <!-- Collapse Panel -->
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">
+            <a data-toggle="collapse" href="#collapseOne">
+              Show other files
+            </a>
+          </h4>
+        </div>
+        <div id="collapseOne" class="panel-collapse collapse in">
+          <div class="panel-body">
+            <q>readme.md</q>, <q>hello world.txt</q>
+          </div>
+        </div>
+      </div>
+      <!-- Collapse Disclosure Triangle -->
+      <style media="screen">
+        /*a.show-other.collapsed:before {
+          content: '▸'
+        }
+        a.show-other:before {
+          content: '▾';
+          width: 0.8em;
+          display: inline-block;
+          font-size: larger;
+        }*/
+        a.disclosure-triangle {
+          cursor: pointer;
+          text-decoration: none;
+        }
+        a.disclosure-triangle:before {
+          content: '▸';
+          transform: rotate(90deg);
+          transform-origin: center;
+          transition: transform 0.1s linear;
+          display: inline-block;
+          font-size: larger;
+          margin-right: 0.2em;
+        }
+        a.disclosure-triangle.collapsed:before {
+          transform: none;
+        }
+      </style>
+      <a class="disclosure-triangle" role="button" data-toggle="collapse" href="#otherFiles2">
+        Show other files
+      </a>
+      <div id="otherFiles2" class="panel-collapse collapse in">
+        <div class="panel-body">
+          <q>readme.md</q>, <q>hello world.txt</q>
+        </div>
+      </div>
+
+      <a class="disclosure-triangle" role="button" data-toggle="collapse" href="#otherFiles3">
+        Show other files
+      </a>
+      <div id="otherFiles3" class="collapse in">
+        <div class="well">
+          <q>readme.md</q>, <q>hello world.txt</q>
+        </div>
+      </div>
+
+      <a class="disclosure-triangle" role="button" data-toggle="collapse" href="#otherFiles4">
+        Show other files
+      </a>
+      <div id="otherFiles4" class="collapse in">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Not a valid document</h3>
+          </div>
+          <div class="panel-body">
+            <table class="table">
+              <thead>
+                <tr> <th> Filename </th> <th> Reason </th> </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>palindrome.yaml</td><td>missing <code>source code:</code> value</td>
+                </tr>
+                <tr>
+                  <td>match.yaml</td><td><code>source code:</code> value was not a string type</td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h3 class="panel-title">Not valid YAML</h3>
+              </div>
+              <div class="panel-body">
+           <table class="table">
+             <thead>
+               <tr> <th> Filename </th> <th> Details </th> </tr>
+             </thead>
+             <tbody>
+               <tr>
+                 <td>powers of two.yaml</td>
+                 <td>
+                   <p>YAML syntax error</p>
+               <pre>
+can not read a block mapping entry; a multiline key may not be an implicit key at line 3, column 12:
+start state: q0
+          ^</pre>
+                 </td>
+               </tr>
+               <tr>
+                 <td>a very long filename says hello world.yaml</td>
+
+                 <td>
+<pre>
+bad indentation of a mapping entry at line 7, column 6:
+    1: {R: q1}
+    ^</pre>
+                </td>
+               </tr>
+             </tbody>
+           </table>
+                <div class="panel panel-default">
+                  <div class="panel-heading">
+                    <h3 class="panel-title">Different file extension (not <code>.yaml</code>/<code>.yml</code>)</h3>
+                  </div>
+                  <div class="panel-body">
+                    <q>readme.md</q>, <q>hello world.txt</q>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- non-nested panels -->
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Not a valid document</h3>
+        </div>
+        <div class="panel-body">
+          <table class="table">
+            <thead>
+              <tr> <th> Filename </th> <th> Reason </th> </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>palindrome.yaml</td><td>missing <code>source code:</code> value</td>
+              </tr>
+              <tr>
+                <td>match.yaml</td><td><code>source code:</code> value was not a string type</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Not valid YAML</h3>
+        </div>
+        <div class="panel-body">
+         <table class="table">
+           <thead>
+             <tr> <th> Filename </th> <th> Details </th> </tr>
+           </thead>
+           <tbody>
+             <tr>
+               <td>powers of two.yaml</td>
+               <td>
+                 <p>YAML syntax error</p>
+         <pre>
+can not read a block mapping entry; a multiline key may not be an implicit key at line 3, column 12:
+start state: q0
+    ^</pre>
+               </td>
+             </tr>
+             <tr>
+               <td>a very long filename says hello world.yaml</td>
+
+               <td>
+<pre>
+bad indentation of a mapping entry at line 7, column 6:
+1: {R: q1}
+^</pre>
+              </td>
+             </tr>
+           </tbody>
+         </table>
+
+        </div>
+      </div>
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Different file extension (not <code>.yaml</code>/<code>.yml</code>)</h3>
+        </div>
+        <div class="panel-body">
+          <q>readme.md</q>, <q>hello world.txt</q>
+        </div>
+      </div>
+      <!-- non-nested panels w/ table integrated (no panel-body) -->
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Not a valid document</h3>
+        </div>
+        <div class="panel-body">
+          These files were parsed as valid YAML but they can't be imported.
+          They are probably intended for other applications.
+        </div>
+          <table class="table">
+            <thead>
+              <tr> <th> Filename </th> <th> Reason </th> </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>palindrome.yaml</td><td>missing <code>source code:</code> value</td>
+              </tr>
+              <tr>
+                <td>match.yaml</td><td><code>source code:</code> value was not a string type</td>
+              </tr>
+            </tbody>
+          </table>
+      </div>
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">Not valid YAML</h4>
+        </div>
+         <table class="table">
+           <thead>
+             <tr> <th> Filename </th> <th> Reported syntax error </th> </tr>
+           </thead>
+           <tbody>
+             <tr>
+               <td>powers of two.yaml</td>
+               <td>
+         <pre>
+can not read a block mapping entry; a multiline key may not be an implicit key at line 3, column 12:
+start state: q0
+           ^</pre>
+               </td>
+             </tr>
+             <tr>
+               <td>a very long filename says hello world.yaml</td>
+
+               <td>
+<pre>
+bad indentation of a mapping entry at line 7, column 6:
+    1: {R: q1}
+     ^</pre>
+              </td>
+             </tr>
+           </tbody>
+         </table>
+        </div>
+        <div class="panel panel-default file-extension-panel">
+          <div class="panel-heading">
+            <h5 class="panel-title">Different file extension (not <code>.yaml</code>/<code>.yml</code>)</h5>
+          </div>
+          <div class="panel-body">
+            <ul class="list-inline">
+              <li>readme.md</li>
+              <li>hello world.txt</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
       <script type="text/javascript">
       $(function() {
         'use strict';
@@ -80,6 +339,8 @@
           var demodata = [
             ['div3.yaml', '342 KB'],
             ['match.yaml', '8 KB'],
+            ['add.yaml', '3 KB'],
+            ['multiply.yaml', '4 KB'],
             ['palindrome.yaml', '20 KB']
           ];
 

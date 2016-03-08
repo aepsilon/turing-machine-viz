@@ -75,7 +75,7 @@ function resetURL() {
 }
 
 function showImportDialog() {
-  return $('#importDialog').modal({keyboard: false});
+  return $('#importDialog').modal({backdrop: 'static', keyboard: false});
 }
 
 function delayCancellable(ms) {
@@ -144,11 +144,48 @@ function showSizeKB(n) {
   return (Math.ceil(10*n/1024)/10).toFixed(1) + ' KB';
 }
 
-function listNondocuments(nondocs, div) {
+function appendPanel(div, titleHTML) {
+  var panel = div.append('div')
+      .attr('class', 'panel panel-default');
+  panel.append('div')
+      .attr('class', 'panel-heading')
+    .append('h5')
+      .attr('class', 'panel-title')
+      .html(titleHTML);
+  return panel;
+}
+
+function listNondocuments(nondocs, dialogBody) {
+  if (_.values(nondocs).every(_.isEmpty)) {
+    return;
+  }
+  // Disclosure triangle
+  var collapseId = 'nondocument-files';
+  dialogBody.append('a')
+      .attr({
+        href: '#'+collapseId,
+        class: 'disclosure-triangle collapsed',
+        role: 'button',
+        'data-toggle': 'collapse'
+      })
+      .text('Show other files');
+  var container = dialogBody.append('div')
+      .attr({
+        id: collapseId,
+        class: 'panel-collapse collapse'
+      });
+  // Errors by type
   if (nondocs.wrongType.length) {
-    var typediv = div.append('div');
-    typediv.append('h5').text('Not YAML files (.yaml or .yml):');
-    typediv.append('span').text(nondocs.wrongType.join(', '));
+    var panel = appendPanel(container,
+      'Different file extension (not <code>.yaml</code>/<code>.yml</code>)');
+    panel.append('div')
+        .attr('class', 'panel-body')
+      .append('ul')
+        .attr('class', 'list-inline')
+      .selectAll('li')
+        .data(nondocs.wrongType)
+      .enter().append('li')
+        .text(_.identity);
   }
   // TODO: other errors
 }
@@ -169,7 +206,7 @@ function pickMultiple0(args) {
   dialogBody.append('p')
     .append('strong').text('Select documents to import');
   var table = dialogBody.append('table')
-    .attr({class: 'table table-hover'});
+    .attr({class: 'table table-hover checkbox-table'});
   var ctable = new CheckboxTable({
     table: table,
     headers: ['Filename', 'Size'],
