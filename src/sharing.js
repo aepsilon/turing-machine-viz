@@ -62,6 +62,43 @@ function ImportError(message) {
 ImportError.prototype = Object.create(Error.prototype);
 ImportError.prototype.constructor = ImportError;
 
+///////////////////
+// Import Dialog //
+///////////////////
+
+// requires an existing dialog in the DOM
+function ImportDialog(dialogNode) {
+  this.node = dialogNode;
+  this.bodyNode = dialogNode.querySelector('.modal-body');
+  this.$dialog = $(dialogNode)
+    .one('hide.bs.modal', this.__onClose.bind(this));
+}
+
+// internal event handler.
+ImportDialog.prototype.__onClose = function () {
+  this.onClose();
+  this.setBodyHTML('');
+  // XXX: also clear footer. prevent leaks.
+};
+
+// configurable
+ImportDialog.prototype.onClose = function () {
+};
+
+ImportDialog.prototype.show = function () {
+  this.$dialog.modal({backdrop: 'static', keyboard: false});
+};
+
+ImportDialog.prototype.close = function () {
+  this.$dialog.modal('hide');
+};
+
+ImportDialog.prototype.setBodyHTML = function (html) {
+  this.bodyNode.innerHTML = html;
+  d3.selectAll(this.bodyNode.getElementsByTagName('a'))
+    .attr('target', '_blank');
+};
+
 /////////////////
 // Prototype 1 //
 /////////////////
@@ -74,31 +111,14 @@ function resetURL() {
   }
 }
 
-function showImportDialog() {
-  return $('#importDialog').modal({backdrop: 'static', keyboard: false});
-}
-
-function delayCancellable(ms) {
-  var cancel;
-  var result = new Promise(function (resolve, reject) {
-    var id = setTimeout(resolve, ms);
-    cancel = function () {
-      clearTimeout(id);
-      reject();
-    };
-  });
-  result.cancel = cancel;
-  return result;
-}
-
 // throws if "source code" attribute is missing or not a string
 // string -> TMData
 function parseDocument(str) {
   var obj = download.parseDocument(str);
   if (obj == null || obj.sourceCode == null) {
-    throw new TypeError('missing <code>source code:</code> value');
+    throw new TypeError('missing "source code:" value');
   } else if (!_.isString(obj.sourceCode)) {
-    throw new TypeError('<code>source code:</code> value needs to be of type string');
+    throw new TypeError('"source code:" value needs to be of type string');
   }
   return obj;
 }
@@ -198,6 +218,7 @@ function listNondocuments(nondocs, dialogBody) {
         });
   }
   if (nondocs.badDoc.length) {
+    // FIXME: change title
     appendPanel(container, 'Not suitable for import')
       .append('table')
         .attr('class', 'table')
@@ -325,104 +346,96 @@ function init(imports) {
   importDocument = imports.importDocument;
 
   $(function () {
-    // Read Gist ID
+    // Get Gist
     var params = queryParams(location.search.substring(1));
     var gistID = params['import-gist'];
     if (!gistID) {
       return;
     }
-    // Fetch Gist
-    // FIXME:
-    var delayed = delayCancellable(4000);
-    // var req = delayed.then(_.constant(getGist(gistID)));
     var req = getGist(gistID);
-    function cancel() {
+    // Show dialog
+    var dialog = new ImportDialog(document.getElementById('importDialog'));
+    dialog.onClose = function () {
       try {
-        delayed.cancel();
+        resetURL();
         req.xhr.abort();
       } catch (e) {
-        // do nothing
+        // ignore
       }
-      cleanup();
-    }
-    // Set up dialog
-    var dialog = showImportDialog();
-    function setDialogHTML(str) {
-      dialog.find('.modal-body')
-        .html(str);
-      dialog.find('a').attr('target', '_blank');
-    }
-    dialog.one('hide.bs.modal', cancel);
-    function cleanup() {
-      dialog.off('hide.bs.modal', cancel);
-      resetURL();
-      setDialogHTML('');
-    }
+    };
     var url = 'https://gist.github.com/' + gistID;
     var linkHTML = url.link(url);
-    setDialogHTML('Retrieving ' + linkHTML + '&hellip;');
-    // Process request
+    dialog.setBodyHTML('Retrieving ' + linkHTML + '&hellip;');
+    dialog.show();
+    // Parse and pick files
     req.then(function pickFiles(data) {
+      dialog.setBodyHTML('Processing ' + linkHTML + '&hellip;');
       var parsed = parseFiles(_.values(data.files), MAX_FILESIZE);
       var docFiles = parsed.documentFiles;
       switch (docFiles.length) {
         case 0:
+        // FIXME: include message, disclosure w/ "Show other files". "Close" button.
           throw new ImportError('no suitable files');
         case 1:
           importDocument(docFiles[0].document);
-          dialog.modal('hide');
+          dialog.close();
           return;
         default:
+          // TODO: also display requested URL
           pickMultiple0({
             documentFiles: docFiles,
             nondocuments: parsed.invalid,
-            dialog: d3.select(dialog[0])
+            dialog: d3.select(dialog.node)
           });
-          // throw new ImportError('importing multiple files at once is not yet supported.');
       }
     })
     // .then(cleanup)
     .catch(function (reason) {
-      // console.warn(reason);
-      var xhr = reason.xhr;
-      if (xhr) {
-        // case: couldn't fetch
-        switch (reason.status) {
-          case 'abort': return;
-          case 'timeout':
-            setDialogHTML(
-              '<strong>The request timed out.</strong>'
-              + '<br>You can check your connection and try again.'
-              + 'Requested URL: ' + linkHTML
-            );
-            break;
-          default:
-          // case: HTTP error
-            if (xhr.status === 404) {
-              setDialogHTML(
-                [ '<p><strong>No GitHub gist exists with that ID.</strong>'
-                , 'It’s possible the ID is incorrect, or the gist was deleted.</p>'
-                + 'Requested URL: ' + linkHTML
-                ].join('<br>')
-              );
-            } else {
-              setDialogHTML(
-                '<p>The import failed because of a <strong>connection error</strong>.' +
-                'HTTP status code: ' + xhr.status + ' ' + xhr.statusText + '</p><br>' +
-                'Requested URL: ' + linkHTML
-              );
-            }
-        }
-      } else {
-        // case: other error
-        if (reason instanceof ImportError) {
-          setDialogHTML('Could not import. An error occurred: ' + reason);
-        } else {
-          setDialogHTML('Could not import. An error occurred: ' + reason);
-        }
-      }
+      dialog.setBodyHTML(htmlForErrorReason(reason)
+        + 'Requested URL: ' + linkHTML);
     });
   });
+}
+
+function wrapTag(tagName, content) {
+  return '<'+tagName+'>' + content + '</'+tagName+'>';
+}
+
+// ({xhr: jqXHR} | Error) -> string
+function htmlForErrorReason(reason) {
+  return wrapTag('p', (function () {
+    var xhr = reason.xhr;
+    if (xhr) {
+      // case: couldn't fetch
+      switch (reason.status) {
+        case 'abort':
+          return '';
+        case 'timeout':
+          return [
+            '<strong>The request timed out.</strong>',
+            'You can check your connection and try again.'
+          ];
+        default:
+        // case: HTTP error
+          if (xhr.status === 404) {
+            return [
+              '<strong>No GitHub gist exists with that ID.</strong>',
+              'It’s possible the ID is incorrect, or the gist was deleted.'
+            ];
+          } else {
+            return [
+              'The import failed because of a <strong>connection error</strong>.',
+              'HTTP status code: ' + xhr.status + ' ' + xhr.statusText
+            ];
+          }
+      }
+    } else {
+      // case: other error
+      // FIXME: elaborate
+      // FIXME: escape unchecked HTML
+      return [ 'An unexpected error occurred: ' + reason ];
+    }
+  }()).join('<br>'));
 }
 
 exports.init = init;
