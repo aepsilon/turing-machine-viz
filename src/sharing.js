@@ -156,7 +156,6 @@ function parseFiles(files, sizelimit) {
       }
     }
   });
-  // TODO: d3 nest by error key. {reason: 'Not YAML'}, {reason: 'Too large'}..
   return {documentFiles: documents, invalid: invalid};
 }
 
@@ -173,6 +172,56 @@ function appendPanel(div, titleHTML) {
     .append('h5')
       .attr('class', 'panel-title')
       .html(titleHTML);
+  return panel;
+}
+
+var emptySelection = Object.freeze(d3.selectAll([]));
+
+// (D3Selection, {title: string, data: [string]}) -> void
+function appendListPanel(container, data) {
+  var panel = emptySelection;
+  if (data.data && data.data.length) {
+    panel = appendPanel(container, data.title);
+    panel.append('div')
+        .attr('class', 'panel-body')
+      .append('ul')
+        .attr('class', 'list-inline')
+      .selectAll('li')
+        .data(data.data)
+      .enter().append('li')
+        .text(_.identity);
+  }
+  return panel;
+}
+
+// ( D3Selection, {title: string, headers: [string],
+//  data: [[string | (D3Selection -> void)]]} ) -> void
+function appendTablePanel(container, data) {
+  var panel = emptySelection;
+  if (data.data && data.data.length) {
+    panel = appendPanel(container, data.title);
+    panel.append('table')
+        .attr('class', 'table')
+        .call(function (table) {
+          // headers
+          table.append('thead')
+            .append('tr').selectAll('th').data(data.headers)
+            .enter().append('th').text(_.identity);
+          // contents
+          table.append('tbody').selectAll('tr')
+              .data(data.data)
+            .enter().append('tr').selectAll('td')
+              .data(_.identity)
+            .enter().append('td').each(/* @this td */ function (d) {
+              var td = d3.select(this);
+              if (typeof d === 'function') {
+                d(td);
+              } else {
+                td.text(d);
+              }
+            });
+        });
+  }
   return panel;
 }
 
@@ -197,131 +246,64 @@ function listNondocuments(nondocs, dialogBody) {
       });
   // Errors by type, most important first
   // TODO: auto-report unexpected errors
-  if (nondocs.otherError.length) {
-    appendPanel(container, 'Unexpected error')
-        .classed('panel-danger', true)
-      // .append('div')
-      //   .attr('class', 'panel-body')
-      .append('table')
-        .attr('class', 'table')
-        .call(function (table) {
-          table.append('thead')
-            .append('tr').selectAll('th').data(['Filename', 'Error'])
-            .enter().append('th').text(_.identity);
-          // table contents
-          table.append('tbody').selectAll('tr')
-              .data(nondocs.otherError)
-            .enter().append('tr').selectAll('td')
-              .data(function (d) { return [d.filename, d.error]; })
-            .enter().append('td')
-              .text(_.identity);
-        });
-  }
-  if (nondocs.badDoc.length) {
+  appendTablePanel(container, {
+    title: 'Unexpected error',
+    headers: ['Filename', 'Error'],
+    data: nondocs.otherError.map(function functionName(d) {
+      return [d.filename, d.error];
+    })
+  }).classed('panel-danger', true);
+  appendTablePanel(container, {
     // FIXME: change title
-    appendPanel(container, 'Not suitable for import')
-      .append('table')
-        .attr('class', 'table')
-        .call(function (table) {
-          table.append('thead')
-            .append('tr').selectAll('th').data(['Filename', 'Reason'])
-            .enter().append('th').text(_.identity);
-          // table contents
-          table.append('tbody').selectAll('tr')
-              .data(nondocs.badDoc)
-            .enter().append('tr').selectAll('td')
-              .data(function (d) { return [d.filename, d.error.message || d.error]; })
-            .enter().append('td')
-              .text(_.identity);
-        });
-  }
-  if (nondocs.badYAML.length) {
-    appendPanel(container, 'Not valid as YAML')
-      .append('table')
-        .attr('class', 'table')
-        .call(function (table) {
-          table.append('thead')
-            .append('tr').selectAll('th').data(['Filename', 'Syntax error'])
-            .enter().append('th').text(_.identity);
-          // table contents
-          table.append('tbody').selectAll('tr')
-              .data(nondocs.badYAML)
-            .enter().append('tr')
-              .each(/* @this tr */ function (d) {
-                var tr = d3.select(this);
-                tr.append('td').text(d.filename);
-                tr.append('td').append('pre').text(d.error.message || d.error);
-              });
-        });
-  }
+    title: 'Not suitable for import',
+    headers: ['Filename', 'Reason'],
+    data: nondocs.badDoc.map(function (d) {
+      return [d.filename, d.error.message];
+    })
+  });
+  appendTablePanel(container, {
+    title: 'Not valid as YAML',
+    headers: ['Filename', 'Syntax error'],
+    data: nondocs.badYAML.map(function (d) {
+      return [d.filename,
+        function (td) { td.append('pre').text(d.error.message); } ];
+    })
+  });
   // TODO: document largest allowed filesize
-  if (nondocs.tooLarge.length) {
-    appendPanel(container, 'File is too large')
-      .append('div')
-        .attr('class', 'panel-body')
-      .append('ul')
-        .attr('class', 'list-inline')
-      .selectAll('li')
-        .data(nondocs.tooLarge)
-      .enter().append('li')
-        .text(_.identity);
-  }
-  if (nondocs.wrongType.length) {
-    appendPanel(container,
-      'Different file extension (not <code>.yaml</code>/<code>.yml</code>)')
-      .append('div')
-        .attr('class', 'panel-body')
-      .append('ul')
-        .attr('class', 'list-inline')
-      .selectAll('li')
-        .data(nondocs.wrongType)
-      .enter().append('li')
-        .text(_.identity);
-  }
-  // TODO: other errors
+  appendListPanel(container, {
+    title: 'File is too large',
+    data: nondocs.tooLarge
+  });
+  appendListPanel(container, {
+    title: 'Different file extension (not <code>.yaml</code>/<code>.yml</code>)',
+    data: nondocs.wrongType
+  });
 }
 
 /*
  v0. SYNChronous import.
  FIXME: filter & parse before switch case; don't have empty or 1-element tables
  */
-function pickMultiple0(args) {
+function pickMultiple(args) {
   var docFiles = args.documentFiles, nondocs = args.nondocuments, dialog = args.dialog; //, callback = args.callback;
-
-  var tabledata = docFiles.map(function (doc) {
-    return [doc.filename, showSizeKB(doc.size)];
-  });
   // Dialog body
-  var dialogBody = dialog.select('.modal-body')
-      .html('');
-  dialogBody.append('p')
-    .append('strong').text('Select documents to import');
-  var table = dialogBody.append('table')
-    .attr({class: 'table table-hover checkbox-table'});
-  var ctable = new CheckboxTable({
-    table: table,
+  var dialogBody = dialog.select('.modal-body').html('');
+  dialogBody.append('p').append('strong')
+    .text('Select documents to import');
+
+  new CheckboxTable({
+    table: dialogBody.append('table')
+      .attr({class: 'table table-hover checkbox-table'}),
     headers: ['Filename', 'Size'],
-    data: tabledata
+    data: docFiles.map(function (doc) {
+      return [doc.filename, showSizeKB(doc.size)];
+    })
   });
   listNondocuments(nondocs, dialogBody);
   // Dialog "Import" button
   dialog.select('.modal-footer')
     .append('button')
-      .attr({
-        type: 'button',
-        class: 'btn btn-success'
-      })
-      .text('List checked')
-      .on('click', function () {
-        dialogBody.append('pre')
-          .text(ctable.getCheckedValues().join('\n'));
-      });
-  dialog.select('.modal-footer')
-    .append('button')
-      .attr({
-        type: 'button',
-        class: 'btn btn-primary'
-      })
+      .attr({type: 'button', class: 'btn btn-primary'})
       .text('Import')
       .on('click', function () {
         importDocuments(docFiles.map(_.property('document')));
@@ -382,7 +364,7 @@ function init(imports) {
           return;
         default:
           // TODO: also display requested URL
-          pickMultiple0({
+          pickMultiple({
             documentFiles: docFiles,
             nondocuments: parsed.invalid,
             dialog: d3.select(dialog.node)
