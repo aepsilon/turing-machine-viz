@@ -96,9 +96,9 @@ function delayCancellable(ms) {
 function parseDocument(str) {
   var obj = download.parseDocument(str);
   if (obj == null || obj.sourceCode == null) {
-    throw new TypeError('missing "source code" value');
+    throw new TypeError('missing <code>source code:</code> value');
   } else if (!_.isString(obj.sourceCode)) {
-    throw new TypeError('"source code" value needs to be of type string');
+    throw new TypeError('<code>source code:</code> value needs to be of type string');
   }
   return obj;
 }
@@ -125,12 +125,13 @@ function parseFiles(files, sizelimit) {
           document: parseDocument(file.content)
         });
       } catch (e) {
+        var tuple = {filename: name, error: e};
         if (e instanceof YAMLException) {
-          invalid.badYAML.push(name);
-        } else if (invalid instanceof TypeError) {
-          invalid.badDoc.push(name);
+          invalid.badYAML.push(tuple);
+        } else if (e instanceof TypeError) {
+          invalid.badDoc.push(tuple);
         } else {
-          invalid.otherError.push(name);
+          invalid.otherError.push(tuple);
         }
       }
     }
@@ -172,13 +173,82 @@ function listNondocuments(nondocs, dialogBody) {
   var container = dialogBody.append('div')
       .attr({
         id: collapseId,
-        class: 'panel-collapse collapse'
+        class: 'collapse'
       });
-  // Errors by type
+  // Errors by type, most important first
+  // TODO: auto-report unexpected errors
+  if (nondocs.otherError.length) {
+    appendPanel(container, 'Unexpected error')
+        .classed('panel-danger', true)
+      // .append('div')
+      //   .attr('class', 'panel-body')
+      .append('table')
+        .attr('class', 'table')
+        .call(function (table) {
+          table.append('thead')
+            .append('tr').selectAll('th').data(['Filename', 'Error'])
+            .enter().append('th').text(_.identity);
+          // table contents
+          table.append('tbody').selectAll('tr')
+              .data(nondocs.otherError)
+            .enter().append('tr').selectAll('td')
+              .data(function (d) { return [d.filename, d.error]; })
+            .enter().append('td')
+              .text(_.identity);
+        });
+  }
+  if (nondocs.badDoc.length) {
+    appendPanel(container, 'Not suitable for import')
+      .append('table')
+        .attr('class', 'table')
+        .call(function (table) {
+          table.append('thead')
+            .append('tr').selectAll('th').data(['Filename', 'Reason'])
+            .enter().append('th').text(_.identity);
+          // table contents
+          table.append('tbody').selectAll('tr')
+              .data(nondocs.badDoc)
+            .enter().append('tr').selectAll('td')
+              .data(function (d) { return [d.filename, d.error.message || d.error]; })
+            .enter().append('td')
+              .text(_.identity);
+        });
+  }
+  if (nondocs.badYAML.length) {
+    appendPanel(container, 'Not valid as YAML')
+      .append('table')
+        .attr('class', 'table')
+        .call(function (table) {
+          table.append('thead')
+            .append('tr').selectAll('th').data(['Filename', 'Syntax error'])
+            .enter().append('th').text(_.identity);
+          // table contents
+          table.append('tbody').selectAll('tr')
+              .data(nondocs.badYAML)
+            .enter().append('tr')
+              .each(/* @this tr */ function (d) {
+                var tr = d3.select(this);
+                tr.append('td').text(d.filename);
+                tr.append('td').append('pre').text(d.error.message || d.error);
+              });
+        });
+  }
+  // TODO: document largest allowed filesize
+  if (nondocs.tooLarge.length) {
+    appendPanel(container, 'File is too large')
+      .append('div')
+        .attr('class', 'panel-body')
+      .append('ul')
+        .attr('class', 'list-inline')
+      .selectAll('li')
+        .data(nondocs.tooLarge)
+      .enter().append('li')
+        .text(_.identity);
+  }
   if (nondocs.wrongType.length) {
-    var panel = appendPanel(container,
-      'Different file extension (not <code>.yaml</code>/<code>.yml</code>)');
-    panel.append('div')
+    appendPanel(container,
+      'Different file extension (not <code>.yaml</code>/<code>.yml</code>)')
+      .append('div')
         .attr('class', 'panel-body')
       .append('ul')
         .attr('class', 'list-inline')
@@ -212,7 +282,7 @@ function pickMultiple0(args) {
     headers: ['Filename', 'Size'],
     data: tabledata
   });
-  listNondocuments(nondocs, dialogBody.append('div'));
+  listNondocuments(nondocs, dialogBody);
   // Dialog "Import" button
   dialog.select('.modal-footer')
     .append('button')

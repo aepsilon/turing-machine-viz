@@ -459,6 +459,10 @@ table:
         cursor: pointer;
         text-decoration: none;
       }
+      a.disclosure-triangle + div.collapse ,
+      a.disclosure-triangle + div.collapsing {
+        margin-top: 1em;
+      }
       a.disclosure-triangle:before {
         content: '▸';
         transform: rotate(90deg);
@@ -470,6 +474,10 @@ table:
       }
       a.disclosure-triangle.collapsed:before {
         transform: none;
+      }
+      .modal-dialog td pre {
+        white-space: pre-wrap;
+        font-size: smaller;
       }
     </style>
     <div id="importDialog" class="modal fade" tabindex="-1" role="dialog"

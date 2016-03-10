@@ -82,18 +82,13 @@
       </div>
       <!-- Collapse Disclosure Triangle -->
       <style media="screen">
-        /*a.show-other.collapsed:before {
-          content: '▸'
-        }
-        a.show-other:before {
-          content: '▾';
-          width: 0.8em;
-          display: inline-block;
-          font-size: larger;
-        }*/
         a.disclosure-triangle {
           cursor: pointer;
           text-decoration: none;
+        }
+        a.disclosure-triangle + div.collapse ,
+        a.disclosure-triangle + div.collapsing {
+          margin-top: 1em;
         }
         a.disclosure-triangle:before {
           content: '▸';
@@ -106,6 +101,13 @@
         }
         a.disclosure-triangle.collapsed:before {
           transform: none;
+        }
+        /*.panel > .table {
+          margin: 0 0.5em;
+        }*/
+        .modal-dialog td pre {
+          white-space: pre-wrap;
+          font-size: smaller;
         }
       </style>
       <a class="disclosure-triangle" role="button" data-toggle="collapse" href="#otherFiles2">
@@ -286,7 +288,7 @@ bad indentation of a mapping entry at line 7, column 6:
         </div>
          <table class="table">
            <thead>
-             <tr> <th> Filename </th> <th> Reported syntax error </th> </tr>
+             <tr> <th> Filename </th> <th> Syntax error </th> </tr>
            </thead>
            <tbody>
              <tr>
