@@ -80,7 +80,7 @@ function ImportDialog(dialogNode) {
 // internal event handler.
 ImportDialog.prototype.__onClose = function () {
   this.onClose();
-  this.setBodyHTML('');
+  this.bodyNode.textContent = '';
   // XXX: also clear footer. prevent leaks.
 };
 
@@ -94,12 +94,6 @@ ImportDialog.prototype.show = function () {
 
 ImportDialog.prototype.close = function () {
   this.$dialog.modal('hide');
-};
-
-ImportDialog.prototype.setBodyHTML = function (html) {
-  this.bodyNode.innerHTML = html;
-  d3.selectAll(this.bodyNode.getElementsByTagName('a'))
-    .attr('target', '_blank');
 };
 
 function appendPanel(div, titleHTML) {
@@ -304,7 +298,7 @@ function pickMultiple(args) {
       nondocs = args.nonDocumentFiles,
       dialog = d3.select(args.dialogNode);
   // Dialog body
-  var dialogBody = dialog.select('.modal-body').html('');
+  var dialogBody = dialog.select('.modal-body').text('');
   dialogBody.append('p').append('strong')
     .text('Select documents to import');
 
@@ -335,7 +329,7 @@ function pickNone(args) {
   var nondocs = args.nonDocumentFiles,
       dialog = d3.select(args.dialogNode);
 
-  var dialogBody = dialog.select('.modal-body').html('');
+  var dialogBody = dialog.select('.modal-body').text('');
   dialogBody.append('p').append('strong')
     .text('None of the files are suitable for import.');
   listNondocuments(dialogBody, nondocs, 'Show details');
@@ -351,6 +345,29 @@ function importDocuments(docs) {
 
 // FIXME: remove this hack
 var importDocument;
+
+// Intermingle text and nodes.
+// [Node | string] -> DocumentFragment
+function joinNodes(nodes) {
+  var result = document.createDocumentFragment();
+  nodes.forEach(function (node) {
+    if (typeof node === 'string') {
+      result.appendChild(document.createTextNode(node));
+    } else {
+      result.appendChild(node);
+    }
+  });
+  return result;
+}
+
+// {href: string, textContent?: string} -> HTMLAnchorElement
+function externalLink(args) {
+  var link = document.createElement('a');
+  link.href = args.href;
+  link.target = '_blank';
+  link.textContent = args.textContent || args.href;
+  return link;
+}
 
 function init(imports) {
   importDocument = imports.importDocument;
@@ -373,13 +390,16 @@ function init(imports) {
         // ignore
       }
     };
-    var url = 'https://gist.github.com/' + gistID;
-    var linkHTML = url.link(url);
-    dialog.setBodyHTML('Retrieving ' + linkHTML + '&hellip;');
+    function setDialogBody(nodes) {
+      dialog.bodyNode.textContent = '';
+      dialog.bodyNode.appendChild(joinNodes(nodes));
+    }
+    var link = externalLink({href: 'https://gist.github.com/' + gistID});
+    setDialogBody(['Retrieving ', link, '…']);
     dialog.show();
     // Parse and pick files
     req.then(function pickFiles(data) {
-      dialog.setBodyHTML('Processing ' + linkHTML + '&hellip;');
+      setDialogBody(['Processing ', link, '…']);
       var parsed = parseFiles(_.values(data.files), MAX_FILESIZE);
       var docfiles = parsed.documentFiles;
       switch (docfiles.length) {
@@ -404,25 +424,26 @@ function init(imports) {
     })
     // .then(cleanup)
     .catch(function (reason) {
-      dialog.setBodyHTML(htmlForErrorReason(reason)
-        + 'Requested URL: ' + linkHTML);
+      setDialogBody([messageForError(reason), 'Requested URL: ', link]);
     });
   });
 }
 
-function wrapTag(tagName, content) {
-  return '<'+tagName+'>' + content + '</'+tagName+'>';
+function createElementHTML(tagName, innerHTML) {
+  var element = document.createElement(tagName);
+  element.innerHTML = innerHTML;
+  return element;
 }
 
-// ({xhr: jqXHR} | Error) -> string
-function htmlForErrorReason(reason) {
-  return wrapTag('p', (function () {
-    var xhr = reason.xhr;
-    if (xhr) {
-      // case: couldn't fetch
+// ({xhr: jqXHR} | Error) -> Node
+function messageForError(reason) {
+  var xhr = reason.xhr;
+  if (xhr) {
+    // case: couldn't fetch
+    return createElementHTML('p', (function () {
       switch (reason.status) {
         case 'abort':
-          return '';
+          return [''];
         case 'timeout':
           return [
             '<strong>The request timed out.</strong>',
@@ -442,13 +463,14 @@ function htmlForErrorReason(reason) {
             ];
           }
       }
-    } else {
-      // case: other error
-      // FIXME: elaborate
-      // FIXME: escape unchecked HTML
-      return [ 'An unexpected error occurred: ' + reason ];
-    }
-  }()).join('<br>'));
+    }()).join('<br>'));
+  } else {
+    // case: other error
+    var pre = document.createElement('pre');
+    pre.textContent = String(reason);
+    return joinNodes([
+      createElementHTML('p', 'An unexpected error occurred:'), pre]);
+  }
 }
 
 exports.init = init;
