@@ -163,7 +163,8 @@ function appendTablePanel(container, data) {
   return panel;
 }
 
-function listNondocuments(dialogBody, nondocs) {
+// (D3Selection, NonDocumentFiles, ?string) -> void
+function listNondocuments(dialogBody, nondocs, disclosureTitle) {
   if (_.values(nondocs).every(_.isEmpty)) {
     return;
   }
@@ -176,7 +177,7 @@ function listNondocuments(dialogBody, nondocs) {
         role: 'button',
         'data-toggle': 'collapse'
       })
-      .text('Show other files');
+      .text(disclosureTitle ? disclosureTitle : 'Show other files');
   var container = dialogBody.append('div')
       .attr({
         id: collapseId,
@@ -301,7 +302,7 @@ function showSizeKB(n) {
 function pickMultiple(args) {
   var docfiles = args.documentFiles,
       nondocs = args.nonDocumentFiles,
-      dialog = args.dialogNode;
+      dialog = d3.select(args.dialogNode);
   // Dialog body
   var dialogBody = dialog.select('.modal-body').html('');
   dialogBody.append('p').append('strong')
@@ -328,6 +329,17 @@ function pickMultiple(args) {
           .map(_.property('document'))
         );
       });
+}
+
+function pickNone(args) {
+  var nondocs = args.nonDocumentFiles,
+      dialog = d3.select(args.dialogNode);
+
+  var dialogBody = dialog.select('.modal-body').html('');
+  dialogBody.append('p').append('strong')
+    .text('None of the files are suitable for import.');
+  listNondocuments(dialogBody, nondocs, 'Show details');
+  dialog.select('.modal-footer button').text('Close');
 }
 
 // FIXME: remove constant?
@@ -372,8 +384,11 @@ function init(imports) {
       var docfiles = parsed.documentFiles;
       switch (docfiles.length) {
         case 0:
-        // FIXME: include message, disclosure w/ "Show other files". "Close" button.
-          throw new TypeError('no suitable files');
+          pickNone({
+            nonDocumentFiles: parsed.nonDocumentFiles,
+            dialogNode: dialog.node
+          });
+          return;
         case 1:
           importDocument(docfiles[0].document);
           dialog.close();
@@ -383,7 +398,7 @@ function init(imports) {
           pickMultiple({
             documentFiles: docfiles,
             nonDocumentFiles: parsed.nonDocumentFiles,
-            dialogNode: d3.select(dialog.node)
+            dialogNode: dialog.node
           });
       }
     })
