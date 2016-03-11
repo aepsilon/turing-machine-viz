@@ -12,6 +12,17 @@ var YAMLException = require('./Parser').YAMLException;
 
 var CheckboxTable = require('./CheckboxTable');
 
+// TODO: test with dev server
+function resetURL() {
+  try {
+    // FIXME:
+    history.replaceState(null, null, '/');
+    // location.search = '';
+  } catch (e) {
+    // ignore
+  }
+}
+
 function decodeFormURLComponent(str) {
   return decodeURIComponent(str.replace('+', ' '));
 }
@@ -54,14 +65,6 @@ function getGist(gistID) {
   }));
 }
 
-function ImportError(message) {
-  this.name = 'ImportError';
-  this.message = message || 'Could not import document';
-  this.stack = (new Error()).stack;
-}
-ImportError.prototype = Object.create(Error.prototype);
-ImportError.prototype.constructor = ImportError;
-
 ///////////////////
 // Import Dialog //
 ///////////////////
@@ -98,71 +101,6 @@ ImportDialog.prototype.setBodyHTML = function (html) {
   d3.selectAll(this.bodyNode.getElementsByTagName('a'))
     .attr('target', '_blank');
 };
-
-/////////////////
-// Prototype 1 //
-/////////////////
-
-function resetURL() {
-  try {
-    history.replaceState(null, null, '/');
-  } catch (e) {
-    // ignore
-  }
-}
-
-// throws if "source code" attribute is missing or not a string
-// string -> TMData
-function parseDocument(str) {
-  var obj = download.parseDocument(str);
-  if (obj == null || obj.sourceCode == null) {
-    throw new TypeError('missing "source code:" value');
-  } else if (!_.isString(obj.sourceCode)) {
-    throw new TypeError('"source code:" value needs to be of type string');
-  }
-  return obj;
-}
-
-// type TMData = {source code: string}
-// type GistFile = {filename: string, size: number, content: string}
-// type GistDoc = {filename: string, size: number, document: TMData}
-// [GistFile] -> {documents: [GistDoc], other: GistFile}
-function parseFiles(files, sizelimit) {
-  // return file.language === 'YAML' && !file.truncated;
-  var documents = [];
-  var invalid = {wrongType: [], tooLarge: [], badYAML: [], badDoc: [], otherError: []};
-  files.forEach(function (file) {
-    var name = file.filename; // eslint-disable-line no-shadow
-    if (file.language !== 'YAML') {
-      invalid.wrongType.push(name);
-    } else if (file.truncated || file.size > sizelimit) {
-      invalid.tooLarge.push(name);
-    } else {
-      try {
-        documents.push({
-          filename: name,
-          size: file.size,
-          document: parseDocument(file.content)
-        });
-      } catch (e) {
-        var tuple = {filename: name, error: e};
-        if (e instanceof YAMLException) {
-          invalid.badYAML.push(tuple);
-        } else if (e instanceof TypeError) {
-          invalid.badDoc.push(tuple);
-        } else {
-          invalid.otherError.push(tuple);
-        }
-      }
-    }
-  });
-  return {documentFiles: documents, invalid: invalid};
-}
-
-// 12.0 KB
-function showSizeKB(n) {
-  return (Math.ceil(10*n/1024)/10).toFixed(1) + ' KB';
-}
 
 function appendPanel(div, titleHTML) {
   var panel = div.append('div')
@@ -225,7 +163,7 @@ function appendTablePanel(container, data) {
   return panel;
 }
 
-function listNondocuments(nondocs, dialogBody) {
+function listNondocuments(dialogBody, nondocs) {
   if (_.values(nondocs).every(_.isEmpty)) {
     return;
   }
@@ -280,12 +218,90 @@ function listNondocuments(nondocs, dialogBody) {
   });
 }
 
-/*
- v0. SYNChronous import.
- FIXME: filter & parse before switch case; don't have empty or 1-element tables
+//////////////////////
+// Document Parsing //
+//////////////////////
+
+/* Interface for Document Parsing
+  type GistFile = {
+    filename: string,
+    language: string,
+    size: number,
+    truncated: boolean,
+    content: string
+  };
+  type TMData = {source code: string};
+  type GistDoc = {filename: string, size: number, document: TMData};
+
+  type Filename = string;
+  type ErrorTuple = {filename: Filename, error: Error | YAMLException};
+  type NonDocumentFiles = {
+    wrongType:  [Filename],
+    tooLarge:   [Filename],
+    badYAML:    [ErrorTuple],
+    badDoc:     [ErrorTuple],
+    otherError: [ErrorTuple]
+  };
  */
+
+// throws if "source code" attribute is missing or not a string
+// string -> TMData
+function parseDocumentYAML(str) {
+  var obj = download.parseDocument(str);
+  if (obj == null || obj.sourceCode == null) {
+    throw new TypeError('missing "source code:" value');
+  } else if (!_.isString(obj.sourceCode)) {
+    throw new TypeError('"source code:" value needs to be of type string');
+  }
+  return obj;
+}
+
+// [GistFile] -> {documentFiles: [GistDoc], nonDocumentFiles: NonDocumentFiles}
+function parseFiles(files, sizelimit) {
+  // return file.language === 'YAML' && !file.truncated;
+  var docfiles = [];
+  var nondocs = {wrongType: [], tooLarge: [], badYAML: [], badDoc: [], otherError: []};
+  files.forEach(function (file) {
+    var name = file.filename; // eslint-disable-line no-shadow
+    if (file.language !== 'YAML') {
+      nondocs.wrongType.push(name);
+    } else if (file.truncated || file.size > sizelimit) {
+      nondocs.tooLarge.push(name);
+    } else {
+      try {
+        docfiles.push({
+          filename: name,
+          size: file.size,
+          document: parseDocumentYAML(file.content)
+        });
+      } catch (e) {
+        var tuple = {filename: name, error: e};
+        if (e instanceof YAMLException) {
+          nondocs.badYAML.push(tuple);
+        } else if (e instanceof TypeError) {
+          nondocs.badDoc.push(tuple);
+        } else {
+          nondocs.otherError.push(tuple);
+        }
+      }
+    }
+  });
+  return {documentFiles: docfiles, nonDocumentFiles: nondocs};
+}
+
+/////////////////////
+// Document Import //
+/////////////////////
+
+function showSizeKB(n) {
+  // example: 12.0 KB
+  return (Math.ceil(10*n/1024)/10).toFixed(1) + ' KB';
+}
+
 function pickMultiple(args) {
-  var docFiles = args.documentFiles, nondocs = args.nondocuments, dialog = args.dialog; //, callback = args.callback;
+  var docfiles = args.documentFiles,
+      nondocs = args.nonDocumentFiles,
+      dialog = args.dialogNode;
   // Dialog body
   var dialogBody = dialog.select('.modal-body').html('');
   dialogBody.append('p').append('strong')
@@ -295,21 +311,22 @@ function pickMultiple(args) {
     table: dialogBody.append('table')
       .attr({class: 'table table-hover checkbox-table'}),
     headers: ['Filename', 'Size'],
-    data: docFiles.map(function (doc) {
+    data: docfiles.map(function (doc) {
       return [doc.filename, showSizeKB(doc.size)];
     })
   });
-  listNondocuments(nondocs, dialogBody);
+  listNondocuments(dialogBody, nondocs);
   // Dialog "Import" button
   dialog.select('.modal-footer')
     .append('button')
       .attr({type: 'button', class: 'btn btn-primary'})
       .text('Import')
       .on('click', function () {
-        importDocuments(docFiles.map(_.property('document')));
+        importDocuments(docfiles.map(_.property('document')));
       });
 }
 
+// FIXME: remove constant?
 var MAX_FILESIZE = 400 * 1000;
 
 function importDocuments(docs) {
@@ -319,11 +336,6 @@ function importDocuments(docs) {
 // FIXME: remove this hack
 var importDocument;
 
-// TODO: bring up dialog for multiple files
-// FIXME: handle and report 404, no YAML files, etc.
-// right now 404 says:
-// Could not import gist. An error occurred:
-// [object Object]
 function init(imports) {
   importDocument = imports.importDocument;
 
@@ -353,21 +365,21 @@ function init(imports) {
     req.then(function pickFiles(data) {
       dialog.setBodyHTML('Processing ' + linkHTML + '&hellip;');
       var parsed = parseFiles(_.values(data.files), MAX_FILESIZE);
-      var docFiles = parsed.documentFiles;
-      switch (docFiles.length) {
+      var docfiles = parsed.documentFiles;
+      switch (docfiles.length) {
         case 0:
         // FIXME: include message, disclosure w/ "Show other files". "Close" button.
-          throw new ImportError('no suitable files');
+          throw new TypeError('no suitable files');
         case 1:
-          importDocument(docFiles[0].document);
+          importDocument(docfiles[0].document);
           dialog.close();
           return;
         default:
           // TODO: also display requested URL
           pickMultiple({
-            documentFiles: docFiles,
-            nondocuments: parsed.invalid,
-            dialog: d3.select(dialog.node)
+            documentFiles: docfiles,
+            nonDocumentFiles: parsed.nonDocumentFiles,
+            dialogNode: d3.select(dialog.node)
           });
       }
     })
