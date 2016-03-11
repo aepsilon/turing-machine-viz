@@ -307,7 +307,7 @@ function pickMultiple(args) {
   dialogBody.append('p').append('strong')
     .text('Select documents to import');
 
-  new CheckboxTable({
+  var ctable = new CheckboxTable({
     table: dialogBody.append('table')
       .attr({class: 'table table-hover checkbox-table'}),
     headers: ['Filename', 'Size'],
@@ -319,10 +319,14 @@ function pickMultiple(args) {
   // Dialog "Import" button
   dialog.select('.modal-footer')
     .append('button')
-      .attr({type: 'button', class: 'btn btn-primary'})
+      .attr({type: 'button', class: 'btn btn-primary', 'data-dismiss': 'modal'})
       .text('Import')
       .on('click', function () {
-        importDocuments(docfiles.map(_.property('document')));
+        var names = d3.set(ctable.getCheckedValues());
+        importDocuments(docfiles
+          .filter(function (file) { return names.has(file.filename); })
+          .map(_.property('document'))
+        );
       });
 }
 
