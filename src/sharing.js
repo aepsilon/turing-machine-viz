@@ -252,9 +252,8 @@ function parseDocumentYAML(str) {
   return obj;
 }
 
-// [GistFile] -> {documentFiles: [DocFile], nonDocumentFiles: NonDocumentFiles}
+// ([GistFile], number) -> {documentFiles: [DocFile], nonDocumentFiles: NonDocumentFiles}
 function parseFiles(files, sizelimit) {
-  // return file.language === 'YAML' && !file.truncated;
   var docfiles = [];
   var nondocs = {wrongType: [], tooLarge: [], badYAML: [], badDoc: [], otherError: []};
   files.forEach(function (file) {
@@ -295,12 +294,13 @@ function showSizeKB(n) {
 }
 
 // {docFiles: [DocFile], nonDocumentFiles: NonDocumentFiles,
-//  dialog: Node, citeNode?: Node} -> void
+//  dialog: Node, citeNode?: Node, importDocuments: [TMData] -> void} -> void
 function pickMultiple(args) {
   var docfiles = args.documentFiles,
       nondocs = args.nonDocumentFiles,
       dialog = d3.select(args.dialogNode),
-      citeNode = args.citeNode;
+      citeNode = args.citeNode,
+      importDocuments = args.importDocuments;
   // Dialog body
   var dialogBody = dialog.select('.modal-body').text('');
   dialogBody.append('p')
@@ -351,16 +351,6 @@ function pickNone(args) {
   dialog.select('.modal-footer button').text('Close');
 }
 
-// FIXME: remove constant?
-var MAX_FILESIZE = 400 * 1000;
-
-function importDocuments(docs) {
-  docs.concat().reverse().map(importDocument);
-}
-
-// FIXME: remove this hack
-var importDocument;
-
 // Intermingle text and nodes.
 // [Node | string] -> DocumentFragment
 function joinNodes(nodes) {
@@ -400,68 +390,66 @@ function externalLink(args) {
   return link;
 }
 
-function init(imports) {
-  importDocument = imports.importDocument;
+// {gistID: string, importDocument: TMData -> void} -> void
+function importGist(args) {
+  var gistID = args.gistID,
+      importDocument = args.importDocument;
+  // generous limit to prevent accidentally exceeding quota
+  var MAX_FILESIZE = 400 * 1024;
 
-  $(function () {
-    // Get Gist
-    var params = queryParams(location.search.substring(1));
-    var gistID = params['import-gist'];
-    if (!gistID) {
-      return;
+  var req = getGist(gistID);
+  // Show dialog
+  var dialog = new ImportDialog(document.getElementById('importDialog'));
+  dialog.titleNode.textContent = 'Import from GitHub gist';
+  dialog.onClose = function () {
+    try {
+      resetURL();
+      req.xhr.abort();
+    } catch (e) {
+      // ignore
     }
-    var req = getGist(gistID);
-    // Show dialog
-    var dialog = new ImportDialog(document.getElementById('importDialog'));
-    dialog.titleNode.textContent = 'Import from GitHub gist';
-    dialog.onClose = function () {
-      try {
-        resetURL();
-        req.xhr.abort();
-      } catch (e) {
-        // ignore
-      }
-    };
-    function setDialogBody(nodes) {
-      dialog.bodyNode.textContent = '';
-      dialog.bodyNode.appendChild(joinNodes(nodes));
+  };
+  function setDialogBody(nodes) {
+    dialog.bodyNode.textContent = '';
+    dialog.bodyNode.appendChild(joinNodes(nodes));
+  }
+  var link = externalLink({href: 'https://gist.github.com/' + gistID});
+  setDialogBody(['Retrieving ', link, '…']);
+  dialog.show();
+  // Parse and pick files
+  req.then(function pickFiles(data) {
+    setDialogBody(['Processing ', link, '…']);
+    var parsed = parseFiles(_.values(data.files), MAX_FILESIZE);
+    var docfiles = parsed.documentFiles;
+    switch (docfiles.length) {
+      case 0:
+        pickNone({
+          nonDocumentFiles: parsed.nonDocumentFiles,
+          dialogNode: dialog.node,
+          citeLink: link
+        });
+        return;
+      case 1:
+        importDocument(docfiles[0].document);
+        dialog.close();
+        return;
+      default:
+        pickMultiple({
+          documentFiles: docfiles,
+          nonDocumentFiles: parsed.nonDocumentFiles,
+          dialogNode: dialog.node,
+          citeNode: gistDescriptionLink({
+            gistID: gistID,
+            description: data.description
+          }),
+          importDocuments: function importDocuments(docs) {
+            docs.concat().reverse().map(importDocument);
+          }
+        });
     }
-    var link = externalLink({href: 'https://gist.github.com/' + gistID});
-    setDialogBody(['Retrieving ', link, '…']);
-    dialog.show();
-    // Parse and pick files
-    req.then(function pickFiles(data) {
-      setDialogBody(['Processing ', link, '…']);
-      var parsed = parseFiles(_.values(data.files), MAX_FILESIZE);
-      var docfiles = parsed.documentFiles;
-      switch (docfiles.length) {
-        case 0:
-          pickNone({
-            nonDocumentFiles: parsed.nonDocumentFiles,
-            dialogNode: dialog.node,
-            citeLink: link
-          });
-          return;
-        case 1:
-          importDocument(docfiles[0].document);
-          dialog.close();
-          return;
-        default:
-          pickMultiple({
-            documentFiles: docfiles,
-            nonDocumentFiles: parsed.nonDocumentFiles,
-            dialogNode: dialog.node,
-            citeNode: gistDescriptionLink({
-              gistID: gistID,
-              description: data.description
-            })
-          });
-      }
-    })
-    // .then(cleanup)
-    .catch(function (reason) {
-      setDialogBody([messageForError(reason), 'Requested URL: ', link]);
-    });
+  })
+  .catch(function (reason) {
+    setDialogBody([messageForError(reason), 'Requested URL: ', link]);
   });
 }
 
@@ -507,6 +495,19 @@ function messageForError(reason) {
     return joinNodes([
       createElementHTML('p', 'An unexpected error occurred:'), pre]);
   }
+}
+
+// {importDocument: TMData -> void} -> void
+function init(imports) {
+  var importDocument = imports.importDocument;
+  $(function () {
+    // query param: import-gist=gistID
+    var params = queryParams(location.search.substring(1));
+    var gistID = params['import-gist'];
+    if (gistID) {
+      importGist({gistID: gistID, importDocument: importDocument});
+    }
+  });
 }
 
 exports.init = init;
