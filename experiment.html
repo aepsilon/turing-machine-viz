@@ -81,7 +81,7 @@
         </div>
       </div>
       <!-- Collapse Disclosure Triangle -->
-      <style media="screen">
+      <style>
         a.disclosure-triangle {
           cursor: pointer;
           text-decoration: none;
@@ -324,6 +324,17 @@ bad indentation of a mapping entry at line 7, column 6:
             </ul>
           </div>
         </div>
+
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <strong>Select documents to import from <a href="#"><q>Sample machines</q></a></strong>
+            <br><strong>Select documents to import from <q><a href="#">Sample machines</a></q></strong>
+            <br><strong>Select documents from <q><a href="#">Sample machines</a></q> to import</strong>
+            <br><strong>Select documents from <a href="#">https://gist.github.com/12345678901234567890</a> to import</strong>
+            <br><strong>Select documents to import from <a href="#">https://gist.github.com/12345678901234567890</a></strong>
+            <br><strong>Select documents to import</strong> from <a href="#">gist 12345678901234567890</a>
+          </div>
+        </div>
       </div>
 
       <script type="text/javascript">
@@ -348,7 +359,7 @@ bad indentation of a mapping entry at line 7, column 6:
 
           var container = d3.select('div.container');
           var table = container.append('table')
-              .attr('class', 'table table-hover');
+              .attr('class', 'table table-hover checkbox-table');
           var button = container.append('button')
               .attr('class', 'btn btn-default')
               .text('Display in table')

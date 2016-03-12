@@ -226,7 +226,7 @@ function listNondocuments(dialogBody, nondocs, disclosureTitle) {
     content: string
   };
   type TMData = {source code: string};
-  type GistDoc = {filename: string, size: number, document: TMData};
+  type DocFile = {filename: string, size: number, document: TMData};
 
   type Filename = string;
   type ErrorTuple = {filename: Filename, error: Error | YAMLException};
@@ -251,7 +251,7 @@ function parseDocumentYAML(str) {
   return obj;
 }
 
-// [GistFile] -> {documentFiles: [GistDoc], nonDocumentFiles: NonDocumentFiles}
+// [GistFile] -> {documentFiles: [DocFile], nonDocumentFiles: NonDocumentFiles}
 function parseFiles(files, sizelimit) {
   // return file.language === 'YAML' && !file.truncated;
   var docfiles = [];
@@ -293,14 +293,23 @@ function showSizeKB(n) {
   return (Math.ceil(10*n/1024)/10).toFixed(1) + ' KB';
 }
 
+// {docFiles: [DocFile], nonDocumentFiles: NonDocumentFiles,
+//  dialog: Node, citeNode?: Node} -> void
 function pickMultiple(args) {
   var docfiles = args.documentFiles,
       nondocs = args.nonDocumentFiles,
-      dialog = d3.select(args.dialogNode);
+      dialog = d3.select(args.dialogNode),
+      citeNode = args.citeNode;
   // Dialog body
   var dialogBody = dialog.select('.modal-body').text('');
-  dialogBody.append('p').append('strong')
-    .text('Select documents to import');
+  dialogBody.append('p')
+      .call(function (p) {
+        p.append('strong').text('Select documents to import');
+        if (citeNode) {
+          p.node().appendChild(document.createTextNode(' from '));
+          p.node().appendChild(citeNode);
+        }
+      });
 
   var ctable = new CheckboxTable({
     table: dialogBody.append('table')
@@ -325,13 +334,18 @@ function pickMultiple(args) {
       });
 }
 
+// {nonDocumentFiles: NonDocumentFiles, dialogNode: Node, citeLink?: Node} -> void
 function pickNone(args) {
   var nondocs = args.nonDocumentFiles,
-      dialog = d3.select(args.dialogNode);
+      dialog = d3.select(args.dialogNode),
+      citeLink = args.citeLink;
 
   var dialogBody = dialog.select('.modal-body').text('');
   dialogBody.append('p').append('strong')
     .text('None of the files are suitable for import.');
+  if (citeLink) {
+    dialogBody.append('p').text('Requested URL: ').node().appendChild(citeLink);
+  }
   listNondocuments(dialogBody, nondocs, 'Show details');
   dialog.select('.modal-footer button').text('Close');
 }
@@ -358,6 +372,22 @@ function joinNodes(nodes) {
     }
   });
   return result;
+}
+
+function wrapTag(tagName, node) {
+  var tag = document.createElement(tagName);
+  tag.appendChild(node);
+  return tag;
+}
+
+// Create a link with text <q>`gist description`</q> if given, otherwise gist `gistID`.
+// {gistID: string, description?: string} -> HTMLAnchorElement | HTMLQuoteElement
+function gistDescriptionLink(args) {
+  var link = externalLink({
+    href: 'https://gist.github.com/' + args.gistID,
+    textContent: args.description || ('gist ' + args.gistID)
+  });
+  return args.description ? wrapTag('q', link) : link;
 }
 
 // {href: string, textContent?: string} -> HTMLAnchorElement
@@ -406,7 +436,8 @@ function init(imports) {
         case 0:
           pickNone({
             nonDocumentFiles: parsed.nonDocumentFiles,
-            dialogNode: dialog.node
+            dialogNode: dialog.node,
+            citeLink: link
           });
           return;
         case 1:
@@ -414,11 +445,14 @@ function init(imports) {
           dialog.close();
           return;
         default:
-          // TODO: also display requested URL
           pickMultiple({
             documentFiles: docfiles,
             nonDocumentFiles: parsed.nonDocumentFiles,
-            dialogNode: dialog.node
+            dialogNode: dialog.node,
+            citeNode: gistDescriptionLink({
+              gistID: gistID,
+              description: data.description
+            })
           });
       }
     })
