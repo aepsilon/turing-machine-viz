@@ -72,6 +72,7 @@ function getGist(gistID) {
 // requires an existing dialog in the DOM
 function ImportDialog(dialogNode) {
   this.node = dialogNode;
+  this.titleNode = dialogNode.querySelector('.modal-header .modal-title');
   this.bodyNode = dialogNode.querySelector('.modal-body');
   this.$dialog = $(dialogNode)
     .one('hide.bs.modal', this.__onClose.bind(this));
@@ -412,6 +413,7 @@ function init(imports) {
     var req = getGist(gistID);
     // Show dialog
     var dialog = new ImportDialog(document.getElementById('importDialog'));
+    dialog.titleNode.textContent = 'Import from GitHub gist';
     dialog.onClose = function () {
       try {
         resetURL();
