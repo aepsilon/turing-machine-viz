@@ -74,6 +74,7 @@ function ImportDialog(dialogNode) {
   this.node = dialogNode;
   this.titleNode = dialogNode.querySelector('.modal-header .modal-title');
   this.bodyNode = dialogNode.querySelector('.modal-body');
+  this.footerNode = dialogNode.querySelector('.modal-footer');
   this.$dialog = $(dialogNode)
     .one('hide.bs.modal', this.__onClose.bind(this));
 }
@@ -294,24 +295,22 @@ function showSizeKB(n) {
 }
 
 // {docFiles: [DocFile], nonDocumentFiles: NonDocumentFiles,
-//  dialog: Node, citeNode?: Node, importDocuments: [TMData] -> void} -> void
+//  dialog: ImportDialog, citeNode?: Node, importDocuments: [TMData] -> void} -> void
 function pickMultiple(args) {
   var docfiles = args.documentFiles,
       nondocs = args.nonDocumentFiles,
-      dialog = d3.select(args.dialogNode),
       citeNode = args.citeNode,
+      dialog = args.dialog,
       importDocuments = args.importDocuments;
   // Dialog body
-  var dialogBody = dialog.select('.modal-body').text('');
-  dialogBody.append('p')
-      .call(function (p) {
-        p.append('strong').text('Select documents to import');
-        if (citeNode) {
-          p.node().appendChild(document.createTextNode(' from '));
-          p.node().appendChild(citeNode);
-        }
-      });
-
+  var dialogBody = d3.select(dialog.bodyNode).text('');
+  dialogBody.append('p').call(function (p) {
+    p.append('strong').text('Select documents to import');
+    if (citeNode) {
+      p.node().appendChild(document.createTextNode(' from '));
+      p.node().appendChild(citeNode);
+    }
+  });
   var ctable = new CheckboxTable({
     table: dialogBody.append('table')
       .attr({class: 'table table-hover checkbox-table'}),
@@ -321,8 +320,8 @@ function pickMultiple(args) {
     })
   });
   listNondocuments(dialogBody, nondocs);
-  // Dialog "Import" button
-  dialog.select('.modal-footer')
+  // "Import" button
+  d3.select(dialog.footerNode)
     .append('button')
       .attr({type: 'button', class: 'btn btn-primary', 'data-dismiss': 'modal'})
       .text('Import')
@@ -335,20 +334,21 @@ function pickMultiple(args) {
       });
 }
 
-// {nonDocumentFiles: NonDocumentFiles, dialogNode: Node, citeLink?: Node} -> void
+// {nonDocumentFiles: NonDocumentFiles, dialog: ImportDialog, citeLink?: Node} -> void
 function pickNone(args) {
   var nondocs = args.nonDocumentFiles,
-      dialog = d3.select(args.dialogNode),
+      dialog = args.dialog,
       citeLink = args.citeLink;
 
-  var dialogBody = dialog.select('.modal-body').text('');
-  dialogBody.append('p').append('strong')
-    .text('None of the files are suitable for import.');
-  if (citeLink) {
-    dialogBody.append('p').text('Requested URL: ').node().appendChild(citeLink);
-  }
-  listNondocuments(dialogBody, nondocs, 'Show details');
-  dialog.select('.modal-footer button').text('Close');
+  d3.select(dialog.bodyNode).text('').call(function (body) {
+    body.append('p').append('strong')
+      .text('None of the files are suitable for import.');
+    if (citeLink) {
+      body.append('p').text('Requested URL: ').node().appendChild(citeLink);
+    }
+    listNondocuments(body, nondocs, 'Show details');
+  });
+  dialog.footerNode.querySelector('button').textContent = 'Close';
 }
 
 // Intermingle text and nodes.
@@ -425,7 +425,7 @@ function importGist(args) {
       case 0:
         pickNone({
           nonDocumentFiles: parsed.nonDocumentFiles,
-          dialogNode: dialog.node,
+          dialog: dialog,
           citeLink: link
         });
         return;
@@ -437,7 +437,7 @@ function importGist(args) {
         pickMultiple({
           documentFiles: docfiles,
           nonDocumentFiles: parsed.nonDocumentFiles,
-          dialogNode: dialog.node,
+          dialog: dialog,
           citeNode: gistDescriptionLink({
             gistID: gistID,
             description: data.description
