@@ -26,6 +26,7 @@ function CheckboxTable(args) {
       .attr('type', 'checkbox')
       .on('click', /* @this checkbox */ function () {
         self.getCheckboxes().property('checked', this.checked);
+        self.onChange();
       });
   $(this.tbody.node()).on('click', 'tr', /* @this tr */ function (e) {
     // treat whole <tr> as click zone
@@ -35,6 +36,7 @@ function CheckboxTable(args) {
     }
     // update header checkbox
     self.refresh();
+    self.onChange();
   });
   // content
   args.headers && this.setHeaders(args.headers);
@@ -91,8 +93,18 @@ CheckboxTable.prototype.getCheckboxes = function () {
   return this.tbody.selectAll('input[type="checkbox"]');
 };
 
+CheckboxTable.prototype.getCheckedValues = function () {
+  return this.tbody.selectAll('input[type="checkbox"]:checked')[0]
+    .map(function (x) { return x.value; });
+};
+
+CheckboxTable.prototype.isCheckedEmpty = function () {
+  var headerBox = this.headerCheckbox.node();
+  return !(headerBox.checked || headerBox.indeterminate);
+};
+
 /**
- * Refresh the header checkbox (called after a change).
+ * Refresh the header checkbox (called after a row checkbox is toggled).
  */
 CheckboxTable.prototype.refresh = function () {
   var headerBox = this.headerCheckbox.node();
@@ -108,9 +120,8 @@ CheckboxTable.prototype.refresh = function () {
   headerBox.indeterminate = (0 < checked && checked < total);
 };
 
-CheckboxTable.prototype.getCheckedValues = function () {
-  return this.tbody.selectAll('input[type="checkbox"]:checked')[0]
-    .map(function (x) { return x.value; });
+// configurable. called after a click toggles a row or header checkbox.
+CheckboxTable.prototype.onChange = function () {
 };
 
 module.exports = CheckboxTable;

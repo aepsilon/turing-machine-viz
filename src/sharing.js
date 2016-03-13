@@ -321,9 +321,10 @@ function pickMultiple(args) {
   });
   listNondocuments(dialogBody, nondocs);
   // "Import" button
-  d3.select(dialog.footerNode)
+  var button = d3.select(dialog.footerNode)
     .append('button')
       .attr({type: 'button', class: 'btn btn-primary', 'data-dismiss': 'modal'})
+      .property('disabled', true)
       .text('Import')
       .on('click', function () {
         var names = d3.set(ctable.getCheckedValues());
@@ -331,7 +332,11 @@ function pickMultiple(args) {
           .filter(function (file) { return names.has(file.filename); })
           .map(_.property('document'))
         );
-      });
+      })
+    .node();
+  ctable.onChange = function () {
+    button.disabled = ctable.isCheckedEmpty();
+  };
 }
 
 // {nonDocumentFiles: NonDocumentFiles, dialog: ImportDialog, citeLink?: Node} -> void
