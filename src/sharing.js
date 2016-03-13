@@ -82,8 +82,9 @@ function ImportDialog(dialogNode) {
 // internal event handler.
 ImportDialog.prototype.__onClose = function () {
   this.onClose();
-  this.bodyNode.textContent = '';
-  // XXX: also clear footer. prevent leaks.
+  // use .empty to clean up $.on used in CheckboxTable
+  $(this.bodyNode).empty();
+  $(this.footerNode).empty();
 };
 
 // configurable
