@@ -11,8 +11,11 @@ var TMDocumentController = require('./TMDocumentController'),
 var ace = require('ace-builds/src-min-noconflict');
 var $ = require('jquery'); // for Bootstrap modal dialog events
 
-require('./sharing').init({
-  importDocument: importDocument
+$(function () {
+  require('./sharing').runImport({
+    dialogNode: document.querySelector('importDialog'),
+    importDocument: importDocument
+  });
 });
 
 // load up front so going offline doesn't break anything
@@ -134,7 +137,7 @@ function importDocument(obj) {
 
 // Document Menu //
 
-// TODO: persist last-opened index
+// XXX: persist last-opened index
 var docIndex = 0;
 
 var menu = (function () {

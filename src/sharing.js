@@ -396,16 +396,17 @@ function externalLink(args) {
   return link;
 }
 
-// {gistID: string, importDocument: TMData -> void} -> void
+// {gistID: string, dialogNode: Node, importDocument: TMData -> void} -> void
 function importGist(args) {
   var gistID = args.gistID,
+      dialogNode = args.dialogNode,
       importDocument = args.importDocument;
-  // generous limit to prevent accidentally exceeding quota
+  // prevent accidentally exceeding quota
   var MAX_FILESIZE = 400 * 1024;
 
   var req = getGist(gistID);
   // Show dialog
-  var dialog = new ImportDialog(document.getElementById('importDialog'));
+  var dialog = new ImportDialog(dialogNode);
   dialog.titleNode.textContent = 'Import from GitHub gist';
   dialog.onClose = function () {
     try {
@@ -503,17 +504,15 @@ function messageForError(reason) {
   }
 }
 
-// {importDocument: TMData -> void} -> void
-function init(imports) {
-  var importDocument = imports.importDocument;
-  $(function () {
-    // query param: import-gist=gistID
-    var params = queryParams(location.search.substring(1));
-    var gistID = params['import-gist'];
-    if (gistID) {
-      importGist({gistID: gistID, importDocument: importDocument});
-    }
-  });
+// Import a gist given by ?import-gist=gistID and reset the URL.
+// Call this once the DOM is ready (document.readyState === 'interactive').
+// {dialogNode: Node, importDocument: TMData -> void} -> void
+function runImport(args) {
+  var params = queryParams(location.search.substring(1));
+  var gistID = params['import-gist'];
+  if (gistID) {
+    importGist(_.assign({gistID: gistID}, args));
+  }
 }
 
-exports.init = init;
+exports.runImport = runImport;
