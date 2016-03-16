@@ -39,6 +39,9 @@
     .navbar-brand {
       font-variant: small-caps;
     }
+    nav .navbar-right {
+      margin-right: 0; /* override negative margin  */
+    }
     button.tm-editor-revert {
       position: absolute;
       margin-top: 0;
@@ -127,19 +130,84 @@
             </ul>
           </div>
         </div>
-        <!-- "Share" Menu -->
-        <!-- <button type="button" class="btn btn-default navbar-btn navbar-right" aria-label="Share">
-          <span class="glyphicon glyphicon-share" aria-hidden="true"></span>
-        </button> -->
-        <div class="navbar-right"
-        data-toggle="tooltip" data-placement="left" data-trigger="hover" title="Share">
+        <!-- Import and "Share" Menu -->
+        <div class="navbar-right">
+          <button type="button" class="btn btn-default navbar-btn" aria-label="Import"
+          data-toggle="modal" data-target="#importButtonDialog"
+          data-has-tooltip data-placement="bottom" data-trigger="hover" title="Import">
+            <span class="glyphicon glyphicon-folder-open" aria-hidden="true"></span>
+          </button>
           <button type="button" class="btn btn-default navbar-btn" aria-label="Share"
-          data-toggle="modal" data-target="#sharingDialog">
+          data-toggle="modal" data-target="#sharingDialog"
+          data-has-tooltip data-placement="bottom" data-trigger="hover" title="Share">
             <span class="glyphicon glyphicon-share" aria-hidden="true"></span>
           </button>
         </div>
       </div>
     </nav>
+    <!-- Dialog for Import button -->
+    <div id="importButtonDialog" class="modal fade" tabindex="-1" role="dialog"
+    aria-labelledby="importButtonDialogHeader">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="importButtonDialogHeader">Import</h4>
+          </div>
+          <div class="modal-body">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h5 class="panel-title">From GitHub gist</h5>
+              </div>
+              <div class="panel-body">
+                <form id="gistIDForm" class="form-inline">
+                  <div class="input-group">
+                    <span class="input-group-addon">https://gist.github.com/</span>
+                    <input type="text" size="22" class="form-control"
+                    placeholder="gist ID" spellcheck="false"
+                    pattern="[\da-fA-F]+" title="Hex digits (0–9, a–f)">
+                  </div>
+                  <button type="submit" class="btn btn-default">Import</button>
+                </form>
+                <span class="help-block">
+                  If the gist contains multiple documents, a dialog will appear for you to confirm.
+                </span>
+              </div>
+            </div>
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h5 class="panel-title">From files</h5>
+              </div>
+              <div class="panel-body">
+                <p>Choose one or more files to import</p>
+                <!-- <div class="form-inline">
+                  <div class="form-group">
+                    <input type="file" name="files" multiple class="well">
+                  </div>
+                  <button type="button" class="btn btn-default">Import</button>
+                </div> -->
+                <!-- <input type="file" name="files" multiple class="well well-sm">
+                <button type="button" class="btn btn-default">Import</button> -->
+                <div class="input-group">
+                  <input type="file" name="files" multiple class="form-control">
+                  <span class="input-group-btn">
+                    <button type="button" class="btn btn-default">Import</button>
+                  </span>
+                </div>
+                <p>
+                  &hellip;or paste a document's contents below.
+                </p>
+                <div class="form-group">
+                  <textarea class="form-control" rows="8" cols="40"></textarea>
+                </div>
+                <button type="button" class="btn btn-default">Import</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Dialog for Rename -->
     <div id="renameDialog" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="renameDialogHeader">
       <div class="modal-dialog modal-sm" role="document">
@@ -279,7 +347,7 @@
       <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
       <script>
         $(function () {
-          $('[data-toggle="tooltip"]').tooltip()
+          $('[data-has-tooltip]').tooltip()
         })
       </script>
       <!-- Entry point -->
@@ -490,7 +558,6 @@ table:
           <div class="modal-body">
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
           </div>
         </div>
       </div>

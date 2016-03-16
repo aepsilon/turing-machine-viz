@@ -12,9 +12,20 @@ var ace = require('ace-builds/src-min-noconflict');
 var $ = require('jquery'); // for Bootstrap modal dialog events
 
 $(function () {
-  require('./sharing').runImport({
-    dialogNode: document.querySelector('importDialog'),
+  // Run import from URL query (if any)
+  var sharingArgs = {
+    dialogNode: document.getElementById('importDialog'),
     importDocument: importDocument
+  };
+  require('./sharing').runImport(sharingArgs);
+  // Init import dialog
+  var $importButtonDialog = $('#importButtonDialog');
+  $importButtonDialog.one('show.bs.modal', function () {
+    require('./import-panel').init({
+      $dialog: $importButtonDialog,
+      gistIDForm: document.getElementById('gistIDForm'),
+      sharingArgs: sharingArgs
+    });
   });
 });
 

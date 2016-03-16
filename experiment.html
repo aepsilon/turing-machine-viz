@@ -337,6 +337,121 @@ bad indentation of a mapping entry at line 7, column 6:
         </div>
       </div>
 
+      <!-- Import dialog -->
+      <div data-toggle="tooltip" data-placement="bottom" data-trigger="hover"
+      title="Import">
+        <button type="button" class="btn btn-default navbar-btn" aria-label="Import"
+        data-toggle="modal" data-target="#importButtonDialog">
+          <span class="glyphicon glyphicon-folder-open" aria-hidden="true"></span>
+        </button>
+      </div>
+      <div id="importButtonDialog" class="modal fade" tabindex="-1" role="dialog"
+      aria-labelledby="importButtonDialogHeader">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <h4 class="modal-title" id="importButtonDialogHeader">Import</h4>
+            </div>
+            <div class="modal-body">
+              <h5>From GitHub gist</h5>
+              <p>
+                Enter a gist ID to import any eligible files.
+                Import previously exported documents from a GitHub gist.
+                Multiple documents can be imported at once from a gist.
+                <!-- More than one document can be imported at a time. -->
+              </p>
+              <form class="form-inline">
+                <label for="basic-url">Import from GitHub gist</label>
+                <div class="input-group">
+                  <span class="input-group-addon">https://gist.github.com/</span>
+                  <input type="text" class="form-control" id="basic-url"
+                  placeholder="gist ID" spellcheck="false">
+                </div>
+                <button type="submit" class="btn btn-default">Import</button>
+              </form>
+              <hr>
+              <h5>From files</h5>
+              <p>
+                Choose one or more documents to import&hellip;
+              </p>
+              <p>
+                &hellip;or paste a document's contents below.
+              </p>
+              <textarea class="form-control" rows="8" cols="40"></textarea>
+              <button type="button" class="btn btn-default">Import</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <button type="button" class="btn btn-default navbar-btn" aria-label="Import"
+    data-toggle="modal" data-target="#importButtonDialog2">
+      <span class="glyphicon glyphicon-folder-open" aria-hidden="true"></span>
+    </button>
+    <div id="importButtonDialog2" class="modal fade" tabindex="-1" role="dialog"
+    aria-labelledby="importButtonDialogHeader2">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="importButtonDialogHeader2">Import</h4>
+          </div>
+          <div class="modal-body">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h5 class="panel-title">From GitHub gist</h5>
+              </div>
+              <div class="panel-body">
+                <form class="form-inline">
+                  <div class="input-group">
+                    <span class="input-group-addon">https://gist.github.com/</span>
+                    <input type="text" size="22" class="form-control"
+                    placeholder="gist ID" spellcheck="false"
+                    pattern="[\da-fA-F]+" title="Hex digits (0–9, a–f)">
+                  </div>
+                  <button type="submit" class="btn btn-default">Import</button>
+                </form>
+                <span class="help-block">
+                  If the gist contains multiple documents, a dialog will appear for you to confirm.
+                </span>
+              </div>
+            </div>
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h5 class="panel-title">From files</h5>
+              </div>
+              <div class="panel-body">
+                <p>Choose one or more files to import</p>
+                <!-- <div class="form-inline">
+                  <div class="form-group">
+                    <input type="file" name="files" multiple class="well">
+                  </div>
+                  <button type="button" class="btn btn-default">Import</button>
+                </div> -->
+                <!-- <input type="file" name="files" multiple class="well well-sm">
+                <button type="button" class="btn btn-default">Import</button> -->
+                <div class="input-group">
+                  <input type="file" name="files" multiple class="form-control">
+                  <span class="input-group-btn">
+                    <button type="button" class="btn btn-default">Import</button>
+                  </span>
+                </div>
+                <p>
+                  &hellip;or paste a document's contents below.
+                </p>
+                <div class="form-group">
+                  <textarea class="form-control" rows="8" cols="40"></textarea>
+                </div>
+                <button type="button" class="btn btn-default">Import</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
       <script type="text/javascript">
       $(function() {
         'use strict';

@@ -321,9 +321,12 @@ function pickMultiple(args) {
     })
   });
   listNondocuments(dialogBody, nondocs);
-  // "Import" button
-  var button = d3.select(dialog.footerNode)
-    .append('button')
+  // Dialog footer
+  var footer = d3.select(dialog.footerNode).text('');
+  footer.append('button')
+      .attr({type: 'button', class: 'btn btn-default', 'data-dismiss': 'modal'})
+      .text('Cancel');
+  var importButton = footer.append('button')
       .attr({type: 'button', class: 'btn btn-primary', 'data-dismiss': 'modal'})
       .property('disabled', true)
       .text('Import')
@@ -336,7 +339,7 @@ function pickMultiple(args) {
       })
     .node();
   ctable.onChange = function () {
-    button.disabled = ctable.isCheckedEmpty();
+    importButton.disabled = ctable.isCheckedEmpty();
   };
 }
 
@@ -515,4 +518,5 @@ function runImport(args) {
   }
 }
 
+exports.importGist = importGist;
 exports.runImport = runImport;
