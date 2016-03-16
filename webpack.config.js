@@ -9,7 +9,7 @@ module.exports = {
   // split libraries into multiple chunks for more readable compiled code
   entry: {
     TMViz: [srcRoot + 'TMViz.js'],
-    CheckboxTable: [srcRoot + 'CheckboxTable.js'],
+    CheckboxTable: [srcRoot + 'sharing/CheckboxTable.js'],
     main: srcRoot + 'main.js'
   },
   output: {

@@ -6,25 +6,25 @@
 var TMDocumentController = require('./TMDocumentController'),
     DocumentMenu = require('./DocumentMenu'),
     Examples = require('./Examples'),
-    download = require('./download'),
+    format = require('./sharing/format'),
     toDocFragment = require('./util').toDocFragment;
 var ace = require('ace-builds/src-min-noconflict');
 var $ = require('jquery'); // for Bootstrap modal dialog events
 
 $(function () {
   // Run import from URL query (if any)
-  var sharingArgs = {
+  var importArgs = {
     dialogNode: document.getElementById('importDialog'),
     importDocument: importDocument
   };
-  require('./sharing').runImport(sharingArgs);
+  require('./sharing/import').runImport(importArgs);
   // Init import dialog
   var $importButtonDialog = $('#importButtonDialog');
   $importButtonDialog.one('show.bs.modal', function () {
-    require('./import-panel').init({
+    require('./sharing/import-panel').init({
       $dialog: $importButtonDialog,
       gistIDForm: document.getElementById('gistIDForm'),
-      sharingArgs: sharingArgs
+      importArgs: importArgs
     });
   });
 });
@@ -47,7 +47,7 @@ function pngFromSvg(svg) {
   var context = canvas.getContext('2d');
 
   var image = new Image();
-  image.src = download.dataURIFromSVG(svg);
+  image.src = format.dataURIFromSVG(svg);
   context.drawImage(image, 0, 0);
   return canvas.toDataURL('image/png');
 }
@@ -64,7 +64,7 @@ function pngFromSvg(svg) {
       link.href = '#';
       link.textContent = 'Download SVG';
       link.addEventListener('click', function () {
-        link.href = download.dataURIFromSVG(document.querySelector('svg'));
+        link.href = format.dataURIFromSVG(document.querySelector('svg'));
         link.download = menu.currentOption.text;
         link.target = '_blank';
         setTimeout(function () {
@@ -103,7 +103,7 @@ function pngFromSvg(svg) {
         // TODO: save upon opening the menu instead?
         controller.save();
         link.href = 'data:application/x-yaml;,' +
-          encodeURIComponent(download.stringifyDocument(menu.currentDocument));
+          encodeURIComponent(format.stringifyDocument(menu.currentDocument));
         link.download = menu.currentOption.text + '.yaml';
         setTimeout(function () {
           link.href = '#'; // release memory after download
@@ -124,7 +124,7 @@ function pngFromSvg(svg) {
     var button = document.getElementById('importButton');
     button.addEventListener('click', function () {
       try {
-        importDocument(download.parseDocument(textarea.value));
+        importDocument(format.parseDocument(textarea.value));
       } catch (error) {
         alert('Could not import document. An error occurred: ' + error);
         throw error;
@@ -322,5 +322,3 @@ window.addEventListener('beforeunload', function () {
 
 // For interaction/debugging
 exports.controller = controller;
-
-exports.download = download;

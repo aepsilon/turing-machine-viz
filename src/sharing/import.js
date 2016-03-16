@@ -4,11 +4,11 @@
 /* eslint no-unused-vars: 1 */
 /* eslint-env browser */
 /* global Promise */
-var download = require('./download');
+var format = require('./format');
 var $ = require('jquery');
 var _ = require('lodash/fp');
 var d3 = require('d3');
-var YAMLException = require('./Parser').YAMLException;
+var YAMLException = require('../Parser').YAMLException;
 
 var CheckboxTable = require('./CheckboxTable');
 
@@ -245,7 +245,7 @@ function listNondocuments(dialogBody, nondocs, disclosureTitle) {
 // throws if "source code" attribute is missing or not a string
 // string -> TMData
 function parseDocumentYAML(str) {
-  var obj = download.parseDocument(str);
+  var obj = format.parseDocument(str);
   if (obj == null || obj.sourceCode == null) {
     throw new TypeError('missing "source code:" value');
   } else if (!_.isString(obj.sourceCode)) {

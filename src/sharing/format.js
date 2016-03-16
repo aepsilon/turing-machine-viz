@@ -56,7 +56,8 @@ var stringifyDocument = _.flow(
   _.omitBy(function (x) { return x == null; }),
   // NB. lodash/fp/partialRight takes an array of arguments.
   _.partialRight(jsyaml.safeDump, [{
-    flowLevel: 2 // positions: one state per line
+    flowLevel: 2, // positions: one state per line
+    noCompatMode: true // use "y:" instead of "'y':"
   }])
 );
 
