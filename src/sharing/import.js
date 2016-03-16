@@ -4,7 +4,7 @@
 /* eslint no-unused-vars: 1 */
 /* eslint-env browser */
 /* global Promise */
-var format = require('./format');
+var parseDocument = require('./format').parseDocument;
 var $ = require('jquery');
 var _ = require('lodash/fp');
 var d3 = require('d3');
@@ -242,18 +242,6 @@ function listNondocuments(dialogBody, nondocs, disclosureTitle) {
   };
  */
 
-// throws if "source code" attribute is missing or not a string
-// string -> TMData
-function parseDocumentYAML(str) {
-  var obj = format.parseDocument(str);
-  if (obj == null || obj.sourceCode == null) {
-    throw new TypeError('missing "source code:" value');
-  } else if (!_.isString(obj.sourceCode)) {
-    throw new TypeError('"source code:" value needs to be of type string');
-  }
-  return obj;
-}
-
 // ([GistFile], number) -> {documentFiles: [DocFile], nonDocumentFiles: NonDocumentFiles}
 function parseFiles(files, sizelimit) {
   var docfiles = [];
@@ -269,7 +257,7 @@ function parseFiles(files, sizelimit) {
         docfiles.push({
           filename: name,
           size: file.size,
-          document: parseDocumentYAML(file.content)
+          document: parseDocument(file.content)
         });
       } catch (e) {
         var tuple = {filename: name, error: e};

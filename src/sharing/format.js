@@ -32,14 +32,16 @@ var docToYaml = {
 var yamlToDoc = _.invert(docToYaml);
 
 // like _.mapKeys, but only using the keys specified in a mapping object.
-// {[key: string] -> string} -> Object -> Object
+// {[key: string] -> string} -> ?Object -> Object
 function mapKeys(mapping) {
   return function (input) {
     var output = {};
-    Object.keys(mapping).forEach(function (fromKey) {
-      var toKey = mapping[fromKey];
-      output[toKey] = input[fromKey];
-    });
+    if (input != null) {
+      Object.keys(mapping).forEach(function (fromKey) {
+        var toKey = mapping[fromKey];
+        output[toKey] = input[fromKey];
+      });
+    }
     return output;
   };
 }
@@ -63,14 +65,26 @@ var stringifyDocument = _.flow(
 
 /**
  * Deserialize a document.
- * @param  {string} str serialized document
- * @return {Object}     data usable in TMDocument.copyFrom()
- * @throws {YAMLException} on syntax error
+ * @param  {string} str    serialized document
+ * @return {Object}        data usable in TMDocument.copyFrom()
+ * @throws {YAMLException} on YAML syntax error
+ * @throws {TypeError}     when missing "source code" string property
  */
 var parseDocument = _.flow(
   jsyaml.safeLoad,
-  mapKeys(yamlToDoc)
+  mapKeys(yamlToDoc),
+  checkData
 );
+
+// throw if "source code" attribute is missing or not a string
+function checkData(obj) {
+  if (obj == null || obj.sourceCode == null) {
+    throw new TypeError('missing "source code:" value');
+  } else if (!_.isString(obj.sourceCode)) {
+    throw new TypeError('"source code:" value needs to be of type string');
+  }
+  return obj;
+}
 
 exports.dataURIFromSVG = dataURIFromSVG;
 exports.stringifyDocument = stringifyDocument;
