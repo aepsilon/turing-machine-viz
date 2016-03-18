@@ -19,12 +19,12 @@ module.exports = {
     pathinfo: true
   },
   externals: {
-    'd3': 'd3',
-    'lodash': 'lodash',
-    'lodash/fp': '_',
-    'js-yaml': 'jsyaml',
     'ace-builds/src-min-noconflict': 'ace',
-    'jquery': 'jQuery'
+    'd3': 'd3',
+    'jquery': 'jQuery',
+    'js-yaml': 'jsyaml',
+    'lodash': 'lodash',
+    'lodash/fp': '_'
   },
   plugins: [
     new webpack.optimize.CommonsChunkPlugin({
