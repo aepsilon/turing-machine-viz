@@ -3,7 +3,7 @@
 /* global document: false */
 var docimport = require('./import');
 var _ = require('lodash/fp');
-var Promise = require('bluebird');
+var Promise = require('bluebird'); // eslint-disable-line no-shadow
 
 Promise.config({
   cancellation: true

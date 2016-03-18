@@ -8,8 +8,7 @@ var FileReaderPromise = require('./FileReaderPromise');
 var $ = require('jquery');
 var _ = require('lodash/fp');
 var d3 = require('d3');
-var Promise = require('bluebird');
-
+var Promise = require('bluebird');  // eslint-disable-line no-shadow
 
 Promise.config({
   cancellation: true

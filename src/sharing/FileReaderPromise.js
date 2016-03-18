@@ -1,7 +1,7 @@
 'use strict';
 
 /* global FileReader:false */
-var Promise = require('bluebird');
+var Promise = require('bluebird'); // eslint-disable-line no-shadow
 
 // arguments are forwarded to FileReader.readAsText
 // (Blob, ?encoding) -> Promise
