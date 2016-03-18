@@ -89,3 +89,6 @@ function checkData(obj) {
 exports.dataURIFromSVG = dataURIFromSVG;
 exports.stringifyDocument = stringifyDocument;
 exports.parseDocument = parseDocument;
+
+// Re-exports
+exports.YAMLException = jsyaml.YAMLException;

@@ -18,7 +18,7 @@
       <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
 
-    <!-- Turing machine visualization -->
+    <!-- Libraries -->
     <script src="lib/d3.js" charset="utf-8"></script>
     <script src="lib/lodash.js"></script>
     <script>
@@ -26,9 +26,9 @@
     </script>
     <script src="lib/lodash.fp.js"></script>
     <script src="lib/js-yaml.min.js" charset="utf-8"></script>
-    <script src="https://cdn.jsdelivr.net/es6-promise/3.1.2/es6-promise.min.js"
-    crossorigin="anonymous" integrity="sha256-ISoFmwQtUj8LXr8rJvXbSEX2Z76LgRxRa+F6Rh6OMRA="></script>
-
+    <script src="https://cdn.jsdelivr.net/bluebird/3.3.4/bluebird.min.js"
+    crossorigin="anonymous" integrity="sha256-So31K3Hg/HONpB6Bj2sOXp2PwRa2W1bQF6I3JFtDg/o="></script>
+    <!-- App code -->
     <script src="build/TMViz.bundle.js" charset="utf-8"></script>
     <link href="build/StateViz.css" rel="stylesheet" />
     <link href="build/tape/tape.css" rel="stylesheet" />
@@ -191,7 +191,8 @@
                 <div class="input-group">
                   <input type="file" name="files" multiple class="form-control">
                   <span class="input-group-btn">
-                    <button type="button" class="btn btn-default">Import</button>
+                    <button id="importFilesButton"
+                    type="button" class="btn btn-default">Import</button>
                   </span>
                 </div>
                 <p>

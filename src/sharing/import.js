@@ -3,14 +3,20 @@
 // XXX: temporary while WIP
 /* eslint no-unused-vars: 1 */
 /* eslint-env browser */
-/* global Promise */
+// /* global Promise */
+var CheckboxTable = require('./CheckboxTable');
 var parseDocument = require('./format').parseDocument;
+var YAMLException = require('./format').YAMLException;
+var FileReaderPromise = require('./FileReaderPromise');
 var $ = require('jquery');
 var _ = require('lodash/fp');
 var d3 = require('d3');
-var YAMLException = require('../Parser').YAMLException;
+var Promise = require('bluebird');
 
-var CheckboxTable = require('./CheckboxTable');
+
+Promise.config({
+  cancellation: true
+});
 
 // TODO: test with dev server
 function resetURL() {
@@ -318,7 +324,8 @@ function pickMultiple(args) {
       .attr({type: 'button', class: 'btn btn-primary', 'data-dismiss': 'modal'})
       .property('disabled', true)
       .text('Import')
-      .on('click', function () {
+      .on('click', /* @this button */ function () {
+        d3.select(this).on('click', null); // prevent double import; like .one()
         var names = d3.set(ctable.getCheckedValues());
         importDocuments(docfiles
           .filter(function (file) { return names.has(file.filename); })
@@ -451,6 +458,92 @@ function importGist(args) {
   });
 }
 
+// {files: FileList, dialogNode: Node, importDocument: TMData -> void} -> void
+function importLocalFiles(args) {
+  var files = args.files,
+      dialogNode = args.dialogNode,
+      importDocument = args.importDocument;
+  // prevent accidentally exceeding quota
+  var MAX_FILESIZE = 400 * 1024;
+  // Show dialog
+  var dialog = new ImportDialog(dialogNode);
+  // var fileNoun = files.length > 1 ? 'files' : 'file';
+  dialog.titleNode.textContent = 'Import from files';
+  function setDialogBody(nodes) {
+    dialog.bodyNode.textContent = '';
+    dialog.bodyNode.appendChild(joinNodes(nodes));
+  }
+  // XXX: file vs files
+  setDialogBody(['Processing files…']);
+  dialog.show();
+  // FIXME: test case: 0 files selected?
+  // Parse and pick files
+  var promise = parseLocalFiles(files, MAX_FILESIZE).then(function pickFiles(parsed) {
+    var docfiles = parsed.documentFiles;
+    switch (docfiles.length) {
+      case 0:
+        pickNone({
+          nonDocumentFiles: parsed.nonDocumentFiles,
+          dialog: dialog
+        });
+        return;
+      case 1:
+        importDocument(docfiles[0].document);
+        dialog.close();
+        return;
+      default:
+        pickMultiple({
+          documentFiles: docfiles,
+          nonDocumentFiles: parsed.nonDocumentFiles,
+          dialog: dialog,
+          importDocuments: function importDocuments(docs) {
+            docs.concat().reverse().map(importDocument);
+          }
+        });
+    }
+  })
+  .catch(function (reason) {
+    setDialogBody([messageForError(reason)]);
+  });
+  dialog.onClose = function () {
+    promise.cancel();
+  };
+}
+
+
+// The promise resolves with {documentFiles: [DocFile], nonDocumentFiles: NonDocumentFiles}.
+// (FileList | [File], number) -> Promise
+function parseLocalFiles(files, sizelimit) {
+  var docfiles = [];
+  var nondocs = {wrongType: [], tooLarge: [], badYAML: [], badDoc: [], otherError: []};
+
+  return Promise.each(_.toArray(files), function (file) {
+    var name = file.name; // eslint-disable-line no-shadow
+    if (name.search(/(\.yaml|\.yml)$/) === -1) {
+      nondocs.wrongType.push(name);
+    } else if (file.truncated || file.size > sizelimit) {
+      nondocs.tooLarge.push(name);
+    } else {
+      return FileReaderPromise.readAsText(file).then(function (content) {
+        docfiles.push({
+          filename: name,
+          size: file.size,
+          document: parseDocument(content)
+        });
+      }).catch(function (e) {
+        var tuple = {filename: name, error: e};
+        if (e instanceof YAMLException) {
+          nondocs.badYAML.push(tuple);
+        } else if (e instanceof TypeError) {
+          nondocs.badDoc.push(tuple);
+        } else {
+          nondocs.otherError.push(tuple);
+        }
+      });
+    }
+  }).return({documentFiles: docfiles, nonDocumentFiles: nondocs});
+}
+
 function createElementHTML(tagName, innerHTML) {
   var element = document.createElement(tagName);
   element.innerHTML = innerHTML;
@@ -489,7 +582,10 @@ function messageForError(reason) {
   } else {
     // case: other error
     var pre = document.createElement('pre');
-    pre.textContent = String(reason);
+    pre.textContent = reason instanceof Error
+      ? String(reason)
+      // for objects like DOMError (.toString gives "[object FileError]")
+      : reason.message || reason.name || String(reason);
     return joinNodes([
       createElementHTML('p', 'An unexpected error occurred:'), pre]);
   }
@@ -502,9 +598,11 @@ function runImport(args) {
   var params = queryParams(location.search.substring(1));
   var gistID = params['import-gist'];
   if (gistID) {
+    // XXX: put resetURL here instead. use .finally(resetURL)
     importGist(_.assign({gistID: gistID}, args));
   }
 }
 
 exports.importGist = importGist;
+exports.importLocalFiles = importLocalFiles;
 exports.runImport = runImport;
