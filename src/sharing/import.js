@@ -188,7 +188,7 @@ function listNondocuments(dialogBody, nondocs, disclosureTitle) {
     title: 'Unexpected error',
     headers: ['Filename', 'Error'],
     data: nondocs.otherError.map(function functionName(d) {
-      return [d.filename, d.error];
+      return [d.filename, errorString(d.error) ];
     })
   }).classed('panel-danger', true);
   appendTablePanel(container, {
@@ -215,6 +215,13 @@ function listNondocuments(dialogBody, nondocs, disclosureTitle) {
     title: 'Different file extension (not <code>.yaml</code>/<code>.yml</code>)',
     data: nondocs.wrongType
   });
+}
+
+// deal with objects like DOMError (whose .toString gives "[object FileError]")
+function errorString(reason) {
+  return reason instanceof Error
+    ? String(reason)
+    : reason.message || reason.name || String(reason);
 }
 
 //////////////////////
@@ -515,10 +522,7 @@ function messageForError(reason) {
   } else {
     // case: other error
     var pre = document.createElement('pre');
-    pre.textContent = reason instanceof Error
-      ? String(reason)
-      // for objects like DOMError (.toString gives "[object FileError]")
-      : reason.message || reason.name || String(reason);
+    pre.textContent = errorString(reason);
     return joinNodes([
       createElementHTML('p', 'An unexpected error occurred:'), pre]);
   }
