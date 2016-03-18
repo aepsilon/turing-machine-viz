@@ -1,9 +1,6 @@
 'use strict';
 
-// XXX: temporary while WIP
-/* eslint no-unused-vars: 1 */
 /* eslint-env browser */
-// /* global Promise */
 var CheckboxTable = require('./CheckboxTable');
 var parseDocument = require('./format').parseDocument;
 var YAMLException = require('./format').YAMLException;
@@ -17,17 +14,6 @@ var Promise = require('bluebird');
 Promise.config({
   cancellation: true
 });
-
-// TODO: test with dev server
-function resetURL() {
-  try {
-    // FIXME:
-    history.replaceState(null, null, '/');
-    // location.search = '';
-  } catch (e) {
-    // ignore
-  }
-}
 
 function decodeFormURLComponent(str) {
   return decodeURIComponent(str.replace('+', ' '));
@@ -49,16 +35,17 @@ function queryParams(queryString) {
 }
 
 // The reject handler is passed an object with properties xhr, status, error.
-// The promise has .xhr (for the jqXHR). .xhr.abort() will also reject the promise.
+// To abort the request, use .cancel (from bluebird).
 // jqXHR -> Promise
 function promisifyAjax(xhr) {
-  var promise = new Promise(function (resolve, reject) {
+  return new Promise(function (resolve, reject, onCancel) {
     xhr.then(resolve, function (jqXHR, textStatus, errorThrown) {
       reject({xhr: jqXHR, status: textStatus, error: errorThrown});
     });
+    onCancel && onCancel(function () {
+      try { xhr.abort(); } catch (e) {/* */}
+    });
   });
-  promise.xhr = xhr;
-  return promise;
 }
 
 // GistID -> Promise
@@ -81,6 +68,11 @@ function ImportDialog(dialogNode) {
   this.titleNode = dialogNode.querySelector('.modal-header .modal-title');
   this.bodyNode = dialogNode.querySelector('.modal-body');
   this.footerNode = dialogNode.querySelector('.modal-footer');
+  this.cancelButtonNode = d3.select(this.footerNode).text('')
+    .append('button')
+      .attr({type: 'button', class: 'btn btn-default', 'data-dismiss': 'modal'})
+      .text('Cancel')
+    .node();
   this.$dialog = $(dialogNode)
     .one('hide.bs.modal', this.__onClose.bind(this));
 }
@@ -103,6 +95,11 @@ ImportDialog.prototype.show = function () {
 
 ImportDialog.prototype.close = function () {
   this.$dialog.modal('hide');
+};
+
+ImportDialog.prototype.setBodyChildNodes = function (nodes) {
+  this.bodyNode.textContent = '';
+  this.bodyNode.appendChild(joinNodes(nodes));
 };
 
 function appendPanel(div, titleHTML) {
@@ -196,7 +193,6 @@ function listNondocuments(dialogBody, nondocs, disclosureTitle) {
     })
   }).classed('panel-danger', true);
   appendTablePanel(container, {
-    // FIXME: change title
     title: 'Not suitable for import',
     headers: ['Filename', 'Reason'],
     data: nondocs.badDoc.map(function (d) {
@@ -229,7 +225,6 @@ function listNondocuments(dialogBody, nondocs, disclosureTitle) {
 /* Interface for Document Parsing
   type GistFile = {
     filename: string,
-    language: string,
     size: number,
     truncated: boolean,
     content: string
@@ -246,26 +241,34 @@ function listNondocuments(dialogBody, nondocs, disclosureTitle) {
     badDoc:     [ErrorTuple],
     otherError: [ErrorTuple]
   };
+  type ParseResult = {documentFiles: [DocFile], nonDocumentFiles: NonDocumentFiles};
  */
 
-// ([GistFile], number) -> {documentFiles: [DocFile], nonDocumentFiles: NonDocumentFiles}
-function parseFiles(files, sizelimit) {
+// Parse each file into a document or a categorized error.
+// Local files are read only if they have the right extension and size.
+// NB. make sure to convert FileList to an actual Array.
+// The promise resolves with ParseResult.
+// (number, [GistFile | File]) -> Promise
+function parseFiles(sizelimit, files) {
   var docfiles = [];
   var nondocs = {wrongType: [], tooLarge: [], badYAML: [], badDoc: [], otherError: []};
-  files.forEach(function (file) {
-    var name = file.filename; // eslint-disable-line no-shadow
-    if (file.language !== 'YAML') {
+
+  return Promise.each(files, function (file) {
+    var name = file.filename || file.name; // eslint-disable-line no-shadow
+    if (name.search(/\.ya?ml$/) === -1) {
       nondocs.wrongType.push(name);
     } else if (file.truncated || file.size > sizelimit) {
       nondocs.tooLarge.push(name);
     } else {
-      try {
+      return Promise.resolve(file.content != null ? file.content
+        : FileReaderPromise.readAsText(file))
+      .then(function (content) {
         docfiles.push({
           filename: name,
           size: file.size,
-          document: parseDocument(file.content)
+          document: parseDocument(content)
         });
-      } catch (e) {
+      }).catch(function (e) {
         var tuple = {filename: name, error: e};
         if (e instanceof YAMLException) {
           nondocs.badYAML.push(tuple);
@@ -274,10 +277,9 @@ function parseFiles(files, sizelimit) {
         } else {
           nondocs.otherError.push(tuple);
         }
-      }
+      });
     }
-  });
-  return {documentFiles: docfiles, nonDocumentFiles: nondocs};
+  }).return({documentFiles: docfiles, nonDocumentFiles: nondocs});
 }
 
 /////////////////////
@@ -316,11 +318,7 @@ function pickMultiple(args) {
   });
   listNondocuments(dialogBody, nondocs);
   // Dialog footer
-  var footer = d3.select(dialog.footerNode).text('');
-  footer.append('button')
-      .attr({type: 'button', class: 'btn btn-default', 'data-dismiss': 'modal'})
-      .text('Cancel');
-  var importButton = footer.append('button')
+  var importButton = d3.select(dialog.footerNode).append('button')
       .attr({type: 'button', class: 'btn btn-primary', 'data-dismiss': 'modal'})
       .property('disabled', true)
       .text('Import')
@@ -352,7 +350,7 @@ function pickNone(args) {
     }
     listNondocuments(body, nondocs, 'Show details');
   });
-  dialog.footerNode.querySelector('button').textContent = 'Close';
+  dialog.cancelButtonNode.textContent = 'Close';
 }
 
 // Intermingle text and nodes.
@@ -394,155 +392,91 @@ function externalLink(args) {
   return link;
 }
 
-// {gistID: string, dialogNode: Node, importDocument: TMData -> void} -> void
-function importGist(args) {
+// The returned promise resolves/cancels when the dialog is closed:
+// • resolves if loading (before import) finished and the user cancelled anyway
+// • cancels if files were still loading and not yet displayed (eg. fetch, parse)
+// ({gistID: string, dialogNode: Node, importDocument: TMData -> void} |
+// {files: FileList, dialogNode: Node, importDocument: TMData -> void}) -> Promise
+function importCommon(args) {
   var gistID = args.gistID,
       dialogNode = args.dialogNode,
       importDocument = args.importDocument;
+
+  var dialog = new ImportDialog(dialogNode);
+  var citeLink;
+  var citeNode;
   // prevent accidentally exceeding quota
   var MAX_FILESIZE = 400 * 1024;
-
-  var req = getGist(gistID);
-  // Show dialog
-  var dialog = new ImportDialog(dialogNode);
-  dialog.titleNode.textContent = 'Import from GitHub gist';
-  dialog.onClose = function () {
-    try {
-      resetURL();
-      req.xhr.abort();
-    } catch (e) {
-      // ignore
-    }
-  };
-  function setDialogBody(nodes) {
-    dialog.bodyNode.textContent = '';
-    dialog.bodyNode.appendChild(joinNodes(nodes));
-  }
-  var link = externalLink({href: 'https://gist.github.com/' + gistID});
-  setDialogBody(['Retrieving ', link, '…']);
-  dialog.show();
-  // Parse and pick files
-  req.then(function pickFiles(data) {
-    setDialogBody(['Processing ', link, '…']);
-    var parsed = parseFiles(_.values(data.files), MAX_FILESIZE);
-    var docfiles = parsed.documentFiles;
-    switch (docfiles.length) {
-      case 0:
-        pickNone({
-          nonDocumentFiles: parsed.nonDocumentFiles,
-          dialog: dialog,
-          citeLink: link
+  // Start fetch
+  var filesPromise = (function () {
+    if (gistID) {
+      citeLink = externalLink({href: 'https://gist.github.com/' + gistID});
+      dialog.setBodyChildNodes(['Retrieving ', citeLink, '…']);
+      return getGist(gistID).then(function (data) {
+        citeNode = gistDescriptionLink({
+          gistID: gistID,
+          description: data.description
         });
-        return;
-      case 1:
-        importDocument(docfiles[0].document);
-        dialog.close();
-        return;
-      default:
-        pickMultiple({
-          documentFiles: docfiles,
-          nonDocumentFiles: parsed.nonDocumentFiles,
-          dialog: dialog,
-          citeNode: gistDescriptionLink({
-            gistID: gistID,
-            description: data.description
-          }),
-          importDocuments: function importDocuments(docs) {
-            docs.concat().reverse().map(importDocument);
-          }
-        });
-    }
-  })
-  .catch(function (reason) {
-    setDialogBody([messageForError(reason), 'Requested URL: ', link]);
-  });
-}
-
-// {files: FileList, dialogNode: Node, importDocument: TMData -> void} -> void
-function importLocalFiles(args) {
-  var files = args.files,
-      dialogNode = args.dialogNode,
-      importDocument = args.importDocument;
-  // prevent accidentally exceeding quota
-  var MAX_FILESIZE = 400 * 1024;
-  // Show dialog
-  var dialog = new ImportDialog(dialogNode);
-  // var fileNoun = files.length > 1 ? 'files' : 'file';
-  dialog.titleNode.textContent = 'Import from files';
-  function setDialogBody(nodes) {
-    dialog.bodyNode.textContent = '';
-    dialog.bodyNode.appendChild(joinNodes(nodes));
-  }
-  // XXX: file vs files
-  setDialogBody(['Processing files…']);
-  dialog.show();
-  // FIXME: test case: 0 files selected?
-  // Parse and pick files
-  var promise = parseLocalFiles(files, MAX_FILESIZE).then(function pickFiles(parsed) {
-    var docfiles = parsed.documentFiles;
-    switch (docfiles.length) {
-      case 0:
-        pickNone({
-          nonDocumentFiles: parsed.nonDocumentFiles,
-          dialog: dialog
-        });
-        return;
-      case 1:
-        importDocument(docfiles[0].document);
-        dialog.close();
-        return;
-      default:
-        pickMultiple({
-          documentFiles: docfiles,
-          nonDocumentFiles: parsed.nonDocumentFiles,
-          dialog: dialog,
-          importDocuments: function importDocuments(docs) {
-            docs.concat().reverse().map(importDocument);
-          }
-        });
-    }
-  })
-  .catch(function (reason) {
-    setDialogBody([messageForError(reason)]);
-  });
-  dialog.onClose = function () {
-    promise.cancel();
-  };
-}
-
-
-// The promise resolves with {documentFiles: [DocFile], nonDocumentFiles: NonDocumentFiles}.
-// (FileList | [File], number) -> Promise
-function parseLocalFiles(files, sizelimit) {
-  var docfiles = [];
-  var nondocs = {wrongType: [], tooLarge: [], badYAML: [], badDoc: [], otherError: []};
-
-  return Promise.each(_.toArray(files), function (file) {
-    var name = file.name; // eslint-disable-line no-shadow
-    if (name.search(/(\.yaml|\.yml)$/) === -1) {
-      nondocs.wrongType.push(name);
-    } else if (file.truncated || file.size > sizelimit) {
-      nondocs.tooLarge.push(name);
-    } else {
-      return FileReaderPromise.readAsText(file).then(function (content) {
-        docfiles.push({
-          filename: name,
-          size: file.size,
-          document: parseDocument(content)
-        });
-      }).catch(function (e) {
-        var tuple = {filename: name, error: e};
-        if (e instanceof YAMLException) {
-          nondocs.badYAML.push(tuple);
-        } else if (e instanceof TypeError) {
-          nondocs.badDoc.push(tuple);
-        } else {
-          nondocs.otherError.push(tuple);
-        }
+        dialog.setBodyChildNodes(['Processing ', citeLink, '…']);
+        return _.values(data.files);
       });
+    } else {
+      dialog.setBodyChildNodes(['Processing files…']);
+      return Promise.resolve(_.toArray(args.files));
     }
-  }).return({documentFiles: docfiles, nonDocumentFiles: nondocs});
+  }());
+  // Show dialog
+  dialog.titleNode.textContent = 'Import from ' + (gistID ? 'GitHub gist' : 'files');
+  dialog.show();
+  // Parse, pick, import
+  var promise = filesPromise
+  .then(parseFiles.bind(undefined, MAX_FILESIZE))
+  .then(function (parsed) {
+    var docfiles = parsed.documentFiles;
+    switch (docfiles.length) {
+      case 0:
+        pickNone({
+          nonDocumentFiles: parsed.nonDocumentFiles,
+          dialog: dialog,
+          citeLink: citeLink
+        });
+        return;
+      case 1:
+        importDocument(docfiles[0].document);
+        dialog.close();
+        return;
+      default:
+        pickMultiple({
+          documentFiles: docfiles,
+          nonDocumentFiles: parsed.nonDocumentFiles,
+          dialog: dialog,
+          citeNode: citeNode,
+          importDocuments: function importDocuments(docs) {
+            docs.concat().reverse().map(importDocument);
+          }
+        });
+    }
+  })
+  .catch(function (reason) {
+    dialog.setBodyChildNodes([messageForError(reason)]
+      .concat(citeLink ? ['Requested URL: ', citeLink] : [])
+    );
+    dialog.cancelButtonNode.textContent = 'Close';
+  });
+  var waitForDialog = new Promise(function (resolve) {
+    dialog.onClose = function () {
+      promise.cancel();
+      resolve();
+    };
+  });
+  return promise.return(waitForDialog);
 }
+
+// {gistID: string, dialogNode: Node, importDocument: TMData -> void} -> Promise
+var importGist = importCommon;
+
+// {files: FileList, dialogNode: Node, importDocument: TMData -> void} -> Promise
+var importLocalFiles = importCommon;
 
 function createElementHTML(tagName, innerHTML) {
   var element = document.createElement(tagName);
@@ -595,11 +529,21 @@ function messageForError(reason) {
 // Call this once the DOM is ready (document.readyState === 'interactive').
 // {dialogNode: Node, importDocument: TMData -> void} -> void
 function runImport(args) {
+  // TODO: test with dev server
+  function resetURL() {
+    try {
+      console.info('resetURL called'); // eslint-disable-line no-console
+      history.replaceState(null, null, '/');
+    } catch (e) {
+      // ignore
+    }
+  }
+
   var params = queryParams(location.search.substring(1));
   var gistID = params['import-gist'];
   if (gistID) {
-    // XXX: put resetURL here instead. use .finally(resetURL)
-    importGist(_.assign({gistID: gistID}, args));
+    importGist(_.assign({gistID: gistID}, args))
+    .finally(resetURL);
   }
 }
 
