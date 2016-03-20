@@ -161,9 +161,12 @@ function appendTablePanel(container, data) {
   return panel;
 }
 
+// NonDocumentFiles -> boolean
+var isEmptyNonDocs = _.every(_.isEmpty);
+
 // (D3Selection, NonDocumentFiles, ?string) -> void
 function listNondocuments(dialogBody, nondocs, disclosureTitle) {
-  if (_.values(nondocs).every(_.isEmpty)) {
+  if (isEmptyNonDocs(nondocs)) {
     return;
   }
   // Disclosure triangle
@@ -348,8 +351,9 @@ function pickNone(args) {
       citeLink = args.citeLink;
 
   d3.select(dialog.bodyNode).text('').call(function (body) {
-    body.append('p').append('strong')
-      .text('None of the files are suitable for import.');
+    body.append('p').append('strong').text(!isEmptyNonDocs(nondocs)
+        ? 'None of the files are suitable for import.'
+        : 'No files were selected.');
     if (citeLink) {
       body.append('p').text('Requested URL: ').node().appendChild(citeLink);
     }
