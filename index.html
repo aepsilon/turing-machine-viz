@@ -101,6 +101,12 @@
       white-space: pre-wrap;
       font-size: smaller;
     }
+
+    /* Fix some cases of extra margins in bootstrap */
+    .modal-body .panel:last-child,
+    .panel-body > *:last-child {
+      margin-bottom: 0;
+    }
     </style>
   </head>
   <body>
@@ -174,34 +180,29 @@
                 </span>
               </div>
             </div>
-            <div class="panel panel-default">
+            <div id="importFilesPanel" class="panel panel-default">
               <div class="panel-heading">
                 <h5 class="panel-title">From files</h5>
               </div>
               <div class="panel-body">
-                <p>Choose one or more files to import</p>
-                <!-- <div class="form-inline">
-                  <div class="form-group">
-                    <input type="file" name="files" multiple class="well">
-                  </div>
-                  <button type="button" class="btn btn-default">Import</button>
-                </div> -->
-                <!-- <input type="file" name="files" multiple class="well well-sm">
-                <button type="button" class="btn btn-default">Import</button> -->
-                <div class="input-group">
-                  <input type="file" name="files" multiple class="form-control">
-                  <span class="input-group-btn">
-                    <button id="importFilesButton"
-                    type="button" class="btn btn-default">Import</button>
-                  </span>
-                </div>
-                <p>
-                  &hellip;or paste a document's contents below.
-                </p>
                 <div class="form-group">
+                  <p>Choose one or more files to import</p>
+                  <div class="input-group">
+                    <input type="file" name="files" multiple class="form-control">
+                    <span class="input-group-btn">
+                      <button id="importFilesButton"
+                      type="button" class="btn btn-default">Import</button>
+                    </span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <p>&hellip;or paste a document’s contents below.</p>
                   <textarea class="form-control" rows="8" cols="40"></textarea>
                 </div>
-                <button type="button" class="btn btn-default">Import</button>
+                <div class="text-center">
+                  <button id="importContentsButton"
+                  type="button" class="btn btn-default">Import</button>
+                </div>
               </div>
             </div>
           </div>
