@@ -79,16 +79,26 @@ var parseDocument = _.flow(
 // throw if "source code" attribute is missing or not a string
 function checkData(obj) {
   if (obj == null || obj.sourceCode == null) {
-    throw new TypeError('missing "source code:" value');
+    throw new InvalidDocumentError('The “source code:” value is missing');
   } else if (!_.isString(obj.sourceCode)) {
-    throw new TypeError('"source code:" value needs to be of type string');
+    throw new InvalidDocumentError('The “source code:” value needs to be of type string');
   }
   return obj;
 }
 
+// for valid YAML that is not valid as a document
+function InvalidDocumentError(message) {
+  this.name = 'InvalidDocumentError';
+  this.message = message || 'Invalid document';
+  this.stack = (new Error()).stack;
+}
+InvalidDocumentError.prototype = Object.create(Error.prototype);
+InvalidDocumentError.prototype.constructor = InvalidDocumentError;
+
 exports.dataURIFromSVG = dataURIFromSVG;
 exports.stringifyDocument = stringifyDocument;
 exports.parseDocument = parseDocument;
+exports.InvalidDocumentError = InvalidDocumentError;
 
 // Re-exports
 exports.YAMLException = jsyaml.YAMLException;

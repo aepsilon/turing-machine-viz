@@ -2,9 +2,8 @@
 
 /* eslint-env browser */
 var CheckboxTable = require('./CheckboxTable');
-var parseDocument = require('./format').parseDocument;
-var YAMLException = require('./format').YAMLException;
 var FileReaderPromise = require('./FileReaderPromise');
+var format = require('./format');
 var $ = require('jquery');
 var _ = require('lodash/fp');
 var d3 = require('d3');
@@ -272,13 +271,13 @@ function parseFiles(sizelimit, files) {
         docfiles.push({
           filename: name,
           size: file.size,
-          document: parseDocument(content)
+          document: format.parseDocument(content)
         });
       }).catch(function (e) {
         var tuple = {filename: name, error: e};
-        if (e instanceof YAMLException) {
+        if (e instanceof format.YAMLException) {
           nondocs.badYAML.push(tuple);
-        } else if (e instanceof TypeError) {
+        } else if (e instanceof format.InvalidDocumentError) {
           nondocs.badDoc.push(tuple);
         } else {
           nondocs.otherError.push(tuple);

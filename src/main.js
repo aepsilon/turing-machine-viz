@@ -133,11 +133,7 @@ function pngFromSvg(svg) {
   });
 }());
 
-// throws if missing .sourceCode or .sourceCode is invalid
 function importDocument(obj) {
-  if (obj == null || obj.sourceCode == null) {
-    throw new TypeError('missing "source code" value');
-  }
   controller.openDocument(menu.duplicate(obj, {select: true}));
   refreshEditMenu();
 }
