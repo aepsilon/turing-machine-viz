@@ -412,9 +412,10 @@ function importCommon(args) {
   var citeNode;
   // prevent accidentally exceeding quota
   var MAX_FILESIZE = 400 * 1024;
-  // Start fetch
+  // Start fetch, show dialog
   var filesPromise = (function () {
-    if (gistID) {
+    if (gistID != null) {
+      dialog.titleNode.textContent = 'Import from GitHub gist';
       citeLink = externalLink({href: 'https://gist.github.com/' + gistID});
       dialog.setBodyChildNodes(['Retrieving ', citeLink, '…']);
       return getGist(gistID).then(function (data) {
@@ -426,12 +427,11 @@ function importCommon(args) {
         return _.values(data.files);
       });
     } else {
+      dialog.titleNode.textContent = 'Import from files';
       dialog.setBodyChildNodes(['Processing files…']);
       return Promise.resolve(_.toArray(args.files));
     }
   }());
-  // Show dialog
-  dialog.titleNode.textContent = 'Import from ' + (gistID ? 'GitHub gist' : 'files');
   dialog.show();
   // Parse, pick, import
   var promise = filesPromise
