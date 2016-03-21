@@ -26,10 +26,15 @@
     </script>
     <script src="lib/lodash.fp.js"></script>
     <script src="lib/js-yaml.min.js" charset="utf-8"></script>
+    <script src="lib/ace-builds/src-min-noconflict/ace.js" charset="utf-8"></script>
     <script src="https://cdn.jsdelivr.net/bluebird/3.3.4/bluebird.min.js"
     crossorigin="anonymous" integrity="sha256-So31K3Hg/HONpB6Bj2sOXp2PwRa2W1bQF6I3JFtDg/o="></script>
-    <!-- App code -->
-    <script src="build/TMViz.bundle.js" charset="utf-8"></script>
+      <!-- jQuery (necessary for Bootstrap plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+      <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+
+    <!-- CSS -->
     <link href="build/StateViz.css" rel="stylesheet" />
     <link href="build/tape/tape.css" rel="stylesheet" />
     <style>
@@ -151,65 +156,7 @@
         </div>
       </div>
     </nav>
-    <!-- Dialog for Import button -->
-    <div id="importButtonDialog" class="modal fade" tabindex="-1" role="dialog"
-    aria-labelledby="importButtonDialogHeader">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            <h4 class="modal-title" id="importButtonDialogHeader">Import</h4>
-          </div>
-          <div class="modal-body">
-            <div class="panel panel-default">
-              <div class="panel-heading">
-                <h5 class="panel-title">From GitHub gist</h5>
-              </div>
-              <div class="panel-body">
-                <form id="gistIDForm" class="form-inline">
-                  <div class="input-group">
-                    <span class="input-group-addon">https://gist.github.com/</span>
-                    <input type="text" size="22" class="form-control"
-                    placeholder="gist ID" spellcheck="false"
-                    pattern="[\da-fA-F]+" title="Hex digits (0–9, a–f)">
-                  </div>
-                  <button type="submit" class="btn btn-default">Import</button>
-                </form>
-                <span class="help-block">
-                  If the gist contains multiple documents, a dialog will appear for you to confirm.
-                </span>
-              </div>
-            </div>
-            <div id="importFilesPanel" class="panel panel-default">
-              <div class="panel-heading">
-                <h5 class="panel-title">From files</h5>
-              </div>
-              <div class="panel-body">
-                <div class="form-group">
-                  <p>Choose one or more files to import</p>
-                  <div class="input-group">
-                    <input type="file" name="files" multiple class="form-control">
-                    <span class="input-group-btn">
-                      <button id="importFilesButton"
-                      type="button" class="btn btn-default">Import</button>
-                    </span>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <p>&hellip;or paste a document’s contents below.</p>
-                  <textarea class="form-control" rows="8" cols="40"></textarea>
-                </div>
-                <div class="text-center">
-                  <button id="importContentsButton"
-                  type="button" class="btn btn-default">Import</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
+    <!-- ** Modal dialogs ** -->
     <!-- Dialog for Rename -->
     <div id="renameDialog" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="renameDialogHeader">
       <div class="modal-dialog modal-sm" role="document">
@@ -266,6 +213,64 @@
             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
             <button id="tm-doc-action-resetsave" type="button"
               class="btn btn-primary btn-wide-save" data-dismiss="modal">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Dialog for Import button -->
+    <div id="importButtonDialog" class="modal fade" tabindex="-1" role="dialog"
+    aria-labelledby="importButtonDialogHeader">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="importButtonDialogHeader">Import</h4>
+          </div>
+          <div class="modal-body">
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h5 class="panel-title">From GitHub gist</h5>
+              </div>
+              <div class="panel-body">
+                <form id="gistIDForm" class="form-inline">
+                  <div class="input-group">
+                    <span class="input-group-addon">https://gist.github.com/</span>
+                    <input type="text" size="22" class="form-control"
+                    placeholder="gist ID" spellcheck="false"
+                    pattern="[\da-fA-F]+" title="Hex digits (0–9, a–f)">
+                  </div>
+                  <button type="submit" class="btn btn-default">Import</button>
+                </form>
+                <span class="help-block">
+                  If the gist contains multiple documents, a dialog will appear for you to confirm.
+                </span>
+              </div>
+            </div>
+            <div id="importFilesPanel" class="panel panel-default">
+              <div class="panel-heading">
+                <h5 class="panel-title">From files</h5>
+              </div>
+              <div class="panel-body">
+                <div class="form-group">
+                  <p>Choose one or more files to import</p>
+                  <div class="input-group">
+                    <input type="file" name="files" multiple class="form-control">
+                    <span class="input-group-btn">
+                      <button id="importFilesButton"
+                      type="button" class="btn btn-default">Import</button>
+                    </span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <p>&hellip;or paste a document’s contents below.</p>
+                  <textarea class="form-control" rows="8" cols="40"></textarea>
+                </div>
+                <div class="text-center">
+                  <button id="importContentsButton"
+                  type="button" class="btn btn-default">Import</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -345,15 +350,13 @@
         </div>
       </div>
 
-      <!-- jQuery (necessary for Bootstrap plugins) -->
-      <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
       <script>
         $(function () {
           $('[data-has-tooltip]').tooltip()
-        })
+        });
       </script>
       <!-- Entry point -->
-      <script src="lib/ace-builds/src-min-noconflict/ace.js" charset="utf-8"></script>
+      <script src="build/TMViz.bundle.js" charset="utf-8"></script>
       <script src="build/main.bundle.js" charset="utf-8"></script>
     <hr>
     <!-- Tutorial -->
@@ -543,9 +546,6 @@ table:
         </div>
       </div>
     </div>
-
-    <!-- Include all compiled plugins (below), or include individual files as needed -->
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
 
     <!-- Dialog for Import -->
     <div id="importDialog" class="modal fade" tabindex="-1" role="dialog"
