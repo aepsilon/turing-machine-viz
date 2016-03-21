@@ -118,19 +118,6 @@ function pngFromSvg(svg) {
     div.textContent = 'Error: a[download] not supported';
     document.body.appendChild(div);
   }
-
-  window.addEventListener('load', function () {
-    var textarea = document.getElementById('importBox');
-    var button = document.getElementById('importButton');
-    button.addEventListener('click', function () {
-      try {
-        importDocument(format.parseDocument(textarea.value));
-      } catch (error) {
-        alert('Could not import document. An error occurred: ' + error);
-        throw error;
-      }
-    });
-  });
 }());
 
 function importDocument(obj) {
