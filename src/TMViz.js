@@ -84,7 +84,7 @@ function pulseEdge(edge) {
 
 function addTape(div, spec) {
   return new TapeViz(div.append('svg').attr('class', 'tm-tape'), 7,
-    spec.blank, spec.input ? spec.input.split('') : []);
+    spec.blank, spec.input ? String(spec.input).split('') : []);
 }
 
 /**

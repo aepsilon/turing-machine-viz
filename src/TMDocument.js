@@ -87,16 +87,14 @@ TMDocument.prototype.path = function (path) {
 
 // TODO: bypass unnecessary parse & stringify cycle for positions
 TMDocument.prototype.copyFrom = function (other) {
-  other.dataKeys.forEach(function (key) {
+  this.dataKeys.forEach(function (key) {
     this[key] = other[key];
   }, this);
   return this;
 };
 
 TMDocument.prototype.delete = function () {
-  this.dataKeys.forEach(function (key) {
-    this[key] = null;
-  }, this);
+  this.copyFrom({});
 };
 
 module.exports = TMDocument;

@@ -63,6 +63,8 @@ function TMDocumentController(containers, buttons, document) {
   editorButtons.load
       .addEventListener('click', function () {
         self.loadEditorSource();
+        // save whenever "Load" is pressed
+        self.save();
         self.editor.focus();
       });
   editorButtons.revert
@@ -102,31 +104,58 @@ TMDocumentController.prototype.openDocument = function (doc) {
 TMDocumentController.prototype.forceLoadDocument = function (doc) {
   this.setBackingDocument(doc);
   var diagramSource = doc.sourceCode;
-  // FIXME: catch and report errors in a panel
-  this.simulator.clear();
-  this.simulator.sourceCode = diagramSource;
-  this.simulator.positionTable = doc.positionTable;
-
   var editorSource = doc.editorSourceCode;
-  var isSynced = (editorSource == null);
-  this.setEditorValue(isSynced ? diagramSource : editorSource);
-  this.isSynced = isSynced;
+  // init //
+  this.simulator.clear();
+  this.setEditorValue(editorSource == null ? diagramSource : editorSource);
   // prevent undo-ing to the previous document. note: .reset() doesn't work
   this.editor.session.setUndoManager(new UndoManager());
+
+  if (editorSource == null) {
+    // case: synced: load straight from editor.
+    this.loadEditorSource();
+  } else {
+    // case: not synced: editor has separate contents.
+    this.isSynced = false;
+    try {
+      this.simulator.sourceCode = diagramSource;
+    } catch (e) {
+      this.showCorruptDiagramAlert(true);
+    }
+  }
+  this.simulator.positionTable = doc.positionTable;
 };
 
 TMDocumentController.prototype.save = function () {
   var doc = this.getDocument();
-  // sidenote: if space runs out, this save order lets syncing free up space for another try
-  doc.editorSourceCode = this.isSynced ? undefined : this.editor.getValue();
-  doc.sourceCode = this.simulator.sourceCode;
-  doc.positionTable = this.simulator.positionTable;
+  if (this.hasValidDiagram) {
+    // sidenote: deleting first can allow saving when space would otherwise be full
+    doc.editorSourceCode = this.isSynced ? undefined : this.editor.getValue();
+    doc.sourceCode = this.simulator.sourceCode;
+    doc.positionTable = this.simulator.positionTable;
+  } else {
+    if (doc.editorSourceCode == null) {
+      // case 1: editor was synced with the diagram.
+      //  only edit doc.sourceCode until it's fixed;
+      //  don't worsen the problem to case 2.
+      doc.sourceCode = this.editor.getValue();
+    } else {
+      // case 2: editor has separate contents.
+      //  this is more confusing, as there are two "source code" values to contend with.
+      doc.editorSourceCode = this.editor.getValue();
+    }
+  }
 };
 
-// replace null with '', since ace crashes for .setValue(null).
-// ?string -> void
+/**
+ * Set the editor contents.
+ * • Converts null to '', since editor.setValue(null) crashes.
+ * • Clears the editor alerts.
+ * @param {?string} str
+ */
 TMDocumentController.prototype.setEditorValue = function (str) {
   this.editor.setValue(util.coalesce(str, ''), -1 /* put cursor at start */);
+  this.setAlertErrors([]);
 };
 
 /////////////////////////
@@ -152,6 +181,7 @@ TMDocumentController.prototype.setAlertErrors = function (errors) {
   alerts.enter()
     .append('div')
       .attr('class', 'alert alert-danger')
+      .attr('role', 'alert')
       .each(/** @this div */ function (e) {
         var div = d3.select(this);
         if (e instanceof YAMLException) {
@@ -200,14 +230,12 @@ TMDocumentController.prototype.setLoadButtonSuccess = function (didSucceed) {
   classes.toggle('btn-primary', !didSucceed);
 };
 
-// internal. whether the editor and diagram source code are in sync.
-// Updates 'load' button display. Updates storage when sync turns true.
-// Doesn't update storage when initializing isSynced.
+// internal. whether the editor and diagram source code are in sync, and the diagram is valid.
+// Updates "Load machine" button display.
 Object.defineProperty(TMDocumentController.prototype, 'isSynced', {
   set: function (isSynced) {
     isSynced = Boolean(isSynced);
     if (this.__isSynced !== isSynced) {
-      var afterInit = this.__isSynced != undefined;
       this.__isSynced = isSynced;
       this.setLoadButtonSuccess(isSynced);
       if (isSynced) {
@@ -218,9 +246,6 @@ Object.defineProperty(TMDocumentController.prototype, 'isSynced', {
         }.bind(this);
         this.editor.on('change', onChange);
       }
-      if (afterInit) {
-        this.save();
-      }
     }
   },
   get: function () { return this.__isSynced; }
@@ -230,30 +255,77 @@ Object.defineProperty(TMDocumentController.prototype, 'isSynced', {
 // Load & Revert //
 ///////////////////
 
+// internal. used to detect when an imported document is corrupted.
+Object.defineProperty(TMDocumentController.prototype, 'hasValidDiagram', {
+  get: function () {
+    return Boolean(this.simulator.sourceCode);
+  }
+});
+
+/**
+ * Show/hide the notice that the diagram's source code is invalid;
+ * use this when the editor has contents of its own (so it can't display the diagram's source).
+ *
+ * This happens for imported documents that were corrupted.
+ * It can also happen if the value in storage is tampered with.
+ * @param  {boolean} show true to display immediately, false to hide.
+ */
+TMDocumentController.prototype.showCorruptDiagramAlert = function (show) {
+  function enquote(s) { return '<q>' + s + '</q>'; }
+  var div = d3.select(this.simulator.container);
+  if (show) {
+    var revertName = this.buttons.editor.revert.textContent.trim();
+    div.html('')
+      .append('div')
+        .attr('class', 'alert alert-danger')
+        .html('<h4>This imported document has an error</h4>' +
+          [ 'The diagram was not valid and could not be displayed.'
+          , 'You can either load a new diagram from the editor, or attempt to recover this one'
+          , 'using ' + enquote(revertName) + ' (which will replace the current editor contents).'
+          ].join('<br>')
+        );
+  } else {
+    div.selectAll('.alert').remove();
+  }
+};
+
+// TODO: factor out common code w/ forceLoadDocument
 TMDocumentController.prototype.loadEditorSource = function () {
   // load to diagram, and report any errors
-  var errors = function () {
+  var errors = (function () {
     try {
+      var wasCorrupted = !this.hasValidDiagram;
       this.simulator.sourceCode = this.editor.getValue();
+      if (wasCorrupted) {
+        // recovery succeeded => close error notice, restore positions
+        this.showCorruptDiagramAlert(false);
+        this.simulator.positionTable = this.getDocument().positionTable;
+      }
       // .toJSON() is the only known way to preserve the cursor/selection(s)
-      this.__loadedEditorSelection = this.editor.session.selection.toJSON();
-      this.isSynced = true;
+      // this.__loadedEditorSelection = this.editor.session.selection.toJSON();
       return [];
     } catch (e) {
       return [e];
     }
-  }.bind(this)();
+  }.call(this));
   this.isSynced = (errors.length === 0);
   this.setAlertErrors(errors);
 };
 
 TMDocumentController.prototype.revertEditorSource = function () {
-  this.setEditorValue(this.simulator.sourceCode);
-  this.setAlertErrors([]);
-  this.isSynced = true;
-  if (this.__loadedEditorSelection) {
-    this.editor.session.selection.fromJSON(this.__loadedEditorSelection);
+  this.setEditorValue(this.hasValidDiagram
+    ? this.simulator.sourceCode
+    : this.getDocument().sourceCode);
+
+  if (this.hasValidDiagram) {
+    this.isSynced = true;
+  } else {
+    // show errors when reverting to a corrupted diagram
+    this.loadEditorSource();
   }
+  // if (this.__loadedEditorSelection) {
+  //   this.editor.session.selection.fromJSON(this.__loadedEditorSelection);
+  // }
 };
 
 module.exports = TMDocumentController;

@@ -9,6 +9,7 @@ module.exports = {
   // split libraries into multiple chunks for more readable compiled code
   entry: {
     TMViz: [srcRoot + 'TMViz.js'],
+    CheckboxTable: [srcRoot + 'sharing/CheckboxTable.js'],
     main: srcRoot + 'main.js'
   },
   output: {
@@ -18,12 +19,14 @@ module.exports = {
     pathinfo: true
   },
   externals: {
-    'd3': 'd3',
-    'lodash': 'lodash',
-    'lodash/fp': '_',
-    'js-yaml': 'jsyaml',
     'ace-builds/src-min-noconflict': 'ace',
-    'jquery': 'jQuery'
+    'bluebird': 'Promise',
+    'clipboard': 'Clipboard',
+    'd3': 'd3',
+    'jquery': 'jQuery',
+    'js-yaml': 'jsyaml',
+    'lodash': 'lodash',
+    'lodash/fp': '_'
   },
   plugins: [
     new webpack.optimize.CommonsChunkPlugin({

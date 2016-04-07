@@ -14,13 +14,57 @@ var $ = require('jquery'); // for Bootstrap modal dialog events
 // (for snippet placeholders, used by "New blank document")
 ace.config.loadModule('ace/ext/language_tools');
 
+function getId(id) { return document.getElementById(id); }
+
+
+/////////////////////
+// Import & Export //
+/////////////////////
+
+function importDocument(obj) {
+  controller.openDocument(menu.duplicate(obj, {select: true}));
+  refreshEditMenu();
+}
+
+$(function () {
+  // Run import from URL query (if any)
+  var importArgs = {
+    dialogNode: getId('importDialog'),
+    importDocument: importDocument
+  };
+  require('./sharing/import').runImport(importArgs);
+  // Init import dialog
+  var $importPanel = $('#importPanel');
+  $importPanel.one('show.bs.modal', function () {
+    require('./sharing/import-panel').init({
+      $dialog: $importPanel,
+      gistIDForm: getId('gistIDForm'),
+      importArgs: importArgs
+    });
+  });
+  // Init export dialog
+  var exportPanel = getId('exportPanel');
+  require('./sharing/export-panel').init({
+    $dialog: $(exportPanel),
+    getCurrentDocument: function () {
+      controller.save(); // IMPORTANT: save changes, otherwise data model is out of date
+      return menu.currentDocument;
+    },
+    gistContainer: getId('shareGistContainer'),
+    downloadContainer: getId('exportDownloadContainer'),
+    copyContentsButton: getId('copyContentsButton'),
+    textarea: exportPanel.querySelector('textarea')
+  });
+});
+
+
 //////////
 // Main //
 //////////
 
 // Document Menu //
 
-// TODO: persist last-opened index
+// XXX: persist last-opened index
 var docIndex = 0;
 
 var menu = (function () {
@@ -88,7 +132,8 @@ refreshEditMenu();
 // only swap out the storage backing; don't affect views or undo history
 function duplicateDocument() {
   controller.save();
-  controller.setBackingDocument(menu.duplicate({select: true}));
+  controller.setBackingDocument(
+    menu.duplicate(menu.currentDocument, {select: true}));
   refreshEditMenu();
 }
 
@@ -150,7 +195,7 @@ document.getElementById('tm-doc-action-delete').addEventListener('click', delete
 // Reset Example
 var discardReset = deleteDocument;
 function saveReset() {
-  menu.duplicate({select: false});
+  menu.duplicate(menu.currentDocument, {select: false});
   menu.delete();
   controller.forceLoadDocument(menu.currentDocument);
 }
