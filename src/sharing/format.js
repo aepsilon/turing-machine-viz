@@ -3,24 +3,6 @@
 var jsyaml = require('js-yaml'),
     _ = require('lodash/fp');
 
-// SVGSVGElement -> string
-function dataURIFromSVG(svg) {
-  // XXX:
-  if (!svg.getAttribute('version')) {
-    svg.setAttribute('version', '1.1');
-  }
-  svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-  svg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
-  var xml = '<?xml version="1.0"?>\n' + svg.outerHTML;
-  return 'data:image/svg+xml;,' + encodeURIComponent(xml);
-}
-
-// function downloadSVG(svg, name, link) {
-//   link.href = dataURIFromSVG(svg);
-//   link.download = name;
-//   link.target = '_blank'; // in case download fails
-// }
-
 // Document Serialization
 
 var docToYaml = {
@@ -58,8 +40,10 @@ var stringifyDocument = _.flow(
   _.omitBy(function (x) { return x == null; }),
   // NB. lodash/fp/partialRight takes an array of arguments.
   _.partialRight(jsyaml.safeDump, [{
-    flowLevel: 2, // positions: one state per line
-    noCompatMode: true // use "y:" instead of "'y':"
+    flowLevel: 2,       // positions: one state per line
+    lineWidth: -1,      // don't wrap lines
+    noRefs: true,       // no aliases/references are used
+    noCompatMode: true  // use y: instead of 'y':
   }])
 );
 
@@ -95,7 +79,6 @@ function InvalidDocumentError(message) {
 InvalidDocumentError.prototype = Object.create(Error.prototype);
 InvalidDocumentError.prototype.constructor = InvalidDocumentError;
 
-exports.dataURIFromSVG = dataURIFromSVG;
 exports.stringifyDocument = stringifyDocument;
 exports.parseDocument = parseDocument;
 exports.InvalidDocumentError = InvalidDocumentError;

@@ -6,124 +6,57 @@
 var TMDocumentController = require('./TMDocumentController'),
     DocumentMenu = require('./DocumentMenu'),
     Examples = require('./Examples'),
-    format = require('./sharing/format'),
     toDocFragment = require('./util').toDocFragment;
 var ace = require('ace-builds/src-min-noconflict');
 var $ = require('jquery'); // for Bootstrap modal dialog events
-
-$(function () {
-  // Run import from URL query (if any)
-  var importArgs = {
-    dialogNode: document.getElementById('importDialog'),
-    importDocument: importDocument
-  };
-  require('./sharing/import').runImport(importArgs);
-  // Init import dialog
-  var $importButtonDialog = $('#importButtonDialog');
-  $importButtonDialog.one('show.bs.modal', function () {
-    require('./sharing/import-panel').init({
-      $dialog: $importButtonDialog,
-      gistIDForm: document.getElementById('gistIDForm'),
-      importArgs: importArgs
-    });
-  });
-});
 
 // load up front so going offline doesn't break anything
 // (for snippet placeholders, used by "New blank document")
 ace.config.loadModule('ace/ext/language_tools');
 
+function getId(id) { return document.getElementById(id); }
+
+
 /////////////////////
 // Import & Export //
 /////////////////////
-
-// https://github.com/Modernizr/Modernizr/blob/master/feature-detects/a/download.js
-var canUseDownloadAttribute =
-  !window.externalHost && 'download' in document.createElement('a');
-
-// https://bl.ocks.org/mbostock/6466603
-function pngFromSvg(svg) {
-  var canvas = document.createElement('canvas');
-  var context = canvas.getContext('2d');
-
-  var image = new Image();
-  image.src = format.dataURIFromSVG(svg);
-  context.drawImage(image, 0, 0);
-  return canvas.toDataURL('image/png');
-}
-
-// FIXME: this is an experiment
-// FIXME: factor out into download-dialog.js, pass in container params.
-(function () {
-  if (canUseDownloadAttribute) {
-    // var sharingDialog = document.getElementById('sharingDialog');
-    var container = document.querySelector('#sharingDialog .modal-body');
-    (function () {
-      var link = document.createElement('a');
-      link.className = 'btn btn-default';
-      link.href = '#';
-      link.textContent = 'Download SVG';
-      link.addEventListener('click', function () {
-        link.href = format.dataURIFromSVG(document.querySelector('svg'));
-        link.download = menu.currentOption.text;
-        link.target = '_blank';
-        setTimeout(function () {
-          link.href = '#'; // release memory after download
-          // XXX:
-          // link.removeAttribute('target');
-        }, 0);
-      });
-      container.appendChild(link);
-    })();
-    container.appendChild(document.createTextNode(' '));
-    (function () {
-      var link = document.createElement('a');
-      link.className = 'btn btn-default';
-      link.href = '#';
-      link.textContent = 'Download PNG';
-      link.addEventListener('click', function () {
-        link.href = pngFromSvg(document.querySelector('svg'));
-        link.download = menu.currentOption.text;
-        link.target = '_blank';
-        setTimeout(function () {
-          link.href = '#'; // release memory after download
-          // XXX:
-          // link.removeAttribute('target');
-        }, 0);
-      });
-      container.appendChild(link);
-    })();
-    container.appendChild(document.createTextNode(' '));
-    (function () {
-      var link = document.createElement('a');
-      link.href = '#';
-      link.className = 'btn btn-default';
-      link.textContent = 'Download Document';
-      link.addEventListener('click', function () {
-        // TODO: save upon opening the menu instead?
-        controller.save();
-        link.href = 'data:application/x-yaml;,' +
-          encodeURIComponent(format.stringifyDocument(menu.currentDocument));
-        link.download = menu.currentOption.text + '.yaml';
-        setTimeout(function () {
-          link.href = '#'; // release memory after download
-          link.removeAttribute('download');
-        }, 0);
-      });
-      container.appendChild(link);
-    })();
-
-  } else {
-    var div = document.createElement('div');
-    div.textContent = 'Error: a[download] not supported';
-    document.body.appendChild(div);
-  }
-}());
 
 function importDocument(obj) {
   controller.openDocument(menu.duplicate(obj, {select: true}));
   refreshEditMenu();
 }
+
+$(function () {
+  // Run import from URL query (if any)
+  var importArgs = {
+    dialogNode: getId('importDialog'),
+    importDocument: importDocument
+  };
+  require('./sharing/import').runImport(importArgs);
+  // Init import dialog
+  var $importPanel = $('#importPanel');
+  $importPanel.one('show.bs.modal', function () {
+    require('./sharing/import-panel').init({
+      $dialog: $importPanel,
+      gistIDForm: getId('gistIDForm'),
+      importArgs: importArgs
+    });
+  });
+  // Init export dialog
+  var exportPanel = getId('exportPanel');
+  require('./sharing/export-panel').init({
+    $dialog: $(exportPanel),
+    getCurrentDocument: function () {
+      controller.save(); // IMPORTANT: save changes, otherwise data model is out of date
+      return menu.currentDocument;
+    },
+    gistContainer: getId('shareGistContainer'),
+    downloadContainer: getId('exportDownloadContainer'),
+    copyContentsButton: getId('copyContentsButton'),
+    textarea: exportPanel.querySelector('textarea')
+  });
+});
+
 
 //////////
 // Main //

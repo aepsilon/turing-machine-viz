@@ -33,7 +33,8 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
       <!-- Include all compiled plugins (below), or include individual files as needed -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/clipboard.js/1.5.9/clipboard.min.js"
+    crossorigin="anonymous" integrity="sha256-Le1IgolgSvP12m4TUXOD6vm//7SRvuVr/+Z0uG/Bp3w="></script>
     <!-- CSS -->
     <link href="build/StateViz.css" rel="stylesheet" />
     <link href="build/tape/tape.css" rel="stylesheet" />
@@ -71,7 +72,7 @@
     @media print {
       button { visibility: hidden; }
     }
-
+    /* Checkbox table */
     .checkbox-table tr > :first-child {
       text-align: right
     }
@@ -81,14 +82,10 @@
     .checkbox-table tbody tr, input[type="checkbox"] {
       cursor: pointer;
     }
-
+    /* Disclosure triangle */
     a.disclosure-triangle {
       cursor: pointer;
       text-decoration: none;
-    }
-    a.disclosure-triangle + div.collapse ,
-    a.disclosure-triangle + div.collapsing {
-      margin-top: 1em;
     }
     a.disclosure-triangle:before {
       content: '▸';
@@ -102,16 +99,26 @@
     a.disclosure-triangle.collapsed:before {
       transform: none;
     }
+    a.disclosure-triangle + div.collapse   > .panel:first-child,
+    a.disclosure-triangle + div.collapsing > .panel:first-child {
+      margin-top: 1em;
+    }
+    /* Fix overflow inside modal caused by td pre */
     .modal-dialog td pre {
       white-space: pre-wrap;
       font-size: smaller;
     }
-
     /* Fix some cases of extra margins in bootstrap */
     .modal-body .panel:last-child,
     .panel-body > *:last-child {
       margin-bottom: 0;
     }
+    /* Feature detection */
+    .download-attr .download-fallback { display: none }
+    .no-copycommand [data-clipboard-target] { display: none }
+
+    .icon-help-block > * { display: table-cell }
+    .icon-help-block > .glyphicon:first-child { padding-right: 0.5em }
     </style>
   </head>
   <body>
@@ -144,12 +151,12 @@
         <!-- Import and "Share" Menu -->
         <div class="navbar-right">
           <button type="button" class="btn btn-default navbar-btn" aria-label="Import"
-          data-toggle="modal" data-target="#importButtonDialog"
+          data-toggle="modal" data-target="#importPanel"
           data-has-tooltip data-placement="bottom" data-trigger="hover" title="Import">
             <span class="glyphicon glyphicon-folder-open" aria-hidden="true"></span>
           </button>
           <button type="button" class="btn btn-default navbar-btn" aria-label="Share"
-          data-toggle="modal" data-target="#sharingDialog"
+          data-toggle="modal" data-target="#exportPanel" data-keyboard="false"
           data-has-tooltip data-placement="bottom" data-trigger="hover" title="Share">
             <span class="glyphicon glyphicon-share" aria-hidden="true"></span>
           </button>
@@ -218,13 +225,13 @@
       </div>
     </div>
     <!-- Dialog for Import button -->
-    <div id="importButtonDialog" class="modal fade" tabindex="-1" role="dialog"
-    aria-labelledby="importButtonDialogHeader">
+    <div id="importPanel" class="modal fade" tabindex="-1" role="dialog"
+    aria-labelledby="importPanelHeader">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            <h4 class="modal-title" id="importButtonDialogHeader">Import</h4>
+            <h4 class="modal-title" id="importPanelHeader">Import</h4>
           </div>
           <div class="modal-body">
             <div class="panel panel-default">
@@ -235,7 +242,7 @@
                 <form id="gistIDForm" class="form-inline">
                   <div class="input-group">
                     <span class="input-group-addon">https://gist.github.com/</span>
-                    <input type="text" size="22" class="form-control"
+                    <input type="text" size="36" class="form-control"
                     placeholder="gist ID" spellcheck="false"
                     pattern="[\da-fA-F]+" title="Hex digits (0–9, a–f)">
                   </div>
@@ -276,18 +283,86 @@
       </div>
     </div>
     <!-- Dialog for Sharing/Export -->
-    <div id="sharingDialog" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="sharingDialogHeader">
+    <div id="exportPanel" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="exportPanelHeader">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            <h4 class="modal-title" id="sharingDialogHeader">Share &amp; Export</h4>
+            <h4 class="modal-title" id="exportPanelHeader">Share &amp; Export</h4>
           </div>
           <div class="modal-body">
-            <p>
-              Downloading a document lets you keep a backup and import it on other browsers and devices.
-              To import a document, simply drag and drop the file here or anywhere on the page.
-            </p>
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h5 class="panel-title">Share with GitHub</h5>
+              </div>
+              <div class="panel-body">
+                <div class="form-group">
+                  <div id="shareGistContainer">
+                  </div>
+                  <p>
+                    You can link to any GitHub gist by its ID:
+                  </p>
+                  <div class="well well-sm">
+                    <samp>turingmachine.io/?import-gist=<var>gistID</var></samp>
+                  </div>
+                  <p>
+                    When using your own gists, you gain the ability to update and delete the contents,
+                    and to share multiple documents at once.
+                  </p>
+                  <a class="disclosure-triangle collapsed" role="button" data-toggle="collapse" href="#customGistInstructions">
+                    How to make your own gist
+                  </a>
+                  <div id="customGistInstructions" class="collapse">
+                    <ol>
+                      <li>Open the <a href="https://gist.github.com" target="_blank">new gist page.</a>
+                        Sign into GitHub if you’d like to be able to edit or delete the contents in the future.
+                      </li>
+                      <li>Download the document (below), then drag &amp; drop it onto the new gist page. <br>
+                          Alternatively, copy &amp; paste the contents, and name the file to end with <code>.yaml</code>
+                      </li>
+                      <li>Create the gist. The gist ID will be at the end of the URL.</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="panel panel-default">
+              <div class="panel-heading">
+                <h5 class="panel-title">Download</h5>
+              </div>
+              <div class="panel-body">
+                <div class="form-group">
+                  <p>Download the current document to get a backup copy
+                    to share and import on other browsers and devices.</p>
+                  <div id="exportDownloadContainer">
+                  </div>
+                  <div class="download-fallback">
+                    <a class="disclosure-triangle collapsed" role="button" data-toggle="collapse" href="#downloadAttrInfo">
+                      Why the extra steps?
+                    </a>
+                    <div id="downloadAttrInfo" class="help-block collapse icon-help-block">
+                      <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+                      <p>Your browser
+                        <a href="http://caniuse.com/#feat=download" target="_blank">doesn’t support</a>
+                        an HTML5 <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/a#attr-download" target="_blank">feature</a>
+                        to mark links as downloadable.
+                        Without sending your data to a server—just to have it
+                        <a href="https://en.wikipedia.org/wiki/MIME#Content-Disposition" target="_blank">marked</a>
+                        and sent back again—the simplest alternative is to save the file manually.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <p>The contents of the download are below.</p>
+                  <button id="copyContentsButton" type="button" class="btn btn-default" data-clipboard-target="#exportTextarea">
+                    Copy to clipboard
+                  </button>
+                </div>
+                <textarea id="exportTextarea"
+                class="form-control" rows="8" cols="40" readonly></textarea>
+              </div>
+            </div>
             <!-- XXX: notify about unloaded changes -->
           </div>
           <!-- <div class="modal-footer">

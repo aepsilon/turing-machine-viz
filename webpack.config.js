@@ -21,6 +21,7 @@ module.exports = {
   externals: {
     'ace-builds/src-min-noconflict': 'ace',
     'bluebird': 'Promise',
+    'clipboard': 'Clipboard',
     'd3': 'd3',
     'jquery': 'jQuery',
     'js-yaml': 'jsyaml',

@@ -4,14 +4,13 @@
 var CheckboxTable = require('./CheckboxTable');
 var FileReaderPromise = require('./FileReaderPromise');
 var format = require('./format');
+var getGist = require('./gist').getGist;
+
 var $ = require('jquery');
 var _ = require('lodash/fp');
 var d3 = require('d3');
 var Promise = require('bluebird');  // eslint-disable-line no-shadow
 
-Promise.config({
-  cancellation: true
-});
 
 function decodeFormURLComponent(str) {
   return decodeURIComponent(str.replace('+', ' '));
@@ -30,30 +29,6 @@ function queryParams(queryString) {
     result[decode(pair[0])] = decode(pair[1]);
   });
   return result;
-}
-
-// The reject handler is passed an object with properties xhr, status, error.
-// To abort the request, use .cancel (from bluebird).
-// jqXHR -> Promise
-function promisifyAjax(xhr) {
-  return new Promise(function (resolve, reject, onCancel) {
-    xhr.then(resolve, function (jqXHR, textStatus, errorThrown) {
-      reject({xhr: jqXHR, status: textStatus, error: errorThrown});
-    });
-    onCancel && onCancel(function () {
-      try { xhr.abort(); } catch (e) {/* */}
-    });
-  });
-}
-
-// GistID -> Promise
-// @see promisifyAjax
-function getGist(gistID) {
-  return promisifyAjax($.ajax({
-    url: 'https://api.github.com/gists/' + gistID,
-    type: 'GET',
-    dataType: 'json'
-  }));
 }
 
 ///////////////////
@@ -514,6 +489,8 @@ function messageForError(reason) {
               '<strong>No GitHub gist exists with that ID.</strong>',
               'It’s possible the ID is incorrect, or the gist was deleted.'
             ];
+          } else if (xhr.status === 0) {
+            return ['GitHub could not be reached. Your Internet connection may be offline.'];
           } else {
             return [
               'The import failed because of a <strong>connection error</strong>.',
