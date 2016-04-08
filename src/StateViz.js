@@ -136,6 +136,10 @@ function rectCenter(svgrect) {
 function identity(x) { return x; }
 function noop() {}
 
+function limitRange(min, max, value) {
+  return Math.max(min, Math.min(value, max));
+}
+
 // function rotateAroundCenter(angle, svglocatable) {
 //   var c = rectCenter(svglocatable.getBBox());
 //   svglocatable.setAttribute('transform', 'rotate('+angle+' '+c.x+' '+c.y+')');
@@ -153,16 +157,16 @@ function visualizeState(svg, nodeArray, linkArray) {
   /* eslint-disable no-invalid-this */
   // based on [Graph with labeled edges](http://bl.ocks.org/jhb/5955887)
   // and [Sticky Force Layout](http://bl.ocks.org/mbostock/3750558)
-  var w = 1000;
-  var h = 400;
-  var linkDistance=200;
-  var nodeRadius = 15;
+  var w = 800;
+  var h = 500;
+  var linkDistance = 140;
+  var nodeRadius = 20;
 
   var colors = d3.scale.category10();
 
   svg.attr({
-    'width': w,
-    'height': h,
+    'width': '100%',
+    'viewBox': [0, 0, w, h].join(' '),
     'version': '1.1',
     ':xmlns': 'http://www.w3.org/2000/svg',
     ':xmlns:xlink': 'http://www.w3.org/1999/xlink'
@@ -318,8 +322,9 @@ function visualizeState(svg, nodeArray, linkArray) {
 
   // Force Layout Update
   force.on('tick', function (){
-    nodecircles.attr({cx: function (d) { return d.x; },
-                      cy: function (d) { return d.y; }
+    // keep coordinates in bounds http://bl.ocks.org/mbostock/1129492
+    nodecircles.attr({cx: function (d) { return d.x = limitRange(nodeRadius, w - nodeRadius, d.x); },
+                      cy: function (d) { return d.y = limitRange(nodeRadius, h - nodeRadius, d.y); }
     });
 
     nodelabels.attr('x', function (d) { return d.x; })
