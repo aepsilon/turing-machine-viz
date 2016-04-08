@@ -136,6 +136,10 @@ function rectCenter(svgrect) {
 function identity(x) { return x; }
 function noop() {}
 
+function limitRange(min, max, value) {
+  return Math.max(min, Math.min(value, max));
+}
+
 // function rotateAroundCenter(angle, svglocatable) {
 //   var c = rectCenter(svglocatable.getBBox());
 //   svglocatable.setAttribute('transform', 'rotate('+angle+' '+c.x+' '+c.y+')');
@@ -318,8 +322,9 @@ function visualizeState(svg, nodeArray, linkArray) {
 
   // Force Layout Update
   force.on('tick', function (){
-    nodecircles.attr({cx: function (d) { return d.x; },
-                      cy: function (d) { return d.y; }
+    // keep coordinates in bounds http://bl.ocks.org/mbostock/1129492
+    nodecircles.attr({cx: function (d) { return d.x = limitRange(nodeRadius, w - nodeRadius, d.x); },
+                      cy: function (d) { return d.y = limitRange(nodeRadius, h - nodeRadius, d.y); }
     });
 
     nodelabels.attr('x', function (d) { return d.x; })
