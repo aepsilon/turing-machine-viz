@@ -52,8 +52,12 @@ function TapeViz(svg, lookaround, blank, input) {
 
   // TODO: factor out hard-coded constants
   // width is before + head + after, trimming 2 off to show cut-off tape ends
-  svg.attr({'width': cellWidth * (lookaround+1+lookaround-2) + 2*10,
-            'height': cellHeight + 2*10});
+  var width  = cellWidth * (lookaround+1+lookaround-2) + 2*10;
+  var height = cellHeight + 2*10;
+  svg.attr({
+    'width': '95%',
+    'viewBox': [0, 0, width, height].join(' ')
+  });
 
   this.wrapper = svg.append('g')
       .attr('class', 'wrapper')

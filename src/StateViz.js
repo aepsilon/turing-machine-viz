@@ -153,16 +153,16 @@ function visualizeState(svg, nodeArray, linkArray) {
   /* eslint-disable no-invalid-this */
   // based on [Graph with labeled edges](http://bl.ocks.org/jhb/5955887)
   // and [Sticky Force Layout](http://bl.ocks.org/mbostock/3750558)
-  var w = 1000;
-  var h = 400;
-  var linkDistance=200;
-  var nodeRadius = 15;
+  var w = 800;
+  var h = 500;
+  var linkDistance = 140;
+  var nodeRadius = 20;
 
   var colors = d3.scale.category10();
 
   svg.attr({
-    'width': w,
-    'height': h,
+    'width': '100%',
+    'viewBox': [0, 0, w, h].join(' '),
     'version': '1.1',
     ':xmlns': 'http://www.w3.org/2000/svg',
     ':xmlns:xlink': 'http://www.w3.org/1999/xlink'
