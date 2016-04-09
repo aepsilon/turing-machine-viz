@@ -2,7 +2,7 @@
 
 var Storage = require('./Storage'),
     Examples = require('./Examples'),
-    Position = require('./Position'),
+    positioning = require('./state-diagram/positioning'),
     util = require('./util');
 
 /**
@@ -69,12 +69,12 @@ TMDocument.prototype.path = function (path) {
     sourceCode: stringProp('diagram.sourceCode'),
     positionTable: {
       get: function () {
-        return util.applyMaybe(Position.parsePositionTable,
+        return util.applyMaybe(positioning.parsePositionTable,
           read(this.path('diagram.positions')));
       },
       set: function (val) {
         write(this.path('diagram.positions'),
-          util.applyMaybe(Position.stringifyPositionTable, val));
+          util.applyMaybe(positioning.stringifyPositionTable, val));
       },
       enumerable: true
     },

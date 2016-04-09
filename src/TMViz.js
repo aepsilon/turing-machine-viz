@@ -2,63 +2,42 @@
 /**
  * Turing machine visualization component.
  *
- * Displays a state diagram and tape diagram,
- * and provides running & reset.
- * (UI controls are not included)
+ * • Adds running and reset on top of the base Turing machine.
+ * • Displays an animated state diagram and tape diagram.
+ * Does not include UI elements for controlling the machine.
  *
- * Internally, the machine's state property is overridden
- * with a setter that updates the state diagram.
  * @module
  */
 
 var TuringMachine = require('./TuringMachine').TuringMachine,
     TapeViz = require('./tape/TapeViz'),
-    StateViz = require('./StateViz'),
-    NodesLinks = require('./NodesLinks'),
-    Position = require('./Position'),
-    util = require('./util'),
+    StateGraph = require('./state-diagram/StateGraph'),
+    StateViz = require('./state-diagram/StateViz'),
+    positioning = require('./state-diagram/positioning'),
+    watchInit = require('./watch').watchInit,
     d3 = require('d3');
 
-// StateMap -> State -> SymbolMap?
-// throws error if state was not in the map.
-// returns null for explicit halting state (assuming that .withSymbol was set correctly)
-function lookupState(stateMap, s) {
-  var stateObj = stateMap[s];
-  if (stateObj === undefined) {
-    throw new Error('not a valid state: ' + String(s));
-  }
-  return stateObj.withSymbol;
-}
+/**
+ * Create an animated transition function.
+ * @param  {StateGraph} graph
+ * @param  {LayoutEdge -> any} animationCallback
+ * @return {(string, string) -> Instruction} Created transition function.
+ */
+function animatedTransition(graph, animationCallback) {
+  return function (state, symbol) {
+    var tuple = graph.getInstructionAndEdge(state, symbol);
+    if (tuple == null) { return null; }
 
-function interpretAction(state, symbol, instruct) {
-  return {
-    state: util.coalesce(instruct.state, state),
-    symbol: util.coalesce(instruct.symbol, symbol),
-    move: util.nonNull(instruct.move)
+    animationCallback(tuple.edge);
+    return tuple.instruction;
   };
 }
 
-// Animate each transition's edge
-// TODO: factor out
-// FIXME: missing null checks, like for .withSymbol
-// TODO: decompose into lookup edge
-function makeTransitionViz(stateMap, callback) {
-  return function (s, sym) {
-    var symbolMap = lookupState(stateMap, s);
-    if (symbolMap == null) { return null; }
-    var edgeObj = symbolMap[sym];
-    // try wildcard if not matched
-    // TODO: remove wildcards (deprecated)
-    edgeObj = (edgeObj === undefined) ? symbolMap['_'] : edgeObj;
-    if (edgeObj == null) { return null; }
-
-    callback(edgeObj.edge);
-    return interpretAction(s, sym, edgeObj.action);
-  };
-}
-
-// default animation for edges.
-// returns the last chained transition.
+/**
+ * Default edge animation callback.
+ * @param  {{domNode: Node}} edge
+ * @return {D3Transition} The animation. Use this for transition chaining.
+ */
 function pulseEdge(edge) {
   var edgepath = d3.select(edge.domNode);
   // workaround for https://github.com/d3/d3-transition/issues/11
@@ -90,49 +69,47 @@ function addTape(div, spec) {
 /**
  * Construct a new state and tape visualization inside a &lt;div&gt;.
  * @constructor
- * @param {HTMLDivElement} div div to take over and use.
- * @param spec      machine specification
- * @param posTable  position table for the state nodes
+ * @param {HTMLDivElement} div        div to take over and use.
+ * @param                  spec       machine specification
+ * @param {PositionTable} [posTable]  position table for the state nodes
  */
 function TMViz(div, spec, posTable) {
   div = d3.select(div);
-  var dataset = NodesLinks.deriveNodesLinks(spec.table);
-  var stateMap = dataset.stateMap;
-  this.__stateMap = stateMap;
+  var graph = new StateGraph(spec.table);
+  // XXX: remove this line once positioning is refactored
+  this.__stateMap = graph.__graph;
   if (posTable != undefined) { this.positionTable = posTable; }
-  StateViz.visualizeState(div.append('svg'), dataset.nodes, dataset.edges);
+  StateViz.visualizeState(div.append('svg'),
+    graph.getVertices(),
+    graph.getEdges()
+  );
 
   this.edgeAnimation = pulseEdge;
   this.stepInterval = 100;
 
-  var self = this; // for nested callbacks
-  function edgeCallback(edge) {
+  var self = this;
+  // We hook into the animation callback to know when to start the next step (when running).
+  function animateAndContinue(edge) {
     var transition = self.edgeAnimation(edge);
-    // if .isRunning, chain .step after .step until this.isRunning = false
     if (self.isRunning) {
       transition.transition().duration(self.stepInterval).each('end', function () {
-        // check in case machine was paused (.isRunning = false) during the animation
-        if (self.isRunning) {
-          self.step();
-        }
+        // stop if machine was paused during the animation
+        if (self.isRunning) { self.step(); }
       });
     }
   }
 
-  // TODO: rewrite the transition. make it point to this.stateMap, this.etc so it stays in sync with the spec.
-  var machine = new TuringMachine(makeTransitionViz(stateMap, edgeCallback), spec.startState, addTape(div, spec));
-  this.machine = machine;
+  this.machine = new TuringMachine(
+    animatedTransition(graph, animateAndContinue),
+    spec.startState,
+    addTape(div, spec)
+  );
   // intercept and animate when the state is set
-  var state = machine.state;
-  Object.defineProperty(machine, 'state', {
-    get: function () { return state; },
-    set: function (s) {
-      d3.select(stateMap[state].domNode).classed('current-state', false);
-      state = s;
-      d3.select(stateMap[s].domNode).classed('current-state', true);
-    }
+  watchInit(this.machine, 'state', function (prop, oldstate, newstate) {
+    d3.select(graph.getVertex(oldstate).domNode).classed('current-state', false);
+    d3.select(graph.getVertex(newstate).domNode).classed('current-state', true);
+    return newstate;
   });
-  machine.state = state;
 
   // Sidenote: each "Step" click evaluates the transition function once.
   // Therefore, detecting halting always requires its own step (for consistency).
@@ -178,11 +155,12 @@ TMViz.prototype.reset = function () {
   this.machine.tape = addTape(this.__parentDiv, this.__spec);
 };
 
+// FIXME: move positioning into StateViz object
 // FIXME: also call force.tick / force.start
 Object.defineProperty(TMViz.prototype, 'positionTable', {
-  get: function () { return Position.getPositionTable(this.__stateMap); },
+  get: function () { return positioning.getPositionTable(this.__stateMap); },
   set: function (posTable) {
-    Position.setPositionTable(posTable, this.__stateMap);
+    positioning.setPositionTable(posTable, this.__stateMap);
     // FIXME: refactor StateViz as object, then call this.__stateviz.force.tick();
   }
 });
