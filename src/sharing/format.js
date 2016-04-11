@@ -32,12 +32,14 @@ function mapKeys(mapping) {
 
 /**
  * Serialize a document.
+ * For each state node position, only .x, .y, and .fixed are saved.
  * @param  {TMDocument} doc document to serialize
  * @return {string}
  */
 var stringifyDocument = _.flow(
   mapKeys(docToYaml),
   _.omitBy(function (x) { return x == null; }),
+  _.update('positions', _.mapValues(_.pick(['x', 'y', 'fixed']))),
   // NB. lodash/fp/partialRight takes an array of arguments.
   _.partialRight(jsyaml.safeDump, [{
     flowLevel: 2,       // positions: one state per line
@@ -49,6 +51,7 @@ var stringifyDocument = _.flow(
 
 /**
  * Deserialize a document.
+ * State positions' .px and .py are optional and default to .x and .y.
  * @param  {string} str    serialized document
  * @return {Object}        data usable in TMDocument.copyFrom()
  * @throws {YAMLException} on YAML syntax error
@@ -56,6 +59,10 @@ var stringifyDocument = _.flow(
  */
 var parseDocument = _.flow(
   jsyaml.safeLoad,
+  _.update('positions', _.mapValues(function (pos) {
+    // NB. lodash/fp/defaults is swapped: 2nd takes precedence
+    return _.defaults({px: pos.x, py: pos.y}, pos);
+  })),
   mapKeys(yamlToDoc),
   checkData
 );
