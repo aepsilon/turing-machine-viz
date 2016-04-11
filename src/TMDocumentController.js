@@ -119,11 +119,11 @@ TMDocumentController.prototype.forceLoadDocument = function (doc) {
     this.isSynced = false;
     try {
       this.simulator.sourceCode = diagramSource;
+      this.simulator.positionTable = doc.positionTable;
     } catch (e) {
       this.showCorruptDiagramAlert(true);
     }
   }
-  this.simulator.positionTable = doc.positionTable;
 };
 
 TMDocumentController.prototype.save = function () {
@@ -289,15 +289,14 @@ TMDocumentController.prototype.showCorruptDiagramAlert = function (show) {
   }
 };
 
-// TODO: factor out common code w/ forceLoadDocument
 TMDocumentController.prototype.loadEditorSource = function () {
   // load to diagram, and report any errors
   var errors = (function () {
     try {
-      var wasCorrupted = !this.hasValidDiagram;
+      var isNewDiagram = !this.hasValidDiagram;
       this.simulator.sourceCode = this.editor.getValue();
-      if (wasCorrupted) {
-        // recovery succeeded => close error notice, restore positions
+      if (isNewDiagram) {
+        // loaded new, or recovery succeeded => close error notice, restore positions
         this.showCorruptDiagramAlert(false);
         this.simulator.positionTable = this.getDocument().positionTable;
       }
