@@ -53,6 +53,7 @@ function vectorFromLengthAngle(length, angle) {
 // *** Utilities ***
 
 // Count the directed edges that start at a given node and end at another.
+// Important: each node must have a unique .index property.
 // Example usage:
 // var counts = new EdgeCounter(edges);
 // var edgesFrom2To5 = counts.numEdgesFromTo(2,5);
@@ -124,6 +125,9 @@ function edgePathFor(nodeRadius, shape, d) {
       var p1 = [d.source.x, d.source.y];
       var p2 = [d.target.x, d.target.y];
       var offset = subtractV(p2, p1);
+      // avoid spurious errors when bounding causes node centers to coincide
+      if (offset[0] === 0 && offset[1] === 0) { return null; }
+
       var target = subtractV(p2, multiplyV(unitV(offset), nodeRadius));
       return 'M '+p1[0]+' '+p1[1]+' L '+ target[0] +' '+ target[1];
     };
@@ -344,7 +348,8 @@ function StateViz(svg, nodes, linkArray) {
 
   // Force Layout Update
   force.on('tick', function (){
-    // keep coordinates in bounds http://bl.ocks.org/mbostock/1129492
+    // Keep coordinates in bounds. http://bl.ocks.org/mbostock/1129492
+    // NB. Bounding can cause node centers to coincide, especially at corners.
     nodecircles.attr({cx: function (d) { return d.x = limitRange(nodeRadius, w - nodeRadius, d.x); },
                       cy: function (d) { return d.y = limitRange(nodeRadius, h - nodeRadius, d.y); }
     });
