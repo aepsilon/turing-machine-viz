@@ -107,8 +107,16 @@ function StateGraph(table) {
 /**
  * D3 layout "nodes".
  */
-StateGraph.prototype.getVertices = function () {
-  return _.values(this.__graph);
+// StateGraph.prototype.getVertices = function () {
+//   return _.values(this.__graph);
+// };
+
+/**
+ * Returns the mapping from states to vertices (D3 layout "nodes").
+ * @return { {[state: string]: Object} }
+ */
+StateGraph.prototype.getVertexMap = function () {
+  return this.__graph;
 };
 
 /**

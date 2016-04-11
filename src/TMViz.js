@@ -13,7 +13,6 @@ var TuringMachine = require('./TuringMachine').TuringMachine,
     TapeViz = require('./tape/TapeViz'),
     StateGraph = require('./state-diagram/StateGraph'),
     StateViz = require('./state-diagram/StateViz'),
-    positioning = require('./state-diagram/positioning'),
     watchInit = require('./watch').watchInit,
     d3 = require('d3');
 
@@ -76,13 +75,11 @@ function addTape(div, spec) {
 function TMViz(div, spec, posTable) {
   div = d3.select(div);
   var graph = new StateGraph(spec.table);
-  // XXX: remove this line once positioning is refactored
-  this.__stateMap = graph.__graph;
-  if (posTable != undefined) { this.positionTable = posTable; }
-  StateViz.visualizeState(div.append('svg'),
-    graph.getVertices(),
+  this.__stateviz = new StateViz(div.append('svg'),
+    graph.getVertexMap(),
     graph.getEdges()
   );
+  if (posTable != undefined) { this.positionTable = posTable; }
 
   this.edgeAnimation = pulseEdge;
   this.stepInterval = 100;
@@ -155,14 +152,9 @@ TMViz.prototype.reset = function () {
   this.machine.tape = addTape(this.__parentDiv, this.__spec);
 };
 
-// FIXME: move positioning into StateViz object
-// FIXME: also call force.tick / force.start
 Object.defineProperty(TMViz.prototype, 'positionTable', {
-  get: function () { return positioning.getPositionTable(this.__stateMap); },
-  set: function (posTable) {
-    positioning.setPositionTable(posTable, this.__stateMap);
-    // FIXME: refactor StateViz as object, then call this.__stateviz.force.tick();
-  }
+  get: function ()  { return this.__stateviz.positionTable; },
+  set: function (posTable) { this.__stateviz.positionTable = posTable; }
 });
 
 module.exports = TMViz;
