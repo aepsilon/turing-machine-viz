@@ -13,7 +13,8 @@
     "webpack": "^1.12.9"
   },
   "scripts": {
-    "depgraph": "mkdir -p build/ && madge -t src/ -x '(build|lib|node_modules)/' > build/depgraph.gv",
+    "depgraph": "mkdir -p build/ && (cd src/ && madge . --dot) > build/depgraph.gv",
+    "depgraph-noext": "mkdir -p build/ && (cd src/ && madge . --dot -x \"`node -e \"console.log(Object.keys(require('../webpack.config').externals).map(s => '^'+s+'$').join('|'))\"`\") > build/depgraph-noext.gv",
     "lint": "eslint --cache src/",
     "watch": "webpack --watch --progress --colors --display-error-details",
     "test": "echo \"Error: no test specified\" && exit 1"
