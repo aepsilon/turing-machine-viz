@@ -40,6 +40,11 @@ TMSimulator.prototype.clear = function () {
 };
 
 Object.defineProperties(TMSimulator.prototype, {
+  /**
+   * The machine's source code.
+   * • Setting a new source code will attempt to persist the state node positions.
+   * • To set a new machine, first call .clear(), then set the source code.
+   */
   sourceCode: {
     get: function () {
       return this.__sourceCode;
@@ -61,10 +66,9 @@ Object.defineProperties(TMSimulator.prototype, {
           // copy & restore positions, clear & load contents
           var posTable = this.machine.positionTable;
           this.clear();
-          this.machine = new TMViz(this.container, spec);
-          this.machine.positionTable = posTable;
+          this.machine = new TMViz(this.container, spec, posTable);
         } else {
-          // case: load
+          // case: load new
           this.machine = new TMViz(this.container, spec);
         }
       }

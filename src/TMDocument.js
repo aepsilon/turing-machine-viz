@@ -2,8 +2,8 @@
 
 var Storage = require('./Storage'),
     Examples = require('./Examples'),
-    Position = require('./Position'),
-    util = require('./util');
+    util = require('./util'),
+    _ = require('lodash/fp');
 
 /**
  * Document model (storage).
@@ -69,12 +69,12 @@ TMDocument.prototype.path = function (path) {
     sourceCode: stringProp('diagram.sourceCode'),
     positionTable: {
       get: function () {
-        return util.applyMaybe(Position.parsePositionTable,
+        return util.applyMaybe(parsePositionTable,
           read(this.path('diagram.positions')));
       },
       set: function (val) {
         write(this.path('diagram.positions'),
-          util.applyMaybe(Position.stringifyPositionTable, val));
+          util.applyMaybe(stringifyPositionTable, val));
       },
       enumerable: true
     },
@@ -96,5 +96,33 @@ TMDocument.prototype.copyFrom = function (other) {
 TMDocument.prototype.delete = function () {
   this.copyFrom({});
 };
+
+
+/////////////////////////
+// Position table JSON //
+/////////////////////////
+
+// JSON -> Object
+var parsePositionTable = JSON.parse;
+
+// PositionTable -> JSON
+var stringifyPositionTable = _.flow(
+  _.mapValues(truncateCoords(2)),
+  JSON.stringify
+);
+
+// Truncate .x .y .px .py to 2 decimal places, to save space.
+function truncateCoords(decimalPlaces) {
+  var multiplier = Math.pow(10, decimalPlaces);
+  function truncate(value) {
+    return Math.round(value * multiplier)/multiplier;
+  }
+
+  return function (val) {
+    var result =  _(val).pick(['x','y','px','py']).mapValues(truncate).value();
+    result.fixed = val.fixed;
+    return result;
+  };
+}
 
 module.exports = TMDocument;

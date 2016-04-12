@@ -1,5 +1,7 @@
 'use strict';
 var d3 = require('d3');
+var _ = require('lodash/fp');
+var assign = require('lodash').assign; // need mutable assign()
 
 // *** Arrays as vectors ***
 
@@ -148,15 +150,32 @@ function limitRange(min, max, value) {
 // *** D3 diagram ***
 require('./StateViz.css');
 
-// TODO: allow multiple diagrams per page? as is, some element IDs would collide.
+// type LayoutNode = {label: string};
+// type StateMap = {[state: string]: LayoutNode};
 
-// Create a Turing Machine state diagram inside a given SVG using the given nodes and edges.
-// Each node/edge object is also annotated with a @domNode@ property corresponding
-// to its SVG element.
-function visualizeState(svg, nodeArray, linkArray) {
-  /* eslint-disable no-invalid-this */
-  // based on [Graph with labeled edges](http://bl.ocks.org/jhb/5955887)
-  // and [Sticky Force Layout](http://bl.ocks.org/mbostock/3750558)
+/**
+ * Create a state diagram inside an SVG.
+ * Each vertex/edge (node/link) object is also annotated with @.domNode@
+ * corresponding to its SVG element.
+ *
+ * Note: currently, element IDs (e.g. for textPath) will collide if multiple
+ * diagrams are on the same document (HTML page).
+ * @param  {D3Selection}      svg           SVG to take over and use.
+ * @param  {[LayoutNode] | StateMap} nodes  Parameter to D3's force.nodes.
+ *   Important: passing a StateMap is recommended when using setPositionTable.
+ *   Passing an array will key the state nodes by array index.
+ * @param  {[LayoutEdge]}     linkArray     Parameter to D3's force.links.
+ */
+function StateViz(svg, nodes, linkArray) {
+  /* References:
+    [Sticky Force Layout](http://bl.ocks.org/mbostock/3750558) demonstrates
+    drag to position and double-click to release.
+
+    [Graph with labeled edges](http://bl.ocks.org/jhb/5955887) demonstrates
+    arrow edges with auto-rotated labels.
+  */
+
+  /* eslint-disable no-invalid-this */ // eslint is not familiar with D3
   var w = 800;
   var h = 500;
   var linkDistance = 140;
@@ -189,6 +208,9 @@ function visualizeState(svg, nodeArray, linkArray) {
   }
 
   // set up force layout
+  var nodeArray = nodes instanceof Array ? nodes : _.values(nodes);
+  this.__stateMap = nodes;
+
   var force = d3.layout.force()
       .nodes(nodeArray)
       .links(linkArray)
@@ -334,7 +356,34 @@ function visualizeState(svg, nodeArray, linkArray) {
 
     edgegroups.each(function (d) { d.refreshLabels(); });
   });
+  this.force = force;
   /* eslint-enable no-invalid-this */
 }
 
-exports.visualizeState = visualizeState;
+// Positioning
+
+// {[key: State]: Node} -> PositionTable
+var getPositionTable = _.mapValues(_.pick(['x', 'y', 'px', 'py', 'fixed']));
+
+// Tag nodes w/ positions. Mutates the node map.
+// PositionTable -> {[key: State]: Node} -> void
+function setPositionTable(posTable, stateMap) {
+  _.forEach(function (node, state) {
+    var position = posTable[state];
+    if (position !== undefined) {
+      assign(node, position);
+    }
+  }, stateMap);
+}
+
+Object.defineProperty(StateViz.prototype, 'positionTable', {
+  get: function () { return getPositionTable(this.__stateMap); },
+  set: function (posTable) {
+    setPositionTable(posTable, this.__stateMap);
+    // ensure that a cooled layout will update
+    this.force.resume();
+  }
+});
+
+
+module.exports = StateViz;
