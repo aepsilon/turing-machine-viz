@@ -203,7 +203,7 @@ document.getElementById('tm-doc-action-resetdiscard').addEventListener('click', 
 document.getElementById('tm-doc-action-resetsave').addEventListener('click', saveReset);
 
 // Controller //
-var controller = function () {
+var controller = (function () {
   function getButton(container, type) {
     return container.querySelector('button.tm-' + type);
   }
@@ -227,9 +227,16 @@ var controller = function () {
       revert: getButton(ed, 'editor-revert')
     }
   }, menu.currentDocument);
-}();
+}());
 
 controller.editor.setTheme('ace/theme/chrome');
+controller.editor.commands.addCommand({
+  name: 'save',
+  bindKey: { mac: 'Cmd-S', win: 'Ctrl-S' },
+  exec: function () {
+    controller.loadEditorSource();
+  }
+});
 
 // XXX: confirm if save fails
 window.addEventListener('beforeunload', function () {
