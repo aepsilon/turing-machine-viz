@@ -32,19 +32,10 @@ var UndoManager = ace.require('ace/undomanager').UndoManager;
 function TMDocumentController(containers, buttons, document) {
   // FIXME: check for every container and button and throw if any are missing
   // TODO: check that document param is present
-  Object.defineProperties(this, {
-    containers: { value: containers },
-    buttons: { value: buttons }
-  });
-
   this.simulator = new TMSimulator(containers.simulator, buttons.simulator);
 
   // Set up ace editor //
   var editor = ace.edit(containers.editor);
-  Object.defineProperty(this, 'editor', {
-    value: editor,
-    enumerable: true
-  });
   editor.session.setOptions({
     mode: 'ace/mode/yaml',
     tabSize: 2,
@@ -77,7 +68,10 @@ function TMDocumentController(containers, buttons, document) {
     __document: {
       value: {editor: {}}, // dummy document that gets replaced
       writable: true
-    }
+    },
+    buttons   : { value: buttons },
+    containers: { value: containers },
+    editor    : { value: editor, enumerable: true }
   });
   this.openDocument(document);
 }
