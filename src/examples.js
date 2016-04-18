@@ -155,6 +155,90 @@ source code: |
     done:
 `;
 
+// TODO: add comments to explain states and inductive derivation
+examples.divBy3 =
+`name: divisible by 3
+source code: |
+  input: '110' # 6
+  blank: ' '
+  start state: q0
+  table:
+    q0:
+      0: R
+      1: {R: q1}
+      ' ': {R: accept}
+    q1:
+      0: {R: q2}
+      1: {R: q0}
+    q2:
+      0: {R: q1}
+      1: {R: q2}
+    accept:
+positions:
+  q0: {x: 262.98, y: 243.17, fixed: 1}
+  q1: {x: 430.41, y: 247.2, fixed: 1}
+  q2: {x: 599.95, y: 246.41, fixed: 1}
+  accept: {x: 263.31, y: 387.7, fixed: 1}
+`;
+
+// FIXME: replace wildcard with multi-symbol matching
+examples.binaryAddition =
+`name: binary addition
+source code: |2
+   # input: '1 111' # 1 + 7 = 8 = 1000_2
+  input: '101 11101' # 5 + 29 = 34 = 100010
+  # input: '1 1000'
+  blank: ' '
+  start state: start
+  table:
+    start:
+      ' ': {R: last}
+      _: R
+    last:
+      ' ': {L: take}
+      _: R
+    take:
+      0: {write: ' ', L: have0}
+      1: {write: ' ', L: have1}
+      ' ': {L: rewrite}
+    have0:
+      ' ': {L: add0}
+      _: L
+    have1:
+      ' ': {L: add1}
+      _: L
+    add0:
+      0: {write: O, R: start}
+      1: {write: I, R: start}
+      ' ': {write: O, R: start}
+      _: L
+    add1:
+      0: {write: I, R: start}
+      ' ': {write: I, R: start}
+      1: {write: O, L: carry}
+      _: L
+    carry:
+      1: {write: 0, L}
+      _: {write: 1, R: start}
+    rewrite:
+      O: {write: 0, L}
+      I: {write: 1, L}
+      ' ': {R: done}
+      _: L
+    done:
+positions:
+  start: {x: 64.59, y: 210.59, fixed: 1}
+  last: {x: 240.81, y: 209.16, fixed: 1}
+  take: {x: 442.52, y: 209.19, fixed: 1}
+  have0: {x: 442.43, y: 83.53, fixed: 1}
+  have1: {x: 444.21, y: 341.95, fixed: 1}
+  add0: {x: 241.27, y: 83.34, fixed: 1}
+  add1: {x: 239.92, y: 343.38, fixed: 1}
+  carry: {x: 61.16, y: 343.53, fixed: 1}
+  rewrite: {x: 541.23, y: 208.39, fixed: 1}
+  done: {x: 681.48, y: 208.79, fixed: 1}
+`;
+
 var blankTemplate =
 `input: '\${2}'
 blank: '\${3: }'
