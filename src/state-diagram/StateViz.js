@@ -347,7 +347,7 @@ function StateViz(svg, nodes, linkArray) {
       });
 
   // Force Layout Update
-  force.on('tick', function (){
+  force.on('tick', function () {
     // Keep coordinates in bounds. http://bl.ocks.org/mbostock/1129492
     // NB. Bounding can cause node centers to coincide, especially at corners.
     nodecircles.attr({cx: function (d) { return d.x = limitRange(nodeRadius, w - nodeRadius, d.x); },
@@ -360,6 +360,11 @@ function StateViz(svg, nodes, linkArray) {
     edgepaths.attr('d', function (d) { return d.getPath(); });
 
     edgegroups.each(function (d) { d.refreshLabels(); });
+
+    // Conserve CPU when layout is fully fixed
+    if (nodeArray.every(function (d) { return d.fixed; })) {
+      force.stop();
+    }
   });
   this.force = force;
   /* eslint-enable no-invalid-this */
