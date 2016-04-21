@@ -191,6 +191,9 @@ function init(args) {
     downloadContainer.appendChild(createDownloadLink(filename, contents));
     // <textarea> for document contents
     textarea.value = contents;
+    // workaround "Copy to clipboard" .focus() scrolling down to <textarea>
+    // note: doesn't work when <textarea> is completely out of view
+    textarea.setSelectionRange(0,0);
 
     var clipboard = new Clipboard('[data-clipboard-target]');
     clipboard.on('success', function (e) {
