@@ -152,6 +152,7 @@ function createDownloadLink(filename, contents) {
 function init(args) {
   var $dialog = args.$dialog,
       getCurrentDocument = args.getCurrentDocument,
+      getIsSynced = args.getIsSynced,
       gistContainer = args.gistContainer,
       downloadContainer = args.downloadContainer,
       textarea = args.textarea;
@@ -170,6 +171,17 @@ function init(args) {
     var filename = doc.name + '.yaml';
     var contents = format.stringifyDocument(doc);
     var gistPromise;
+
+    // warn about unsynced changes
+    var $alert;
+    if (!getIsSynced()) {
+      $alert = $(
+        '<div class="alert alert-warning" role="alert">' +
+        'The code editor has <strong>unsynced changes</strong> and might not correspond with the diagram.<br>' +
+        'Click <q>Load machine</q> to try to sync them. Otherwise, two sets of code will be exported.' +
+        '</div>'
+      ).prependTo($dialog.find('.modal-body'));
+    }
 
     createGenerateGistButton(gistContainer).addEventListener('click', function (e) {
       gistPromise = generateGist(gistContainer, e.target, filename, contents);
@@ -191,6 +203,7 @@ function init(args) {
       if (gistPromise) {
         try { gistPromise.cancel(); } catch (e) {/* */}
       }
+      if ($alert) { $alert.remove(); }
       gistContainer.textContent = '';
       downloadContainer.textContent = '';
       textarea.value = '';

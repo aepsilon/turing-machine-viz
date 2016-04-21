@@ -50,6 +50,7 @@ $(function () {
       controller.save(); // IMPORTANT: save changes, otherwise data model is out of date
       return menu.currentDocument;
     },
+    getIsSynced: controller.getIsSynced.bind(controller),
     gistContainer: getId('shareGistContainer'),
     downloadContainer: getId('exportDownloadContainer'),
     copyContentsButton: getId('copyContentsButton'),

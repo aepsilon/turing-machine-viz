@@ -212,9 +212,12 @@ TMDocumentController.prototype.setAlertErrors = function (errors) {
   );
 };
 
-/////////////////
-// Sync Status //
-/////////////////
+
+//////////////////////////////
+// Syncing diagram & editor //
+//////////////////////////////
+
+// Sync Status
 
 // This method can be overridden as necessary.
 // The default implementation toggles Bootstrap 3 classes.
@@ -226,6 +229,7 @@ TMDocumentController.prototype.setLoadButtonSuccess = function (didSucceed) {
 
 // internal. whether the editor and diagram source code are in sync, and the diagram is valid.
 // Updates "Load machine" button display.
+// for future reference: .isSynced cannot be moved to TMDocument because it requires knowledge from the simulator.
 Object.defineProperty(TMDocumentController.prototype, 'isSynced', {
   set: function (isSynced) {
     isSynced = Boolean(isSynced);
@@ -245,9 +249,12 @@ Object.defineProperty(TMDocumentController.prototype, 'isSynced', {
   get: function () { return this.__isSynced; }
 });
 
-///////////////////
-// Load & Revert //
-///////////////////
+// public API for isSynced
+TMDocumentController.prototype.getIsSynced = function () {
+  return Boolean(this.isSynced);
+};
+
+// Load & Revert
 
 // internal. used to detect when an imported document is corrupted.
 Object.defineProperty(TMDocumentController.prototype, 'hasValidDiagram', {
@@ -283,6 +290,7 @@ TMDocumentController.prototype.showCorruptDiagramAlert = function (show) {
   }
 };
 
+// Sync from editor to diagram
 TMDocumentController.prototype.loadEditorSource = function () {
   // load to diagram, and report any errors
   var errors = (function () {
@@ -305,6 +313,7 @@ TMDocumentController.prototype.loadEditorSource = function () {
   this.setAlertErrors(errors);
 };
 
+// Sync from diagram to editor
 TMDocumentController.prototype.revertEditorSource = function () {
   this.setEditorValue(this.hasValidDiagram
     ? this.simulator.sourceCode
