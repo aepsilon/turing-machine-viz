@@ -28,6 +28,8 @@ var _ = require('lodash');
 /**
  * Use a transition table to derive the graph (vertices & edges) for a D3 diagram.
  * Edges with the same source and target are combined.
+ * NB. In addition to single symbols, comma-separated symbols are supported.
+ * e.g. symbol string '0,1,,,I' -> symbols [0,1,',','I'].
  */
 // TransitionTable -> DiagramGraph
 function deriveGraph(table) {
@@ -42,7 +44,10 @@ function deriveGraph(table) {
   // 2. Create the edges, which can now point at any vertex object.
   var allEdges = [];
   _.forEach(graph, function (vertex, state) {
+
     vertex.transitions = vertex.transitions && (function () {
+      var stateTransitions = {};
+
       // Combine edges with the same source and target
       var cache = {};
       function edgeTo(target, label) {
@@ -55,16 +60,33 @@ function deriveGraph(table) {
         edge.labels.push(label);
         return edge;
       }
+      // Create symbol -> instruction object map
+      _.forEach(vertex.transitions, function (instruct, symbolKey) {
+        // Handle comma-separated symbols.
+        // Recreate array by splitting on ','. Treat 2 consecutive ',' as , ','.
+        var symbols = symbolKey.split(',').reduce(function (acc, x) {
+          if (x === '' && acc[acc.length-1] === '') {
+            acc[acc.length-1] = ',';
+          } else {
+            acc.push(x);
+          }
+          return acc;
+        }, []);
+        var target = instruct.state != null ? instruct.state : state;
+        var edge = edgeTo(target, labelFor(symbols, instruct));
 
-      return _.mapValues(vertex.transitions, function (instruct, symbol) {
-        // Normalize for execution, but display the less-cluttered original.
-        var normalized = normalize(state, symbol, instruct);
-        return {
-          instruction: normalized,
-          edge: edgeTo(normalized.state, labelFor(symbol, instruct))
-        };
+        symbols.forEach(function (symbol) {
+          stateTransitions[symbol] = {
+            // Normalize for execution, but display the less-cluttered original.
+            instruction: normalize(state, symbol, instruct),
+            edge: edge
+          };
+        });
       });
+
+      return stateTransitions;
     }());
+
   });
 
   return {graph: graph, edges: allEdges};
@@ -77,10 +99,10 @@ function normalize(state, symbol, instruction) {
 }
 
 // TODO: allow custom function for showing spaces?
-function labelFor(symbol, action) {
+function labelFor(symbols, action) {
   var rightSide = ((action.symbol == null) ? '' : (visibleSpace(String(action.symbol)) + ','))
     + String(action.move);
-  return visibleSpace(String(symbol)) + '→' + rightSide;
+  return symbols.map(visibleSpace).join(',') + '→' + rightSide;
 }
 
 // replace ' ' with '␣'.
