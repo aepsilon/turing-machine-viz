@@ -5,7 +5,7 @@
 /* eslint-env browser */
 var TMDocumentController = require('./TMDocumentController'),
     DocumentMenu = require('./DocumentMenu'),
-    Examples = require('./Examples'),
+    examples = require('./examples'),
     toDocFragment = require('./util').toDocFragment;
 var ace = require('ace-builds/src-min-noconflict');
 var $ = require('jquery'); // for Bootstrap modal dialog events
@@ -77,7 +77,7 @@ var menu = (function () {
   // Group: Examples
   var exampleGroup = document.createElement('optgroup');
   exampleGroup.label = 'Examples';
-  exampleGroup.appendChild(toDocFragment(Examples.list.map(
+  exampleGroup.appendChild(toDocFragment(examples.list.map(
     DocumentMenu.prototype.optionFromDocument)));
   select.appendChild(exampleGroup);
 
@@ -143,7 +143,7 @@ function newBlankDocument() {
   refreshEditMenu();
   // load up starter template
   if (controller.editor.insertSnippet) { // async loaded
-    controller.editor.insertSnippet(Examples.blankTemplate);
+    controller.editor.insertSnippet(examples.blankTemplate);
     controller.loadEditorSource();
   }
   controller.editor.focus();

@@ -121,7 +121,7 @@ DocumentMenu.prototype.delete = function () {
 // (model/storage) //
 /////////////////////
 
-var Storage = require('./Storage');
+var KeyValueStorage = require('./storage').KeyValueStorage;
 
 // TODO: impl. transactions
 
@@ -142,10 +142,10 @@ DocumentList.prototype.add = function (docID) {
   this.writeList();
 };
 DocumentList.prototype.readList = function () {
-  this.__list = JSON.parse(Storage.KeyValueStorage.read(this.storageKey)) || [];
+  this.__list = JSON.parse(KeyValueStorage.read(this.storageKey)) || [];
 };
 DocumentList.prototype.writeList = function () {
-  Storage.KeyValueStorage.write(this.storageKey, JSON.stringify(this.__list));
+  KeyValueStorage.write(this.storageKey, JSON.stringify(this.__list));
 };
 
 DocumentList.prototype.newDocument = function () {

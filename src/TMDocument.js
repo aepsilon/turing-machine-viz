@@ -1,7 +1,7 @@
 'use strict';
 
-var Storage = require('./Storage'),
-    Examples = require('./Examples'),
+var KeyValueStorage = require('./storage').KeyValueStorage,
+    examples = require('./examples'),
     util = require('./util'),
     _ = require('lodash/fp');
 
@@ -10,7 +10,7 @@ var Storage = require('./Storage'),
  * @param {string} docID Each document ID in a key-value store should be unique.
  */
 function TMDocument(docID) {
-  var preset = Examples.get(docID);
+  var preset = examples.get(docID);
   Object.defineProperties(this, {
     id:     { value: docID },
     prefix: { value: 'doc.' + docID },
@@ -47,7 +47,7 @@ TMDocument.prototype.path = function (path) {
 };
 
 (function () {
-  var store = Storage.KeyValueStorage;
+  var store = KeyValueStorage;
   var read = store.read.bind(store);
   var write = function (key, val) {
     if (val != null) {

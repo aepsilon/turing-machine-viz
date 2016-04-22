@@ -1,11 +1,11 @@
 'use strict';
 var TMSimulator = require('./TMSimulator'),
-    Parser = require('./Parser'),
+    parser = require('./parser'),
     util = require('./util'),
     ace = require('ace-builds/src-min-noconflict'),
     d3 = require('d3');
-var TMSpecError = Parser.TMSpecError;
-var YAMLException = Parser.YAMLException;
+var TMSpecError = parser.TMSpecError;
+var YAMLException = parser.YAMLException;
 var UndoManager = ace.require('ace/undomanager').UndoManager;
 
 /**

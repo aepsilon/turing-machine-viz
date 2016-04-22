@@ -40,8 +40,8 @@ module.exports = {
   ],
   module: {
     loaders: [
-      // ./Examples.js uses ES6 template literals for multiline strings
-      { test: /\/Examples\.js$/,
+      // ./examples.js uses ES6 template literals for multiline strings
+      { test: /\/examples\.js$/,
         exclude: /(node_modules|bower_components)/,
         loader: 'babel-loader',
         query: {

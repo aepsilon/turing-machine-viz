@@ -1,6 +1,6 @@
 'use strict';
 
-var Parser = require('./Parser'),
+var parseSpec = require('./parser').parseSpec,
     TMViz = require('./TMViz'),
     watchInit = require('./watch').watchInit,
     values = require('lodash').values;
@@ -60,7 +60,7 @@ Object.defineProperties(TMSimulator.prototype, {
         this.container.innerHTML = '';
       } else {
         // parse & check, then set
-        var spec = Parser.parseSpec(sourceCode);
+        var spec = parseSpec(sourceCode);
         if (this.machine) {
           // case: update
           // copy & restore positions, clear & load contents
