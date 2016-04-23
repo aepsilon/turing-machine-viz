@@ -7,37 +7,41 @@ var TMDocument = require('./TMDocument'),
 /**
  * Document menu controller.
  * @constructor
- * @param {Object}  args argument object
+ * @param {Object}  args                  argument object
  * @param {HTMLSelectElement}
  *                  args.menu
  * @param {?Node}  [args.group=args.menu] Node to add documents to.
- * @param {string}  args.storageKey
- * @param {number} [args.selectedIndex=0] Start with this item selected.
+ * @param {string}  args.storagePrefix
  * @param {?(TMDocument -> HTMLOptionElement)}
- *                  args.makeOption Customize rendering for each document entry.
+ *                  args.makeOption       Customize rendering for each document entry.
  */
 function DocumentMenu(args) {
-  var menu = args.menu;
-  var storageKey = args.storageKey;
+  var menu = args.menu,
+      group = args.group || menu,
+      storagePrefix = args.storagePrefix;
+
   if (!menu) {
     throw new TypeError('DocumentMenu: missing parameter: menu element');
-  } else if (!storageKey) {
-    throw new TypeError('DocumentMenu: missing parameter: storage key');
+  } else if (!storagePrefix) {
+    throw new TypeError('DocumentMenu: missing parameter: storage prefix');
   }
-  var doclist = new DocumentList(storageKey);
   if (args.makeOption) {
     this.optionFromDocument = args.makeOption;
   }
-  var group = args.group || menu;
-  group.appendChild(toDocFragment(doclist.list.map(function (entry) {
+
+  // Load document entries (non-examples)
+  this.doclist = new DocumentList(storagePrefix + '.list');
+  this.group = group;
+  group.appendChild(toDocFragment(this.doclist.list.map(function (entry) {
     return this.optionFromDocument(new TMDocument(entry.id));
   }, this)));
-
+  // Re-open last-opened document
   this.menu = menu;
-  this.menu.selectedIndex = args.selectedIndex || 0;
-  this.group = group;
-  this.doclist = doclist;
-  // Events
+  this.menu.selectedIndex =
+    Number(KeyValueStorage.read(storagePrefix + '.currentIndex')) || 0;
+  this.__storagePrefix = storagePrefix;
+
+  // Listen for selection changes
   var self = this;
   this.menu.addEventListener('change', function () {
     // TODO: put into refreshCurrent, rename to onSelectedChange
@@ -58,6 +62,12 @@ Object.defineProperties(DocumentMenu.prototype, {
     enumerable: true
   }
 });
+
+// Save the current selected index.
+DocumentMenu.prototype.saveCurrentIndex = function () {
+  KeyValueStorage.write(this.__storagePrefix + '.currentIndex',
+                        String(this.menu.selectedIndex));
+};
 
 // Configurable methods
 

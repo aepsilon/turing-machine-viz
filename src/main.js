@@ -64,10 +64,6 @@ $(function () {
 //////////
 
 // Document Menu //
-
-// XXX: persist last-opened index
-var docIndex = 0;
-
 var menu = (function () {
   var select = document.getElementById('tm-doc-menu');
   // Group: Documents
@@ -84,8 +80,7 @@ var menu = (function () {
   return new DocumentMenu({
     menu: select,
     group: docGroup,
-    storageKey: 'tm.docs',
-    selectedIndex: docIndex
+    storagePrefix: 'tm.docs'
   });
 })();
 
@@ -242,6 +237,7 @@ controller.editor.commands.addCommand({
 // XXX: confirm if save fails
 window.addEventListener('beforeunload', function () {
   controller.save();
+  menu.saveCurrentIndex();
 });
 
 // For interaction/debugging
