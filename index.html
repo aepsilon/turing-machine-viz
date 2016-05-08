@@ -72,7 +72,8 @@
     }
 
     @media print {
-      button { visibility: hidden; }
+      button.btn, hr { display: none }
+      #tutorial { page-break-before: always }
     }
     /* Checkbox table */
     .checkbox-table tr > :first-child {
