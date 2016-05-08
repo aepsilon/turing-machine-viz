@@ -10,36 +10,50 @@ var lodash = require('lodash'); // for 2-arg mapValues and mutable assign
 // {[key: string]: string}
 var examples = {};
 
-// From "Introduction to the Theory of Computation" (3rd ed.) by Michael Sipser, pg. 172
 examples.powersOfTwo =
 `name: powers of two
 source code: |
-  # Matches strings of 0s whose length is a power of two
-  input: '0000'
+  # Matches strings of 0s whose length is a power of two.
+  # Based on an example from
+  #   "Introduction to the Theory of Computation" (3rd ed.)
+  #   by Michael Sipser
+  input: '0000' # try '0', '000', '00000000'
   blank: ' '
-  start state: q1
+  start state: none
   synonyms:
     accept: {R: accept}
     reject: {R: reject}
+  # The idea: divide the length by 2 each time until it reaches 1.
+  #
+  # To do this, cross off every other 0, one pass at a time.
+  # If any pass reads an odd number of 0s (a remainder), reject right away.
+  # Otherwise if every pass halves the length cleanly,
+  # the length must be a power of two (1*2^n for n ≥ 0).
+  #
+  # Note that since the first 0 is never crossed off, we can simply
+  # erase it on the first pass and start the count from 1 from then on.
   table:
-    q1:
-      0: {write: ' ', R: q2}
-      _: reject
-    q2:
-      0  : {write: x, R: q3}
+    none:
+      0: {write: ' ', R: one}
+      ' ': reject
+    # Base case. Accept length of 1 = 2^0.
+    one:
+      0  : {write: x, R: even}
       ' ': accept
       x  : R
-    q3:
-      0  : {R: q4}
-      ' ': {L: q5}
+    # Inductive case.
+    # Divide by 2 and check for no remainder.
+    even:
+      0  : {R: odd}
+      ' ': {L: back} # return for another pass
       x  : R
-    q4:
-      0  : {write: x, R: q3}
-      ' ': reject
+    odd: # odd and > 1
+      0  : {write: x, R: even}
+      ' ': reject # odd number of 0s on this pass
       x  : R
-    q5:
-      ' ': {R: q2}
-      _  : L
+    back:
+      ' ': {R: one}
+      [0,x]: L
     accept:
     reject:
 `;
@@ -115,24 +129,30 @@ source code: |
 examples.copy1s =
 `name: copy 1s
 source code: |
+  # Copies a string of 1s.
   input: '111'
   blank: 0
-  start state: s1
+  start state: erase
   table:
-    s1:
+    # mark the current 1 by erasing it
+    erase:
       0: {R: H}
-      1: {write: 0, R: s2}
-    s2:
-      0: {R: s3}
+      1: {write: 0, R: midR}
+    # skip to the middle separator
+    midR:
+      0: {R: mark}
       1: R
-    s3:
-      0: {write: 1, L: s4}
+    # skip to the end and write a 1
+    mark:
+      0: {write: 1, L: midL}
       1: R
-    s4:
-      0: {L: s5}
+    # return to the middle
+    midL:
+      0: {L: restore}
       1: L
-    s5:
-      0: {write: 1, R: s1}
+    # return to the erased 1, restore it, and then advance to the next 1
+    restore:
+      0: {write: 1, R: erase}
       1: L
     H:
 `;
@@ -140,39 +160,47 @@ source code: |
 examples.binaryIncrement =
 `name: binary increment
 source code: |
+  # Adds 1 to a binary number.
   input: '1011'
   blank: ' '
   start state: right
   table:
+    # scan to the rightmost digit
     right:
-      1  : R
-      0  : R
-      ' ': {L: inc}
-    inc:
-      1  : {write: 0, L}
-      0  : {write: 1, R: done}
-      ' ': {write: 1, R: done}
+      [1,0]: R
+      ' '  : {L: carry}
+    # then carry the 1
+    carry:
+      1      : {write: 0, L}
+      [0,' ']: {write: 1, R: done}
     done:
 `;
 
-// TODO: add comments to explain states and inductive derivation
 examples.divBy3 =
 `name: divisible by 3
 source code: |
-  input: '110' # 6
+  # Checks if a binary number is divisible by 3.
+  input: '1001' # try '1111' (15), '10100' (20), '111001' (57)
   blank: ' '
+  # The idea is to keep a running total of the remainder.
+  #
+  # Each time a digit is read, multiply the current total by 2
+  # and then add the new digit.
+  # This keeps the total up to date with the number left of the tape head.
+  # Eventually the tape head reaches the end and we have the remainder
+  # for the whole number.
   start state: q0
   table:
     q0:
-      0: R
-      1: {R: q1}
+      0: R       # 2*0 + 0 = 0
+      1: {R: q1} # 2*0 + 1 = 1
       ' ': {R: accept}
     q1:
-      0: {R: q2}
-      1: {R: q0}
+      0: {R: q2} # 2*1 + 0 = 2
+      1: {R: q0} # 2*1 + 1 = 3
     q2:
-      0: {R: q1}
-      1: {R: q2}
+      0: {R: q1} # 2*2 + 0 = 4
+      1: {R: q2} # 2*2 + 1 = 5
     accept:
 positions:
   q0: {x: 262.98, y: 243.17, fixed: 1}
@@ -181,50 +209,53 @@ positions:
   accept: {x: 263.31, y: 387.7, fixed: 1}
 `;
 
-// FIXME: replace wildcard with multi-symbol matching
 examples.binaryAddition =
 `name: binary addition
-source code: |2
-   # input: '1 111' # 1 + 7 = 8 = 1000_2
-  input: '101 11101' # 5 + 29 = 34 = 100010
-  # input: '1 1000'
+source code: |
+  # Adds two binary numbers together.
+  input: '1101 11011'
   blank: ' '
   start state: start
   table:
+    # scan to the rightmost digit of the second number
     start:
       ' ': {R: last}
-      _: R
+      [0,1,O,I]: R
     last:
       ' ': {L: take}
-      _: R
+      [0,1,O,I]: R
+    # read the rightmost digit and erase it
     take:
       0: {write: ' ', L: have0}
       1: {write: ' ', L: have1}
       ' ': {L: rewrite}
+    # return to the first number
     have0:
       ' ': {L: add0}
-      _: L
+      [0,1]: L
     have1:
       ' ': {L: add1}
-      _: L
+      [0,1]: L
+    # add the digit to the next position,
+    # marking it (using O or I) as already added
     add0:
-      0: {write: O, R: start}
-      1: {write: I, R: start}
-      ' ': {write: O, R: start}
-      _: L
+      [0,' ']: {write: O, R: start}
+      1      : {write: I, R: start}
+      [O,I]  : L
     add1:
-      0: {write: I, R: start}
-      ' ': {write: I, R: start}
-      1: {write: O, L: carry}
-      _: L
+      [0,' ']: {write: I, R: start}
+      1      : {write: O, L: carry}
+      [O,I]  : L
+    # carry the 1 as needed
     carry:
-      1: {write: 0, L}
-      _: {write: 1, R: start}
+      [0,' ']: {write: 1, R: start}
+      1      : {write: 0, L}
+    # rewrite place markers back to 0s and 1s
     rewrite:
       O: {write: 0, L}
       I: {write: 1, L}
+      [0,1]: L
       ' ': {R: done}
-      _: L
     done:
 positions:
   start: {x: 64.59, y: 210.59, fixed: 1}
