@@ -209,6 +209,7 @@ function StateViz(svg, nodes, linkArray) {
   }
   function releasenode(d) {
     d.fixed = false;
+    force.resume();
   }
 
   // set up force layout
