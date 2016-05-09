@@ -113,6 +113,168 @@ source code: |
     H:
 `],
 
+['divBy3Base10',
+`name: divisible by 3 (base 10)
+source code: |
+  # Checks if a base 10 number is divisible by 3.
+  input: 4728 # try 42, 57, 1337, 5328, 7521, 314159265
+  blank: ' '
+  # This uses the same idea as the base 2 version.
+  #
+  # To make things more interesting, we derive the step relation:
+  # Let x be the number left of the tape head,
+  #     d the digit under the head, and
+  #     x' the number up to and including the head.
+  # Then
+  #   x' = 10x + d .
+  # Notice 10 ≡ 1 (mod 3). Therefore
+  #   x' ≡ x + d (mod 3) .
+  # Each step simply adds the new digit's remainder mod 3.
+  start state: q0
+  table:
+    q0:
+      [0,3,6,9]: R
+      [1,4,7]: {R: q1}
+      [2,5,8]: {R: q2}
+      ' ': {R: accept}
+    q1:
+      [0,3,6,9]: R
+      [1,4,7]: {R: q2}
+      [2,5,8]: {R: q0}
+    q2:
+      [0,3,6,9]: R
+      [1,4,7]: {R: q0}
+      [2,5,8]: {R: q1}
+    accept:
+`],
+
+['matchThreeLengths',
+`name: three equal lengths
+source code: |
+  # Decides the language { aⁿbⁿcⁿ | n ≥ 0 }, that is,
+  # accepts a's followed by b's then c's of the same length.
+  input: aabbcc # try bac, aabc, aabcc, aabcbc
+  blank: ' '
+  # On each pass, cross off the first a, b, and c.
+  # All a's must precede all b's, which must precede all c's.
+  # When there are no more a's,
+  # all input symbols should have been crossed off.
+  start state: A
+  table:
+    A:
+      a: {write: ., R: B}
+      .: R
+      ' ': {R: accept}
+    B:
+      [a,.]: R
+      b: {write: ., R: C}
+    C:
+      [b,.]: R
+      c: {write: ., R: Cs}
+    Cs:
+      c: R
+      ' ': {L: back}
+    back:
+      [b,c,.]: L
+      ' ': {R: A}
+      a: {L: A}
+    accept:
+`],
+
+['matchBinaryEqual',
+`name: equal strings
+source code: |
+  # Decides the language { w#w | w ∈ {0,1}* }
+  # (two equal binary strings separated by '#')
+  input: '01001#01001' # try '#', '1#10', '10#1', '10#10'
+  blank: ' '
+  # Two strings are equal if they are both the empty string,
+  # or they start with the same symbol and are equal thereafter.
+  start state: start
+  table:
+    start:
+      # inductive case: start with the same symbol
+      0: {write: ' ', R: have0}
+      1: {write: ' ', R: have1}
+      # base case: empty string
+      '#': {R: check}
+    have0:
+      [0,1]: R
+      '#': {R: match0}
+    have1:
+      [0,1]: R
+      '#': {R: match1}
+    match0:
+      x: R
+      0: {write: x, L: back}
+    match1:
+      x: R
+      1: {write: x, L: back}
+    back:
+      [0,1,'#',x]: L
+      ' ': {R: start}
+    check:
+      x: R
+      ' ': {R: accept}
+    accept:
+positions:
+  start: {x: 308.89, y: 220.03, fixed: 1}
+  have0: {x: 359.42, y: 350.96, fixed: 1}
+  have1: {x: 357.51, y: 96.03, fixed: 1}
+  match0: {x: 494.75, y: 352.18, fixed: 1}
+  match1: {x: 498.7, y: 97.9, fixed: 1}
+  back: {x: 554.93, y: 222.53, fixed: 1}
+  check: {x: 192.08, y: 219.39, fixed: 1}
+  accept: {x: 85.47, y: 220.29, fixed: 1}
+`],
+
+['palindrome',
+`name: palindrome
+source code: |
+  # Accepts palindromes made of the symbols 'a' and 'b'
+  input: 'abba' # try a, ab, bb, babab
+  blank: ' '
+  start state: start
+  synonyms:
+    accept: {R: accept}
+    reject: {R: reject}
+  # A palindrome is either the empty string, a single symbol,
+  # or a (shorter) palindrome with the same symbol added to both ends.
+  table:
+    start:
+      ' ': accept # empty string
+      a: {write: ' ', R: haveA}
+      b: {write: ' ', R: haveB}
+    haveA:
+      [a,b]: R
+      ' ': {L: matchA}
+    haveB:
+      [a,b]: R
+      ' ': {L: matchB}
+    matchA:
+      a: {write: ' ', L: back} # same symbol at both ends
+      b: reject
+      ' ': accept # single symbol
+    matchB:
+      a: reject
+      b: {write: ' ', L: back} # same symbol at both ends
+      ' ': accept # single symbol
+    back:
+      [a,b]: L
+      ' ': {R: start}
+    accept:
+    reject:
+positions:
+  start: {x: 430.54, y: 190.9, fixed: 1}
+  haveA: {x: 280.7, y: 187.23, fixed: 1}
+  haveB: {x: 595.17, y: 190.24, fixed: 1}
+  matchA: {x: 280.71, y: 320.65, fixed: 1}
+  matchB: {x: 595.22, y: 325.48, fixed: 1}
+  back: {x: 428.18, y: 320.07, fixed: 1}
+  accept: {x: 432.35, y: 62.52, fixed: 1}
+  reject: {x: 427.41, y: 450.69, fixed: 1}
+`],
+
 ['busyBeaver3',
 `name: 3-state busy beaver
 source code: |
@@ -269,12 +431,131 @@ positions:
   carry: {x: 61.16, y: 343.53, fixed: 1}
   rewrite: {x: 541.23, y: 208.39, fixed: 1}
   done: {x: 681.48, y: 208.79, fixed: 1}
+`],
+
+['lengthMult',
+`name: multiplied lengths
+source code: |
+  # Decides the language { a^(i)b^(j)c^(k) | i*j = k and i,j,k ≥ 0 }.
+  # (a's followed by b's then c's, where
+  # the number of a's multiplied by the number of b's
+  # equals the number of c's.)
+  input: aabbbcccccc # try ab, abc, bbb, aabbbbcccccccc
+  blank: ' '
+  start state: eachA
+  synonyms:
+    accept: {R: accept}
+  # The approach is two nested loops:
+  # For each 'a':
+  #   For each 'b':
+  #     Cross off a 'c'
+  # At the end, check that all c's are crossed off.
+  table:
+    eachA:
+      # For each 'a' erased, cross off j of the 'c' symbols.
+      a: {write: ' ', R: eachB}
+      b: {R: scan}
+      ' ': accept
+    eachB:
+      a: R
+      b: {write: B, R: markC}
+      ' ': accept
+      x: {L: nextA}
+    markC:
+      [b,x]: R
+      c: {write: x, L: nextB}
+    nextB:
+      [b,x]: L
+      B: {R: eachB}
+    nextA:
+      ' ': {R: eachA}
+      [a,x]: L
+      B: {write: b, L}
+    # Once all the 'a's are erased,
+    # all 'c' symbols should be crossed off.
+    scan:
+      [b,x]: R
+      ' ': accept
+    accept:
+positions:
+  eachA: {x: 378.63, y: 125.55, fixed: 1}
+  eachB: {x: 379.99, y: 278.79, fixed: 1}
+  markC: {x: 381.14, y: 417.07, fixed: 1}
+  nextB: {x: 546.07, y: 417.78, fixed: 1}
+  nextA: {x: 549.2, y: 279.15, fixed: 1}
+  scan: {x: 234.16, y: 123.89, fixed: 1}
+  accept: {x: 235.66, y: 211.49, fixed: 1}
+`],
+
+['unaryMult',
+`name: unary multiplication
+source code: |
+  # Multiplies together two unary numbers separated by a '*'.
+  # (Unary is like tallying. Here '||*|||' means 2 times 3.)
+  input: '||*|||' # try '*', '|*|||', '||||*||'
+  blank: ' '
+
+  # The idea:
+  #   multiply(0, b) = 0
+  #   multiply(a, b) = b + multiply(a-1, b)   when a > 0
+  start state: eachA
+  table:
+    # Erase one symbol from the first number.
+    eachA:
+      '|': {write: ' ', R: sep}  # Inductive case: a > 0.
+      '*': {write: ' ', R: tidy} # Base case:      a = 0.
+    sep:
+      '|': R
+      '*': {R: eachB}
+    # For each symbol erased from the first number,
+    # add the second number to the result
+    # by marking and copying each symbol.
+    eachB:
+      '|': {write: x, R: skip}
+      ' ': {L: sepL}
+    skip:
+      '|': R
+      ' ': {R: inc}
+    inc:
+      '|': R
+      ' ': {write: '|', L: skipL}
+    skipL:
+      '|': L
+      ' ': {L: nextB}
+    nextB:
+      '|': L
+      x: {R: eachB}
+    # Restore the marked symbols.
+    sepL:
+      x: {write: '|', L}
+      '*': {L: nextA}
+    nextA:
+      '|': L
+      ' ': {R: eachA}
+    # Clean up: erase the input.
+    tidy:
+      '|': {write: ' ', R}
+      ' ': {R: done}
+    done:
+positions:
+  eachA: {x: 380.7, y: 42.6, fixed: 1}
+  sep: {x: 381.6, y: 153.73, fixed: 1}
+  eachB: {x: 382.07, y: 258.05, fixed: 1}
+  skip: {x: 383.26, y: 369.35, fixed: 1}
+  inc: {x: 384.79, y: 473.78, fixed: 1}
+  skipL: {x: 521.41, y: 443.54, fixed: 1}
+  nextB: {x: 520.59, y: 309.48, fixed: 1}
+  sepL: {x: 519.84, y: 201.11, fixed: 1}
+  nextA: {x: 521.2, y: 91.47, fixed: 1}
+  tidy: {x: 247.21, y: 91.68, fixed: 1}
+  done: {x: 248.23, y: 202.94, fixed: 1}
 `]
+
 ].map(function (pair) {
   // parse each string into a document
   var id = pair[0];
   var doc = parseDocument(pair[1]);
-  
+
   doc.id = id;
   return [id, doc];
 });
