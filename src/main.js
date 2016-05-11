@@ -233,6 +233,7 @@ controller.editor.commands.addCommand({
     controller.loadEditorSource();
   }
 });
+controller.editor.session.setUseWrapMode(true);
 
 // XXX: confirm if save fails
 window.addEventListener('beforeunload', function () {

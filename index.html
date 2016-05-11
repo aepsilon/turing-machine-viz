@@ -50,30 +50,34 @@
     nav .navbar-right {
       margin-right: 0; /* override negative margin  */
     }
+    /* Editor */
+    #editor-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 85ch;
+      margin: auto;
+    }
     button.tm-editor-revert {
       position: absolute;
-      margin-top: 0;
-      margin-left: 4em;
-    }
-    .btn-wide-save {
-      padding-left: 1.5em;
-      padding-right:1.5em;
+      right: 0;
     }
     .tm-editor.ace_editor {
-      height: 60em;
-      width: 40em;
       border: 1px solid #DDD;
       /*border: 1px solid #ccc;*/
       border-radius: 4px;
-      margin: auto;
       margin-top: 1em;
       font-family: 'Source Code Pro', 'source-code-pro', 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
       text-align: left;
     }
-
+    /* Print styles */
     @media print {
       button.btn, hr { display: none }
       #tutorial { page-break-before: always }
+    }
+    /* "Save" button */
+    .btn-wide-save {
+      padding-left: 1.5em;
+      padding-right:1.5em;
     }
     /* Checkbox table */
     .checkbox-table tr > :first-child {
@@ -379,7 +383,7 @@
       <div class="row">
         <div class="col-md-7 form-group text-center">
           <!-- Diagram -->
-          <div id="machine-container">
+          <div id="machine-container" class="form-group">
             <!-- Noscript notice -->
             <noscript>
               <div class="panel panel-default">
@@ -417,6 +421,7 @@
 
         <!-- Code Editor -->
         <div class="col-md-5 form-group text-center">
+        <div id="editor-wrapper">
           <div id="editor-alerts-container"></div>
           <button type="button" class="btn btn-primary tm-editor-load">
             Load machine
@@ -425,6 +430,7 @@
             Revert to diagram
           </button>
           <div id="editor-container" class="tm-editor"></div>
+        </div>
         </div>
       </div>
 
