@@ -1,6 +1,7 @@
 'use strict';
+
 var _ = require('lodash');
-/* global localStorage */
+/* global localStorage:false, window:false */
 
 ///////////////////////
 // Key-Value Storage //
@@ -18,6 +19,7 @@ var canUseLocalStorage = (function () {
   }
 })();
 
+// RAM-only fallback
 var RAMStorage = (function () {
   var obj = {};
   return Object.freeze({
@@ -32,10 +34,24 @@ var RAMStorage = (function () {
 
 var KeyValueStorage = (function () {
   var s = canUseLocalStorage ? localStorage : RAMStorage;
+
   return {
     read  : s.getItem.bind(s),
     write : s.setItem.bind(s),
-    remove: s.removeItem.bind(s)
+    remove: s.removeItem.bind(s),
+    // Registers a listener for StorageEvents from other tabs/windows.
+    addStorageListener: canUseLocalStorage
+      ? function (listener) {
+        window.addEventListener('storage', function (e) {
+          if (e.storageArea === localStorage) {
+            listener(e);
+          }
+        });
+      }
+      : function () {},
+    removeStorageListener: canUseLocalStorage
+      ? window.removeEventListener.bind(window, 'storage')
+      : function () {}
   };
 })();
 
