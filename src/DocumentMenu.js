@@ -1,8 +1,8 @@
 'use strict';
 
 /* global document */
-var TMDocument = require('./TMDocument'),
-    toDocFragment = require('./util').toDocFragment;
+var TMDocument = require('./TMDocument');
+var toDocFragment = require('./util').toDocFragment;
 
 /**
  * Document menu controller.
@@ -44,7 +44,6 @@ function DocumentMenu(args) {
   // Listen for selection changes
   var self = this;
   this.menu.addEventListener('change', function () {
-    // TODO: put into refreshCurrent, rename to onSelectedChange
     self.onChange(self.currentDocument);
   });
 }
@@ -78,9 +77,10 @@ DocumentMenu.prototype.optionFromDocument = function (doc) {
   return option;
 };
 
-// TODO: use an event system?
-// called when user action triggers the 'change' event for the <select> menu.
-// called with the new value of .currentDocument.
+// Called when the selected index (of the <select>) changes
+// through user action or via this class's API.
+// The callback receives the new value of .currentDocument,
+// along with the options object (if triggered programmatically).
 DocumentMenu.prototype.onChange = function () {
 };
 
@@ -92,6 +92,7 @@ DocumentMenu.prototype.__prepend = function (doc, opts) {
   this.group.insertBefore(option, this.group.firstChild);
   if (opts && opts.select) {
     option.selected = true;
+    this.onChange(doc, opts);
   }
   return doc;
 };
@@ -115,15 +116,16 @@ DocumentMenu.prototype.rename = function (name) {
 
 // required invariant: one option is always selected.
 // returns true if the current entry was removed from the list.
-DocumentMenu.prototype.delete = function () {
+DocumentMenu.prototype.delete = function (opts) {
   this.currentDocument.delete();
   var index = this.menu.selectedIndex;
-  var status = this.doclist.deleteIndex(index);
-  if (status) {
+  var didDeleteEntry = this.doclist.deleteIndex(index);
+  if (didDeleteEntry) {
     this.currentOption.remove();
     this.menu.selectedIndex = index;
+    this.onChange(this.currentDocument, opts);
   }
-  return status;
+  return didDeleteEntry;
 };
 
 /////////////////////
