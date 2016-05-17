@@ -8,6 +8,7 @@ var KeyValueStorage = require('./storage').KeyValueStorage,
 /**
  * Document model (storage).
  * @param {string} docID Each document ID in a key-value store should be unique.
+ *                       An ID is typically a timestamp. It should not contain '.'.
  */
 function TMDocument(docID) {
   var preset = examples.get(docID);
@@ -40,6 +41,15 @@ function useFallbackGet(preset, obj, prop) {
   };
   return desc;
 }
+
+/**
+ * Checks whether a storage key is for a document's name.
+ * @return {?string} The document ID if true, otherwise null.
+ */
+TMDocument.IDFromNameStorageKey = function (string) {
+  var result = /^doc\.([^.]+)\.name\.visible$/.exec(string);
+  return result && result[1];
+};
 
 // internal method.
 TMDocument.prototype.path = function (path) {

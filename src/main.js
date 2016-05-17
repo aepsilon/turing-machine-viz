@@ -141,7 +141,7 @@ var menu = (function () {
   // only swap out the storage backing; don't affect views or undo history
   function duplicateDocument() {
     controller.save();
-    menu.duplicate(menu.currentDocument, {select: true, type: 'duplicate'});
+    menu.duplicate(menu.currentDocument, {select: true});
   }
 
   function newBlankDocument() {
@@ -199,13 +199,13 @@ var menu = (function () {
 
   // Delete
   function deleteDocument() {
-    menu.delete({type: 'delete'});
+    menu.delete();
   }
   document.getElementById('tm-doc-action-delete').addEventListener('click', deleteDocument);
 
   // Reset Example
   function discardReset() {
-    menu.delete({type: 'delete'});
+    menu.delete();
     // load manually since example stays and selection doesn't change
     controller.forceLoadDocument(menu.currentDocument);
   }
@@ -260,7 +260,7 @@ controller.editor.session.setUseWrapMode(true);
 // XXX: confirm if save fails
 window.addEventListener('beforeunload', function () {
   controller.save();
-  menu.saveCurrentIndex();
+  menu.saveCurrentDocID();
 });
 
 // For interaction/debugging
