@@ -263,5 +263,27 @@ window.addEventListener('beforeunload', function () {
   menu.saveCurrentDocID();
 });
 
+// Keep the current document in sync across tabs/windows
+window.addEventListener('blur', function () {
+  // One tab saves the data...
+  controller.save();
+});
+(function () {
+  // ...and the other tab loads it.
+  var isReloading = false;
+  require('./TMDocument').addOutsideChangeListener(function (docID, prop) {
+    if (docID === controller.getDocument().id && prop !== 'name' && !isReloading) {
+      // Batch together property changes into one reload
+      isReloading = true;
+      setTimeout(function () {
+        isReloading = false;
+        // Preserve undo history
+        controller.forceLoadDocument(controller.getDocument(), true);
+
+      }, 100);
+    }
+  });
+}());
+
 // For interaction/debugging
 exports.controller = controller;
