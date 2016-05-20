@@ -256,6 +256,15 @@ controller.editor.commands.addCommand({
   }
 });
 controller.editor.session.setUseWrapMode(true);
+$(function () {
+  try {
+    require('./kbdshortcuts').main(controller.editor.commands,
+      getId('kbdShortcutTable')
+    );
+  } catch (e) {
+    /* */
+  }
+});
 
 // XXX: confirm if save fails
 window.addEventListener('beforeunload', function () {

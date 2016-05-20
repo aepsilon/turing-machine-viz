@@ -50,6 +50,9 @@ crossorigin="anonymous" integrity="sha256-Le1IgolgSvP12m4TUXOD6vm//7SRvuVr/+Z0uG
   nav .navbar-right {
     margin-right: 0; /* override negative margin  */
   }
+  .editor-shortcuts td:first-child {
+    text-align: right;
+  }
   /* Editor */
   #editor-wrapper {
     position: relative;
@@ -394,7 +397,7 @@ aria-labelledby="importPanelHeader">
               <h3 class="panel-title">Tip: Enable JavaScript</h3>
             </div>
             <div class="panel-body">
-              <p>The visualization couldn't load because JavaScript is disabled.</p>
+              <p>The visualization couldn’t load because JavaScript is disabled.</p>
             </div>
           </div>
         </noscript>
@@ -555,55 +558,17 @@ table:
   </section>
 
   <div class="col-md-4 col-sm-6">
-    <!-- <h3>Tips</h3> -->
     <!-- XXX: not a verbal phrase -->
     <h3>Tips</h3>
     <h4>Arrange the diagram</h4>
     <p> <b>Drag</b> or click a state node to fix it in place. </p>
     <p> <b>Double-click</b> a node to release it. </p>
     <h4>Edit with keyboard shortcuts</h4>
-    <style media="screen">
-      .editor-shortcuts td:first-child {
-        text-align: right;
-      }
-    </style>
-    <table class="editor-shortcuts table">
-      <tbody>
-        <tr>
-          <td><kbd>Cmd</kbd>-<kbd>/</kbd></td>
-          <td>Toggle comment</td>
-        </tr>
-        <tr>
-          <td><kbd>Tab</kbd></td>
-          <td>Indent selection</td>
-        </tr>
-        <tr>
-          <td><kbd>Shift</kbd>-<kbd>Tab</kbd></td>
-          <td>Unindent selection</td>
-        </tr>
-        <tr>
-          <td><kbd>Opt</kbd>-<kbd>↑</kbd></td>
-          <td>Move line up</td>
-        </tr>
-        <tr>
-          <td><kbd>Opt</kbd>-<kbd>↓</kbd></td>
-          <td>Move line down</td>
-        </tr>
-        <tr>
-          <td><kbd>Ctrl</kbd>-<kbd>Opt</kbd>-<kbd>→</kbd></td>
-          <td>Add next occurrence to selection<br>
-          <small>Like a quick "find". Useful for renaming things.</small></td>
-        </tr>
-        <tr>
-          <td><kbd>Cmd</kbd>-<kbd>F</kbd></td>
-          <td>Find</td>
-        </tr>
-        <tr>
-          <td><kbd>Cmd</kbd>-<kbd>Opt</kbd>-<kbd>F</kbd></td>
-          <td>Find and Replace</td>
-        </tr>
-      </tbody>
+    <table id="kbdShortcutTable" class="editor-shortcuts table">
     </table>
+    <noscript>
+      <p>The code editor and keyboard shortcuts require that JavaScript be enabled.</p>
+    </noscript>
     More keyboard shortcuts are available on the
     <a href="https://github.com/ajaxorg/ace/wiki/Default-Keyboard-Shortcuts"
     target="_blank">full list</a>.
