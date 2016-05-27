@@ -17,6 +17,47 @@ ace.config.loadModule('ace/ext/language_tools');
 function getId(id) { return document.getElementById(id); }
 
 
+//////////////////////////
+// Compatibility Checks //
+//////////////////////////
+
+(function () {
+  function addWarning(html) {
+    getId('diagram-column').insertAdjacentHTML('afterbegin', html);
+  }
+
+  // Warn when falling back to RAM-only storage
+  // NB. This mainly covers local storage errors and Safari's Private Browsing.
+  if (!require('./storage').canUseLocalStorage) {
+    addWarning('<div class="alert alert-info alert-dismissible" role="alert">' +
+      '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>' +
+      '<p>Local storage is unavailable. ' +
+      'Your browser could be in Private Browsing mode, or it might not support <a href="http://caniuse.com/#feat=namevalue-storage" target="_blank">local storage</a>.</p>' +
+      '<strong>Any changes will be lost after leaving the webpage.</strong>' +
+      '</div>');
+  }
+
+  /*
+  Warn for IE 10 and under, which misbehave and lack certain features.
+  Examples:
+    • IE 9 and under don't support .classList.
+    • IE 10's "storage event is fired even on the originating document where it occurred."
+      http://caniuse.com/#feat=namevalue-storage
+  */
+
+  // Detect IE 10 and under (http://stackoverflow.com/a/16135889)
+  var isIEUnder11 = new Function('/*@cc_on return @_jscript_version; @*/')() < 11;
+  if (isIEUnder11) {
+    addWarning('<div class="alert alert-warning alert-dismissible" role="alert">' +
+      '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>' +
+      '<p><strong>Your <a href="http://whatbrowser.org" target="_blank">web browser</a> is out of date</strong> and does not support some features used by this program.<br>' +
+      '<em>The page may not work correctly, and data may be lost.</em></p>' +
+      'Please update your browser, or use another browser such as <a href="http://www.google.com/chrome/browser/" target="_blank">Chrome</a> or <a href="http://getfirefox.com" target="_blank">Firefox</a>.' +
+      '</div>');
+  }
+}());
+
+
 /////////////////////
 // Import & Export //
 /////////////////////
