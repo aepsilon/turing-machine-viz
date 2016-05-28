@@ -224,9 +224,11 @@ TMDocumentController.prototype.setAlertErrors = function (errors) {
 // This method can be overridden as necessary.
 // The default implementation toggles Bootstrap 3 classes.
 TMDocumentController.prototype.setLoadButtonSuccess = function (didSucceed) {
-  var classes = this.buttons.editor.load.classList;
-  classes.toggle('btn-success', didSucceed);
-  classes.toggle('btn-primary', !didSucceed);
+  d3.select(this.buttons.editor.load)
+      .classed({
+        'btn-success': didSucceed,
+        'btn-primary': !didSucceed
+      });
 };
 
 // internal. whether the editor and diagram source code are in sync, and the diagram is valid.
