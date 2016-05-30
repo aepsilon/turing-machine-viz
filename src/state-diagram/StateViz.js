@@ -89,13 +89,15 @@ EdgeCounter.prototype.shapeForEdge = function (e) {
 // create a function that will compute an edge's SVG 'd' attribute.
 function edgePathFor(nodeRadius, shape, d) {
   // case: self-loop
+  var loopEndOffset, loopArc;
   if (shape === EdgeShape.loop) {
+    // start at the top (90°), end slightly above the right (15°)
+    loopEndOffset = vectorFromLengthAngle(nodeRadius, -15 * Math.PI/180);
+    loopArc = ' a 19,27 45 1,1 ' + loopEndOffset[0] + ',' + (loopEndOffset[1]+nodeRadius);
     return function () {
       var x1 = d.source.x,
           y1 = d.source.y;
-      // start at the top (90°) and end at the right (0°)
-      return 'M ' + x1 + ',' + (y1-nodeRadius) +
-        ' A 30,20 -45 1,1 ' + (x1+nodeRadius) + ',' + y1;
+      return 'M ' + x1 + ',' + (y1-nodeRadius) + loopArc;
     };
   }
   // case: between nodes
