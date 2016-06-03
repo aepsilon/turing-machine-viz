@@ -341,7 +341,7 @@ aria-labelledby="importPanelHeader">
       <div class="modal-body">
         <div class="panel panel-default">
           <div class="panel-heading">
-            <h5 class="panel-title">Share with GitHub</h5>
+            <h5 class="panel-title">Share link</h5>
           </div>
           <div class="panel-body">
             <div class="form-group">
@@ -351,7 +351,7 @@ aria-labelledby="importPanelHeader">
                 You can link to any GitHub gist by its ID:
               </p>
               <div class="well well-sm">
-                <samp>turingmachine.io/?import-gist=<var>gistID</var></samp>
+                <samp>turingmachine.io/?import-gist=<var>ID</var></samp>
               </div>
               <p>
                 When using your own gists, you gain the ability to update and delete the contents,
@@ -483,8 +483,10 @@ aria-labelledby="importPanelHeader">
   <!-- Entry point -->
   <script src="build/TMViz.bundle.js" charset="utf-8"></script>
   <script src="build/main.bundle.js" charset="utf-8"></script>
-<hr>
+
+  <hr>
 <!-- Tutorial -->
+<!-- FIXME: Indent inside container-fluid -->
 <div id="tutorial" class="row">
   <section class="col-md-4 col-sm-6">
     <h3>Try it out</h3>
@@ -555,8 +557,8 @@ table:
   # then carry the 1
   carry:
     1  : {write: 0, L}
-    0  : {write: 1, R: done}
-    ' ': {write: 1, R: done}
+    0  : {write: 1, L: done}
+    ' ': {write: 1, L: done}
   done:
 </pre>
     <p>
@@ -575,15 +577,15 @@ table:
     An instruction’s general form has three parts:
     <pre>{write: <var>symbol</var>, <var>move</var>: <var>state</var>}</pre>
     <ul>
-      <li><code>{write: 1, R: done}</code> writes the symbol <code>1</code>,
-        moves the tape head right (<code>R</code>), and goes to the <code>done</code> state.
+      <li><code>{write: 1, L: done}</code> writes the symbol <code>1</code>,
+        moves the tape head left (<code>L</code>), and goes to the <code>done</code> state.
       </li>
     </ul>
     <p>
-      For brevity, you can omit the symbol or state if they stay the same.
+      For brevity, you can omit the symbol and state if they stay the same.
       <ul>
         <li>
-          <code>{L: carry}</code> writes back the same symbol that was read, moves the tape head left, and goes to the <code>carry</code> state.
+          <code>{L: carry}</code> writes the same symbol that was read, moves the tape head left, and goes to the <code>carry</code> state.
         </li>
         <li>
           <code>R</code> (shorthand for {R}) simply moves the tape head right. It writes back the same symbol and stays in the same state.
@@ -595,95 +597,46 @@ table:
   <div class="col-md-4 col-sm-6">
     <!-- XXX: not a verbal phrase -->
     <h3>Tips</h3>
-    <h4>Arrange the diagram</h4>
+    <!-- <h4>Arrange the diagram</h4>
     <p> <b>Drag</b> or click a state node to fix it in place. </p>
-    <p> <b>Double-click</b> a node to release it. </p>
-    <h4>Edit with keyboard shortcuts</h4>
+    <p> <b>Double-click</b> a node to release it. </p> -->
+    <h4>Editor keyboard shortcuts</h4>
     <table id="kbdShortcutTable" class="editor-shortcuts table">
     </table>
     <noscript>
       <p>The code editor and keyboard shortcuts require that JavaScript be enabled.</p>
     </noscript>
+    <p>
     More keyboard shortcuts are available on the
     <a href="https://github.com/ajaxorg/ace/wiki/Default-Keyboard-Shortcuts"
     target="_blank">full list</a>.
-  </div>
-</div>
-<hr>
-<!-- XXX: old reference -->
-  <div class="row">
-    <div class="col-md-4 col-sm-6">
-      <h3>Format</h3>
-        <!-- <p>
-          At each step, a Turing machine looks up and carries out the <a href="#def-transition">transition</a>
-          for combination of its current state and the current symbol under the tape head.
-        </p> -->
-        <p>
-          At each step, a Turing machine takes its current state and current symbol under the tape head,
-          looks it up in its transition table, and carries out the resulting instruction.
-        </p>
-        <h4>Example</h4>
-<pre>
-# binary increment
-input: '1011'
-blank: ' '
-start state: right
-table:
-# scan to the right end
-right:
-1  : R
-0  : R
-' ': {L: inc}
-# then carry the 1
-inc:
-1  : {write: 0, L}
-0  : {write: 1, R: done}
-' ': {write: 1, R: done}
-done:
-</pre>
-      <h4>Additional Info</h4>
-      The document format is <a href="https://en.wikipedia.org/wiki/YAML" target="_blank"><abbr>YAML</abbr></a>.
-      <!-- <h4>N.B.</h4>
-      Numbers on the right side of a mapping (key: value) are automatically converted to strings, so
-      00101 becomes 101. To keep the leading zeros, use quotes: '00101' or "00101".
-      </p> -->
-    </div>
-    <div class="col-md-4 col-sm-6">
-      <h3>Instruction Format</h3>
+    </p>
+
+    <h4>Misc. tips</h4>
+    <ul id="misc-tips-list">
+      <li>Changes are autosaved.</li>
+      <!-- FIXME: edit, rephrase -->
+      <li>Don't hesitate to duplicate. Use “Edit &gt; Duplicate document” to create a snapshot before you start a variation or try something new.</li>
+      <li>Documents are saved in your browser’s local storage. They will stay there between sessions, but be careful when clearing browser data. You can create backups by downloading your documents.</li>
+      <li>Incognito / Private Browsing mode uses a separate temporary storage. This is useful for importing or editing documents that you want to try but don’t want to keep.</li>
+    </ul>
+    <a class="disclosure-triangle collapsed" role="button" data-toggle="collapse" href="#aboutSyntax">
+      More about the syntax
+    </a>
+    <div id="aboutSyntax" class="collapse">
+      <p>The code is written in <a href="https://en.wikipedia.org/wiki/YAML" target="_blank"><abbr>YAML</abbr></a> 1.2, a general-purpose data format.</p>
       <p>
-        Each <dfn id="def-tm-instruction">instruction</dfn> has three steps:
-        <ol>
-          <li>write a symbol to the tape</li>
-          <li>move the tape head left (<code>L</code>) or right (<code>R</code>)</li>
-          <li>set the new state</li>
-        </ol>
-        <!-- then moves the tape head left (<code>L</code>) or right (<code>R</code>),
-        and finally sets the new state. -->
-      </p>
-      <p> <code>{write: <i>symbol</i>, <i>move</i>: <i>state</i>}</code> </p>
-      <p>For convenience and simplicity, you can omit any parts that aren't changed.</p>
-      <p>
-        <strong>TODO: write several different drafts and compare</strong>
+      If you’re familiar with JSON, YAML is similar, but designed to be more readable.
+      Mappings can use indent instead of brackets <code>{}</code>, and strings can often be included directly without quotes.
       </p>
       <p>
-        <code>{<i>move</i>: <i>state</i>}</code> moves the tape head and goes to another state.
-        It writes back the same symbol that was read.
+      Some strings need to be quoted: for example, those that start/end with a space, or include certain characters that have special meaning in YAML. If a string is causing problems, try putting quotes around it.
       </p>
-      <p>
-        <code>L</code> or <code>R</code> only moves the tape head,
-        since it writes back the same symbol and stays in the same state.
-      </p>
-    </div>
-    <div class="col-md-3 col-sm-11">
-      <h3>Diagram</h3>
-      <p> <b>Drag</b> or click a state node to fix it in place. </p>
-      <p> <b>Double-click</b> a node to release it. </p>
-    </div>
-    <div class="col-sm-1">
-      GitHub link here.
     </div>
   </div>
 </div>
+</div>
+
 <footer class="page-footer">
   <a href="https://github.com/aepsilon/turing-machine-viz" target="_blank" title="View on GitHub">
     <svg class="octicon octicon-mark-github" height="24" width="24" viewBox="0 0 16 16" version="1.1" aria-hidden="true">
