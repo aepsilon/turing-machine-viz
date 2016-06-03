@@ -55,6 +55,19 @@ function getId(id) { return document.getElementById(id); }
       'Please update your browser, or use another browser such as <a href="http://www.google.com/chrome/browser/" target="_blank">Chrome</a> or <a href="http://getfirefox.com" target="_blank">Firefox</a>.' +
       '</div>');
   }
+
+  // Warn about iOS local storage volatility
+  $(function () {
+    // Detect iOS (http://stackoverflow.com/a/9039885)
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS) {
+      getId('misc-tips-list').insertAdjacentHTML('afterbegin',
+        '<li><strong class="text-warning">Important note for iOS</strong>: ' +
+        'iOS saves browser local storage in the cache folder, which is <strong>not backed up</strong>, and is ' +
+        '<q cite="https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API#Browser_compatibility"><strong>subject to occasional clean up</strong>, ' +
+        'at the behest of the OS, typically if space is short.</q></li>');
+    }
+  });
 }());
 
 
