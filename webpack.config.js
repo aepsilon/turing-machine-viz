@@ -16,6 +16,7 @@ const commonConfig = {
     library: '[name]',
     libraryTarget: 'var', // allow console interaction
     path: path.join(__dirname, 'build'),
+    publicPath: '/build/',
     filename: '[name].bundle.js'
   },
   externals: {

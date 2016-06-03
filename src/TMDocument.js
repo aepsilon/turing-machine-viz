@@ -8,6 +8,7 @@ var KeyValueStorage = require('./storage').KeyValueStorage,
 /**
  * Document model (storage).
  * @param {string} docID Each document ID in a key-value store should be unique.
+ *                       An ID is typically a timestamp. It should not contain '.'.
  */
 function TMDocument(docID) {
   var preset = examples.get(docID);
@@ -97,6 +98,32 @@ TMDocument.prototype.delete = function () {
   this.copyFrom({});
 };
 
+// Cross-tab/window storage sync
+
+/**
+ * Checks whether a storage key is for a document's name.
+ * @return {?string} The document ID if true, otherwise null.
+ */
+TMDocument.IDFromNameStorageKey = function (string) {
+  var result = /^doc\.([^.]+)\.name\.visible$/.exec(string);
+  return result && result[1];
+};
+
+/**
+ * Registers a listener for document changes caused by other tabs/windows.
+ * The listener receives the document ID and the property name that changed.
+ * @param {Function} listener
+ */
+TMDocument.addOutsideChangeListener = function (listener) {
+  var re = /^doc\.([^.]+)\.(.+)\.visible$/;
+
+  KeyValueStorage.addStorageListener(function (e) {
+    var matches = re.exec(e.key);
+    if (matches) {
+      listener(matches[1], matches[2]);
+    }
+  });
+}
 
 /////////////////////////
 // Position table JSON //

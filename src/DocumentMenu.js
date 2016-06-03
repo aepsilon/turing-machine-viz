@@ -1,11 +1,15 @@
 'use strict';
 
 /* global document */
-var TMDocument = require('./TMDocument'),
-    toDocFragment = require('./util').toDocFragment;
+var KeyValueStorage = require('./storage').KeyValueStorage;
+var TMDocument = require('./TMDocument');
+var d3 = require('d3');
+var merge = require('lodash/fp').merge;
 
 /**
  * Document menu controller.
+ *
+ * The view is fully determined by a 3-tuple: ([ID], ID -> Name, currentID).
  * @constructor
  * @param {Object}  args                  argument object
  * @param {HTMLSelectElement}
@@ -28,24 +32,45 @@ function DocumentMenu(args) {
   if (args.makeOption) {
     this.optionFromDocument = args.makeOption;
   }
+  this.menu = menu;
+  this.group = group;
+  this.group.innerHTML = '';
+  this.__storagePrefix = storagePrefix;
 
   // Load document entries (non-examples)
   this.doclist = new DocumentList(storagePrefix + '.list');
-  this.group = group;
-  group.appendChild(toDocFragment(this.doclist.list.map(function (entry) {
-    return this.optionFromDocument(new TMDocument(entry.id));
-  }, this)));
+  this.render();
   // Re-open last-opened document
-  this.menu = menu;
-  this.menu.selectedIndex =
-    Number(KeyValueStorage.read(storagePrefix + '.currentIndex')) || 0;
-  this.__storagePrefix = storagePrefix;
+  this.selectSavedCurrentDocID();
 
   // Listen for selection changes
   var self = this;
   this.menu.addEventListener('change', function () {
-    // TODO: put into refreshCurrent, rename to onSelectedChange
-    self.onChange(self.currentDocument);
+    self.onChange(self.currentDocument, {type: 'open'});
+  });
+
+  // Listen for storage changes in other tabs/windows
+  KeyValueStorage.addStorageListener(function (e) {
+    var docID;
+    var option, newOption;
+
+    if (e.key === self.doclist.storageKey) {
+      // case: [ID] list changed
+      self.doclist.readList();
+      self.render();
+    } else if ( (docID = TMDocument.IDFromNameStorageKey(e.key)) ) {
+      // case: single document renamed: (ID -> Name) changed
+      option = self.findOptionByDocID(docID);
+      if (option) {
+        // replace the whole <option>, to be consistent with .optionFromDocument
+        option.parentNode.replaceChild(
+          newOption = self.optionFromDocument(new TMDocument(docID)),
+          option
+        );
+        newOption.selected = option.selected;
+        d3.select(newOption).datum( d3.select(option).datum() );
+      }
+    }
   });
 }
 
@@ -63,10 +88,56 @@ Object.defineProperties(DocumentMenu.prototype, {
   }
 });
 
-// Save the current selected index.
-DocumentMenu.prototype.saveCurrentIndex = function () {
-  KeyValueStorage.write(this.__storagePrefix + '.currentIndex',
-                        String(this.menu.selectedIndex));
+DocumentMenu.prototype.render = function () {
+  var currentDocID = this.currentOption ? this.currentOption.value : null;
+
+  var option = d3.select(this.group).selectAll('option')
+    .data(this.doclist.list, function (entry) { return entry.id; });
+
+  option.exit().remove();
+
+  var self = this;
+  option.enter().insert(function (entry) {
+    return self.optionFromDocument(new TMDocument(entry.id));
+  });
+
+  // If current document was deleted, switch to another document
+  if (this.currentOption.value !== currentDocID) {
+    // fallback 1: saved current docID
+    if (!this.selectSavedCurrentDocID({type: 'delete'})) {
+      // fallback 2: whatever is now selected
+      this.onChange(this.currentDocument, {type: 'delete'});
+    }
+  }
+};
+
+// Returns the <option> whose 'value' attribute is docID.
+DocumentMenu.prototype.findOptionByDocID = function (docID) {
+  return this.menu.querySelector('option[value="' + docID.replace(/"/g, '\\"') + '"]');
+};
+
+// Select the saved current docID. Returns true on success.
+DocumentMenu.prototype.selectSavedCurrentDocID = function (opts) {
+  try {
+    this.findOptionByDocID(this.getSavedCurrentDocID()).selected = true;
+  } catch (e) {
+    return false;
+  }
+  this.onChange(this.currentDocument, opts);
+  return true;
+};
+
+// Saves the current (selected) docID to storage.
+DocumentMenu.prototype.saveCurrentDocID = function () {
+  var docID = this.currentOption && this.currentOption.value;
+  if (docID) {
+    KeyValueStorage.write(this.__storagePrefix + '.currentDocID', docID);
+  }
+};
+
+// Returns the saved current docID, otherwise null.
+DocumentMenu.prototype.getSavedCurrentDocID = function () {
+  return KeyValueStorage.read(this.__storagePrefix + '.currentDocID');
 };
 
 // Configurable methods
@@ -78,9 +149,11 @@ DocumentMenu.prototype.optionFromDocument = function (doc) {
   return option;
 };
 
-// TODO: use an event system?
-// called when user action triggers the 'change' event for the <select> menu.
-// called with the new value of .currentDocument.
+// Called when the current document ID changes
+// through user action (<select>) or this class's API.
+// The callback receives the new value of .currentDocument,
+// along with the options object (whose .type
+// is 'duplicate', 'delete', or 'open').
 DocumentMenu.prototype.onChange = function () {
 };
 
@@ -92,6 +165,7 @@ DocumentMenu.prototype.__prepend = function (doc, opts) {
   this.group.insertBefore(option, this.group.firstChild);
   if (opts && opts.select) {
     option.selected = true;
+    this.onChange(doc, opts);
   }
   return doc;
 };
@@ -99,13 +173,13 @@ DocumentMenu.prototype.__prepend = function (doc, opts) {
 // Methods not about Current Document
 
 DocumentMenu.prototype.newDocument = function (opts) {
-  return this.__prepend(this.doclist.newDocument(), opts);
+  return this.__prepend(this.doclist.newDocument(), merge({type: 'open'}, opts));
 };
 
 // Methods about Current Document
 
 DocumentMenu.prototype.duplicate = function (doc, opts) {
-  return this.__prepend(this.doclist.duplicate(doc), opts);
+  return this.__prepend(this.doclist.duplicate(doc), merge({type: 'duplicate'}, opts));
 };
 
 DocumentMenu.prototype.rename = function (name) {
@@ -115,23 +189,22 @@ DocumentMenu.prototype.rename = function (name) {
 
 // required invariant: one option is always selected.
 // returns true if the current entry was removed from the list.
-DocumentMenu.prototype.delete = function () {
+DocumentMenu.prototype.delete = function (opts) {
   this.currentDocument.delete();
   var index = this.menu.selectedIndex;
-  var status = this.doclist.deleteIndex(index);
-  if (status) {
+  var didDeleteEntry = this.doclist.deleteIndex(index);
+  if (didDeleteEntry) {
     this.currentOption.remove();
     this.menu.selectedIndex = index;
+    this.onChange(this.currentDocument, merge({type: 'delete'}, opts));
   }
-  return status;
+  return didDeleteEntry;
 };
 
 /////////////////////
 // Document List   //
 // (model/storage) //
 /////////////////////
-
-var KeyValueStorage = require('./storage').KeyValueStorage;
 
 // TODO: impl. transactions
 

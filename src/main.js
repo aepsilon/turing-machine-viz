@@ -22,8 +22,8 @@ function getId(id) { return document.getElementById(id); }
 /////////////////////
 
 function importDocument(obj) {
-  controller.openDocument(menu.duplicate(obj, {select: true}));
-  refreshEditMenu();
+  // duplicate data into the menu, then open it.
+  menu.duplicate(obj, {select: true});
 }
 
 $(function () {
@@ -59,11 +59,10 @@ $(function () {
 });
 
 
-//////////
-// Main //
-//////////
+///////////////////
+// Document List //
+///////////////////
 
-// Document Menu //
 var menu = (function () {
   var select = document.getElementById('tm-doc-menu');
   // Group: Documents
@@ -84,121 +83,144 @@ var menu = (function () {
   });
 })();
 
-function openDocument(doc) {
-  controller.openDocument(doc);
-  refreshEditMenu();
-}
-menu.onChange = openDocument;
 
+/////////////////
 // "Edit" Menu //
-var refreshEditMenu = (function () {
-  var renameLink = document.querySelector('[data-target="#renameDialog"]');
-  var deleteLink = document.querySelector('[data-target="#deleteDialog"]');
-  var wasExample;
-  function renameExample() {
-    // duplicate, then rename the duplicate.
-    // how it works: switch to duplicate document ->
-    //   refreshEditMenu() enables rename dialog -> event bubbles up -> dialog opens.
-    // this might be the simplest way; Event.stopPropagation leaves the dropdown hanging.
-    duplicateDocument();
-  }
+/////////////////
 
-  return function () {
-    var isExample = menu.currentDocument.isExample;
-    if (wasExample !== isExample) {
-      if (!isExample) {
-        renameLink.textContent = 'Rename…';
-        renameLink.removeEventListener('click', renameExample);
-        renameLink.setAttribute('data-toggle', 'modal');
-        deleteLink.textContent = 'Delete…';
-        deleteLink.setAttribute('data-target', '#deleteDialog');
-      } else {
-        renameLink.textContent = 'Rename a copy…';
-        renameLink.addEventListener('click', renameExample);
-        renameLink.removeAttribute('data-toggle');
-        deleteLink.textContent = 'Reset this example…';
-        deleteLink.setAttribute('data-target', '#resetExampleDialog');
-      }
-      wasExample = isExample;
+(function () {
+  menu.onChange = function (doc, opts) {
+    switch (opts && opts.type) {
+      case 'duplicate':
+        controller.setBackingDocument(doc);
+        break;
+      case 'delete':
+        controller.forceLoadDocument(doc);
+        break;
+      default:
+        controller.openDocument(doc);
     }
+    refreshEditMenu();
   };
-})();
-refreshEditMenu();
 
-// only swap out the storage backing; don't affect views or undo history
-function duplicateDocument() {
-  controller.save();
-  controller.setBackingDocument(
-    menu.duplicate(menu.currentDocument, {select: true}));
-  refreshEditMenu();
-}
-
-function newBlankDocument() {
-  controller.openDocument(menu.newDocument({select: true}));
-  refreshEditMenu();
-  // load up starter template
-  if (controller.editor.insertSnippet) { // async loaded
-    controller.editor.insertSnippet(examples.blankTemplate);
-    controller.loadEditorSource();
-  }
-  controller.editor.focus();
-}
-
-[{id: 'tm-doc-action-duplicate', callback: duplicateDocument},
- {id: 'tm-doc-action-newblank', callback: newBlankDocument}
-].forEach(function (item) {
-  document.getElementById(item.id).addEventListener('click', function (e) {
-    e.preventDefault();
-    item.callback(e);
-  });
-});
-
-// Rename
-var renameDialog = document.getElementById('renameDialog');
-var renameBox = renameDialog.querySelector('input[type="text"]');
-$(renameDialog)
-  .on('show.bs.modal', function () {
-    renameBox.value = menu.currentOption.text;
-  })
-  .on('shown.bs.modal', function () {
-    renameBox.select();
-  })
-  // NB. remember data-keyboard="false" on the triggering element,
-  // to prevent closing with Esc and causing a save.
-  // remark: an exception thrown on 'hide' prevents the dialog from closing,
-  // so save during 'hidden' instead.
-  .on('hidden.bs.modal', function () {
-    var newName = renameBox.value;
-    if (menu.currentOption.text !== newName) {
-      // TODO: report errors
-      menu.rename(newName);
+  // Refresh the "Edit" menu items depending on document vs. example.
+  var refreshEditMenu = (function () {
+    var renameLink = document.querySelector('[data-target="#renameDialog"]');
+    var deleteLink = document.querySelector('[data-target="#deleteDialog"]');
+    var wasExample;
+    function renameExample() {
+      // duplicate, then rename the duplicate.
+      // how it works: switch to duplicate document ->
+      //   refreshEditMenu() enables rename dialog -> event bubbles up -> dialog opens.
+      // this might be the simplest way; Event.stopPropagation leaves the dropdown hanging.
+      duplicateDocument();
     }
-    renameBox.value = '';
-  });
-document.getElementById('renameDialogForm').addEventListener('submit', function (e) {
-  e.preventDefault();
-  $(renameDialog).modal('hide');
-});
 
-// Delete
-function deleteDocument() {
-  menu.delete();
+    return function () {
+      var isExample = menu.currentDocument.isExample;
+      if (wasExample !== isExample) {
+        if (!isExample) {
+          renameLink.textContent = 'Rename…';
+          renameLink.removeEventListener('click', renameExample);
+          renameLink.setAttribute('data-toggle', 'modal');
+          deleteLink.textContent = 'Delete…';
+          deleteLink.setAttribute('data-target', '#deleteDialog');
+        } else {
+          renameLink.textContent = 'Rename a copy…';
+          renameLink.addEventListener('click', renameExample);
+          renameLink.removeAttribute('data-toggle');
+          deleteLink.textContent = 'Reset this example…';
+          deleteLink.setAttribute('data-target', '#resetExampleDialog');
+        }
+        wasExample = isExample;
+      }
+    };
+  }());
   refreshEditMenu();
-  controller.forceLoadDocument(menu.currentDocument);
-}
-document.getElementById('tm-doc-action-delete').addEventListener('click', deleteDocument);
 
-// Reset Example
-var discardReset = deleteDocument;
-function saveReset() {
-  menu.duplicate(menu.currentDocument, {select: false});
-  menu.delete();
-  controller.forceLoadDocument(menu.currentDocument);
-}
-document.getElementById('tm-doc-action-resetdiscard').addEventListener('click', discardReset);
-document.getElementById('tm-doc-action-resetsave').addEventListener('click', saveReset);
+  // only swap out the storage backing; don't affect views or undo history
+  function duplicateDocument() {
+    controller.save();
+    menu.duplicate(menu.currentDocument, {select: true});
+  }
 
+  function newBlankDocument() {
+    menu.newDocument({select: true});
+    // load up starter template
+    if (controller.editor.insertSnippet) { // async loaded
+      controller.editor.insertSnippet(examples.blankTemplate);
+      controller.loadEditorSource();
+    }
+    controller.editor.focus();
+  }
+
+  [{id: 'tm-doc-action-duplicate', callback: duplicateDocument},
+  {id: 'tm-doc-action-newblank', callback: newBlankDocument}
+  ].forEach(function (item) {
+    document.getElementById(item.id).addEventListener('click', function (e) {
+      e.preventDefault();
+      item.callback(e);
+    });
+  });
+}());
+
+
+/////////////
+// Dialogs //
+/////////////
+
+(function () {
+  // Rename
+  var renameDialog = document.getElementById('renameDialog');
+  var renameBox = renameDialog.querySelector('input[type="text"]');
+  $(renameDialog)
+    .on('show.bs.modal', function () {
+      renameBox.value = menu.currentOption.text;
+    })
+    .on('shown.bs.modal', function () {
+      renameBox.select();
+    })
+    // NB. remember data-keyboard="false" on the triggering element,
+    // to prevent closing with Esc and causing a save.
+    // remark: an exception thrown on 'hide' prevents the dialog from closing,
+    // so save during 'hidden' instead.
+    .on('hidden.bs.modal', function () {
+      var newName = renameBox.value;
+      if (menu.currentOption.text !== newName) {
+        // TODO: report errors
+        menu.rename(newName);
+      }
+      renameBox.value = '';
+    });
+  document.getElementById('renameDialogForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    $(renameDialog).modal('hide');
+  });
+
+  // Delete
+  function deleteDocument() {
+    menu.delete();
+  }
+  document.getElementById('tm-doc-action-delete').addEventListener('click', deleteDocument);
+
+  // Reset Example
+  function discardReset() {
+    menu.delete();
+    // load manually since example stays and selection doesn't change
+    controller.forceLoadDocument(menu.currentDocument);
+  }
+  function saveReset() {
+    menu.duplicate(menu.currentDocument, {select: false});
+    discardReset();
+  }
+  document.getElementById('tm-doc-action-resetdiscard').addEventListener('click', discardReset);
+  document.getElementById('tm-doc-action-resetsave').addEventListener('click', saveReset);
+}());
+
+////////////////
 // Controller //
+////////////////
+
 var controller = (function () {
   function getButton(container, type) {
     return container.querySelector('button.tm-' + type);
@@ -238,8 +260,30 @@ controller.editor.session.setUseWrapMode(true);
 // XXX: confirm if save fails
 window.addEventListener('beforeunload', function () {
   controller.save();
-  menu.saveCurrentIndex();
+  menu.saveCurrentDocID();
 });
+
+// Keep the current document in sync across tabs/windows
+window.addEventListener('blur', function () {
+  // One tab saves the data...
+  controller.save();
+});
+(function () {
+  // ...and the other tab loads it.
+  var isReloading = false;
+  require('./TMDocument').addOutsideChangeListener(function (docID, prop) {
+    if (docID === controller.getDocument().id && prop !== 'name' && !isReloading) {
+      // Batch together property changes into one reload
+      isReloading = true;
+      setTimeout(function () {
+        isReloading = false;
+        // Preserve undo history
+        controller.forceLoadDocument(controller.getDocument(), true);
+
+      }, 100);
+    }
+  });
+}());
 
 // For interaction/debugging
 exports.controller = controller;

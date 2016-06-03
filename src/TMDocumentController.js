@@ -95,7 +95,7 @@ TMDocumentController.prototype.openDocument = function (doc) {
 
 // (low-level) load the document. current data is discarded without saving.
 // this can be used to switch from a deleted document or reload a document.
-TMDocumentController.prototype.forceLoadDocument = function (doc) {
+TMDocumentController.prototype.forceLoadDocument = function (doc, keepUndoHistory) {
   this.setBackingDocument(doc);
   var diagramSource = doc.sourceCode;
   var editorSource = doc.editorSourceCode;
@@ -103,7 +103,9 @@ TMDocumentController.prototype.forceLoadDocument = function (doc) {
   this.simulator.clear();
   this.setEditorValue(editorSource == null ? diagramSource : editorSource);
   // prevent undo-ing to the previous document. note: .reset() doesn't work
-  this.editor.session.setUndoManager(new UndoManager());
+  if (!keepUndoHistory) {
+    this.editor.session.setUndoManager(new UndoManager());
+  }
 
   if (editorSource == null) {
     // case: synced: load straight from editor.
