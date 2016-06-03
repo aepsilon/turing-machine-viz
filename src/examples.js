@@ -41,8 +41,12 @@ source code: |
     # then carry the 1
     carry:
       1      : {write: 0, L}
-      [0,' ']: {write: 1, R: done}
+      [0,' ']: {write: 1, L: done}
     done:
+positions:
+  right: {x: 230, y: 250}
+  carry: {x: 400, y: 250}
+  done:  {x: 570, y: 250}
 `],
 
 ['divBy3',
@@ -72,10 +76,10 @@ source code: |
       1: {R: q2} # 2*2 + 1 = 5
     accept:
 positions:
-  q0: {x: 262.98, y: 243.17, fixed: 1}
-  q1: {x: 430.41, y: 247.2, fixed: 1}
-  q2: {x: 599.95, y: 246.41, fixed: 1}
-  accept: {x: 263.31, y: 387.7, fixed: 1}
+  q0: {x: 262.98, y: 243.17}
+  q1: {x: 430.41, y: 247.2}
+  q2: {x: 599.95, y: 246.41}
+  accept: {x: 263.31, y: 387.7}
 `],
 
 // Busy beavers, repeat01, and copy1s are from
@@ -218,14 +222,14 @@ source code: |
       ' ': {R: accept}
     accept:
 positions:
-  start: {x: 308.89, y: 220.03, fixed: 1}
-  have0: {x: 359.42, y: 350.96, fixed: 1}
-  have1: {x: 357.51, y: 96.03, fixed: 1}
-  match0: {x: 494.75, y: 352.18, fixed: 1}
-  match1: {x: 498.7, y: 97.9, fixed: 1}
-  back: {x: 554.93, y: 222.53, fixed: 1}
-  check: {x: 192.08, y: 219.39, fixed: 1}
-  accept: {x: 85.47, y: 220.29, fixed: 1}
+  start: {x: 308.89, y: 220.03}
+  have0: {x: 359.42, y: 350.96}
+  have1: {x: 357.51, y: 96.03}
+  match0: {x: 494.75, y: 352.18}
+  match1: {x: 498.7, y: 97.9}
+  back: {x: 554.93, y: 222.53}
+  check: {x: 192.08, y: 219.39}
+  accept: {x: 85.47, y: 220.29}
 `],
 
 ['palindrome',
@@ -265,14 +269,14 @@ source code: |
     accept:
     reject:
 positions:
-  start: {x: 430.54, y: 190.9, fixed: 1}
-  haveA: {x: 280.7, y: 187.23, fixed: 1}
-  haveB: {x: 595.17, y: 190.24, fixed: 1}
-  matchA: {x: 280.71, y: 320.65, fixed: 1}
-  matchB: {x: 595.22, y: 325.48, fixed: 1}
-  back: {x: 428.18, y: 320.07, fixed: 1}
-  accept: {x: 432.35, y: 62.52, fixed: 1}
-  reject: {x: 427.41, y: 450.69, fixed: 1}
+  start: {x: 430.54, y: 190.9}
+  haveA: {x: 280.7, y: 187.23}
+  haveB: {x: 595.17, y: 190.24}
+  matchA: {x: 280.71, y: 320.65}
+  matchB: {x: 595.22, y: 325.48}
+  back: {x: 428.18, y: 320.07}
+  accept: {x: 432.35, y: 62.52}
+  reject: {x: 427.41, y: 450.69}
 `],
 
 ['busyBeaver3',
@@ -421,16 +425,16 @@ source code: |
       ' ': {R: done}
     done:
 positions:
-  start: {x: 64.59, y: 210.59, fixed: 1}
-  last: {x: 240.81, y: 209.16, fixed: 1}
-  take: {x: 442.52, y: 209.19, fixed: 1}
-  have0: {x: 442.43, y: 83.53, fixed: 1}
-  have1: {x: 444.21, y: 341.95, fixed: 1}
-  add0: {x: 241.27, y: 83.34, fixed: 1}
-  add1: {x: 239.92, y: 343.38, fixed: 1}
-  carry: {x: 61.16, y: 343.53, fixed: 1}
-  rewrite: {x: 541.23, y: 208.39, fixed: 1}
-  done: {x: 681.48, y: 208.79, fixed: 1}
+  start: {x: 64.59, y: 210.59}
+  last: {x: 240.81, y: 209.16}
+  take: {x: 442.52, y: 209.19}
+  have0: {x: 442.43, y: 83.53}
+  have1: {x: 444.21, y: 341.95}
+  add0: {x: 241.27, y: 83.34}
+  add1: {x: 239.92, y: 343.38}
+  carry: {x: 61.16, y: 343.53}
+  rewrite: {x: 541.23, y: 208.39}
+  done: {x: 681.48, y: 208.79}
 `],
 
 ['lengthMult',
@@ -478,13 +482,13 @@ source code: |
       ' ': accept
     accept:
 positions:
-  eachA: {x: 378.63, y: 125.55, fixed: 1}
-  eachB: {x: 379.99, y: 278.79, fixed: 1}
-  markC: {x: 381.14, y: 417.07, fixed: 1}
-  nextB: {x: 546.07, y: 417.78, fixed: 1}
-  nextA: {x: 549.2, y: 279.15, fixed: 1}
-  scan: {x: 234.16, y: 123.89, fixed: 1}
-  accept: {x: 235.66, y: 211.49, fixed: 1}
+  eachA: {x: 378.63, y: 125.55}
+  eachB: {x: 379.99, y: 278.79}
+  markC: {x: 381.14, y: 417.07}
+  nextB: {x: 546.07, y: 417.78}
+  nextA: {x: 549.2, y: 279.15}
+  scan: {x: 234.16, y: 123.89}
+  accept: {x: 235.66, y: 211.49}
 `],
 
 ['unaryMult',
@@ -538,17 +542,17 @@ source code: |
       ' ': {R: done}
     done:
 positions:
-  eachA: {x: 380.7, y: 42.6, fixed: 1}
-  sep: {x: 381.6, y: 153.73, fixed: 1}
-  eachB: {x: 382.07, y: 258.05, fixed: 1}
-  skip: {x: 383.26, y: 369.35, fixed: 1}
-  inc: {x: 384.79, y: 473.78, fixed: 1}
-  skipL: {x: 521.41, y: 443.54, fixed: 1}
-  nextB: {x: 520.59, y: 309.48, fixed: 1}
-  sepL: {x: 519.84, y: 201.11, fixed: 1}
-  nextA: {x: 521.2, y: 91.47, fixed: 1}
-  tidy: {x: 247.21, y: 91.68, fixed: 1}
-  done: {x: 248.23, y: 202.94, fixed: 1}
+  eachA: {x: 380.7, y: 42.6}
+  sep: {x: 381.6, y: 153.73}
+  eachB: {x: 382.07, y: 258.05}
+  skip: {x: 383.26, y: 369.35}
+  inc: {x: 384.79, y: 473.78}
+  skipL: {x: 521.41, y: 443.54}
+  nextB: {x: 520.59, y: 309.48}
+  sepL: {x: 519.84, y: 201.11}
+  nextA: {x: 521.2, y: 91.47}
+  tidy: {x: 247.21, y: 91.68}
+  done: {x: 248.23, y: 202.94}
 `]
 
 ].map(function (pair) {
