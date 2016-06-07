@@ -4,7 +4,7 @@
 var KeyValueStorage = require('./storage').KeyValueStorage;
 var TMDocument = require('./TMDocument');
 var d3 = require('d3');
-var merge = require('lodash/fp').merge;
+var defaults = require('lodash/fp').defaults; // NB. 2nd arg takes precedence
 
 /**
  * Document menu controller.
@@ -173,13 +173,13 @@ DocumentMenu.prototype.__prepend = function (doc, opts) {
 // Methods not about Current Document
 
 DocumentMenu.prototype.newDocument = function (opts) {
-  return this.__prepend(this.doclist.newDocument(), merge({type: 'open'}, opts));
+  return this.__prepend(this.doclist.newDocument(), defaults({type: 'open'}, opts));
 };
 
 // Methods about Current Document
 
 DocumentMenu.prototype.duplicate = function (doc, opts) {
-  return this.__prepend(this.doclist.duplicate(doc), merge({type: 'duplicate'}, opts));
+  return this.__prepend(this.doclist.duplicate(doc), defaults({type: 'duplicate'}, opts));
 };
 
 DocumentMenu.prototype.rename = function (name) {
@@ -196,7 +196,7 @@ DocumentMenu.prototype.delete = function (opts) {
   if (didDeleteEntry) {
     this.currentOption.remove();
     this.menu.selectedIndex = index;
-    this.onChange(this.currentDocument, merge({type: 'delete'}, opts));
+    this.onChange(this.currentDocument, defaults({type: 'delete'}, opts));
   }
   return didDeleteEntry;
 };

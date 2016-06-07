@@ -64,7 +64,7 @@ function getId(id) { return document.getElementById(id); }
 
 function importDocument(obj) {
   // duplicate data into the menu, then open it.
-  menu.duplicate(obj, {select: true});
+  menu.duplicate(obj, {select: true, type: 'open'});
 }
 
 $(function () {
