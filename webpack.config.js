@@ -4,12 +4,15 @@ const path = require('path');
 const webpack = require('webpack');
 
 
+/////////////////
+// Base Config //
+/////////////////
+
 const srcRoot = './src/';
 
 const commonConfig = {
   entry: {
     TMViz: [srcRoot + 'TMViz.js'],
-    CheckboxTable: [srcRoot + 'sharing/CheckboxTable.js'],
     main: srcRoot + 'main.js'
   },
   output: {
@@ -61,6 +64,11 @@ const commonConfig = {
     ]
   }
 };
+
+
+//////////////////////
+// Dev/Prod Configs //
+//////////////////////
 
 const devConfig = {
   output: {pathinfo: true}
