@@ -44,7 +44,7 @@ function useFallbackGet(preset, obj, prop) {
 
 // internal method.
 TMDocument.prototype.path = function (path) {
-  return [].concat(this.prefix, path, 'visible').join('.');
+  return [this.prefix, path].join('.');
 };
 
 (function () {
@@ -105,7 +105,7 @@ TMDocument.prototype.delete = function () {
  * @return {?string} The document ID if true, otherwise null.
  */
 TMDocument.IDFromNameStorageKey = function (string) {
-  var result = /^doc\.([^.]+)\.name\.visible$/.exec(string);
+  var result = /^doc\.([^.]+)\.name$/.exec(string);
   return result && result[1];
 };
 
@@ -115,7 +115,7 @@ TMDocument.IDFromNameStorageKey = function (string) {
  * @param {Function} listener
  */
 TMDocument.addOutsideChangeListener = function (listener) {
-  var re = /^doc\.([^.]+)\.(.+)\.visible$/;
+  var re = /^doc\.([^.]+)\.(.+)$/;
 
   KeyValueStorage.addStorageListener(function (e) {
     var matches = re.exec(e.key);
@@ -123,7 +123,7 @@ TMDocument.addOutsideChangeListener = function (listener) {
       listener(matches[1], matches[2]);
     }
   });
-}
+};
 
 /////////////////////////
 // Position table JSON //
