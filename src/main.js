@@ -205,15 +205,20 @@ var menu = (function () {
       controller.editor.insertSnippet(examples.blankTemplate);
       controller.loadEditorSource();
     }
-    controller.editor.focus();
   }
 
+  var $renameDialog = $(getId('renameDialog'));
   [{id: 'tm-doc-action-duplicate', callback: duplicateDocument},
   {id: 'tm-doc-action-newblank', callback: newBlankDocument}
   ].forEach(function (item) {
     document.getElementById(item.id).addEventListener('click', function (e) {
       e.preventDefault();
       item.callback(e);
+
+      $renameDialog.modal({keyboard: false})
+        .one('hidden.bs.modal', function () {
+          controller.editor.focus();
+        });
     });
   });
 }());
@@ -225,9 +230,9 @@ var menu = (function () {
 
 (function () {
   // Rename
-  var renameDialog = document.getElementById('renameDialog');
-  var renameBox = renameDialog.querySelector('input[type="text"]');
-  $(renameDialog)
+  var $renameDialog = $(getId('renameDialog'));
+  var renameBox = getId('renameDialogInput');
+  $renameDialog
     .on('show.bs.modal', function () {
       renameBox.value = menu.currentOption.text;
     })
@@ -248,7 +253,7 @@ var menu = (function () {
     });
   document.getElementById('renameDialogForm').addEventListener('submit', function (e) {
     e.preventDefault();
-    $(renameDialog).modal('hide');
+    $renameDialog.modal('hide');
   });
 
   // Delete

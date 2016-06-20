@@ -185,8 +185,8 @@ crossorigin="anonymous" integrity="sha256-Le1IgolgSvP12m4TUXOD6vm//7SRvuVr/+Z0uG
           Edit <span class="caret"></span>
         </button>
         <ul class="dropdown-menu">
-          <li><a href="#" id="tm-doc-action-duplicate">Duplicate document</a></li>
-          <li><a href="#" id="tm-doc-action-newblank">New blank document</a></li>
+          <li><a href="#" id="tm-doc-action-duplicate">Duplicate document&hellip;</a></li>
+          <li><a href="#" id="tm-doc-action-newblank">New blank document&hellip;</a></li>
           <li role="separator" class="divider"></li>
           <!-- "Rename" saves when closed, so don't allow closing with Esc -->
           <li><a href="#" data-toggle="modal" data-keyboard="false"
@@ -213,17 +213,17 @@ crossorigin="anonymous" integrity="sha256-Le1IgolgSvP12m4TUXOD6vm//7SRvuVr/+Z0uG
 </nav>
 <!-- ** Modal dialogs ** -->
 <!-- Dialog for Rename -->
-<div id="renameDialog" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="renameDialogHeader">
+<div id="renameDialog" class="modal" tabindex="-1" role="dialog" aria-labelledby="renameDialogHeader">
   <div class="modal-dialog modal-sm" role="document">
     <div class="modal-content">
       <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="renameDialogHeader">Rename</h4>
+        <h4 class="modal-title" id="renameDialogHeader">Document Name</h4>
       </div>
       <div class="modal-body">
         <form id="renameDialogForm">
-          <label class="sr-only" for="renameDialogName">Document Name</label>
-          <input type="text" class="form-control" id="renameDialogName" placeholder="document name">
+          <label class="sr-only" for="renameDialogInput">Document Name</label>
+          <input type="text" class="form-control" id="renameDialogInput" placeholder="document name">
         </form>
       </div>
     </div>
