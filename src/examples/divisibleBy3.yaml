@@ -1,0 +1,54 @@
+name: divisible by 3
+source code: |
+  # Checks if a binary number is divisible by 3.
+  input: '1001' # try '1111' (15), '10100' (20), '111001' (57)
+  blank: ' '
+  # How it works:
+
+  # Consider reading a binary number, say 10011 (19),
+  # from left to right one digit at a time.
+  # Each time a digit is read, the new value equals the new digit
+  # plus the old value shifted left one place (multiplied by 2).
+
+  # Digits  Value
+  # -------------
+  #         0
+  # 1       1
+  # 10      2
+  # 100     4
+  # 1001    9
+  # 10011   19
+
+  # Now instead of tracking the entire number, just track the remainder.
+  # It works the same way.
+  start state: q0
+  table:
+    q0:
+      0: R       # 2*0 + 0 = 0
+      1: {R: q1} # 2*0 + 1 = 1
+      ' ': {R: accept}
+    q1:
+      0: {R: q2} # 2*1 + 0 = 2
+      1: {R: q0} # 2*1 + 1 = 3
+    q2:
+      0: {R: q1} # 2*2 + 0 = 4
+      1: {R: q2} # 2*2 + 1 = 5
+    accept:
+
+
+  # Exercises:
+
+  # • Modify the machine to check if n-1 is divisible by 3,
+  #   where n is the input. That is, accept the binary of 1, 4, 7, 10, ...
+  #   Hint: this can be done without modifying the tape (no 'write').
+
+  # • Round the number up to the nearest multiple of 3.
+  #   Hint: do one pass right to find the remainder, then another pass left
+  #   to add. See the 'binary increment' example for how to add.
+
+  # • Round the number down to the nearest multiple of 3.
+positions:
+  q0: {x: 230, y: 250}
+  q1: {x: 400, y: 250}
+  q2: {x: 570, y: 250}
+  accept: {x: 230.01, y: 380}

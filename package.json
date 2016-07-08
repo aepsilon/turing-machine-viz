@@ -5,11 +5,8 @@
   "main": "main.js",
   "dependencies": {},
   "devDependencies": {
-    "babel-core": "^6.3.17",
-    "babel-loader": "^6.2.0",
-    "babel-plugin-transform-es2015-template-literals": "^6.3.13",
-    "babel-plugin-transform-strict-mode": "^6.3.13",
     "file-loader": "^0.8.5",
+    "raw-loader": "^0.5.1",
     "webpack": "^1.12.9"
   },
   "scripts": {

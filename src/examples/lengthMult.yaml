@@ -1,0 +1,50 @@
+name: multiplied lengths
+source code: |
+  # Decides the language { a^(i)b^(j)c^(k) | i*j = k and i,j,k ≥ 0 }.
+  # (a's followed by b's then c's,
+  # where the number of a's multiplied by the number of b's
+  # equals the number of c's.)
+  input: aabbbcccccc # try ab, abc, bbb, aabbbbcccccccc
+  blank: ' '
+  start state: eachA
+  synonyms:
+    accept: {R: accept}
+  # The approach is two nested loops:
+  # For each 'a':
+  #   For each 'b':
+  #     Cross off a 'c'
+  # At the end, check that all c's are crossed off.
+  table:
+    eachA:
+      a: {write: ' ', R: eachB}
+      b: {R: scan}
+      ' ': accept
+    eachB:
+      a: R
+      b: {write: B, R: markC}
+      ' ': accept
+      x: {L: nextA}
+    markC:
+      [b,x]: R
+      c: {write: x, L: nextB}
+    nextB:
+      [b,x]: L
+      B: {R: eachB}
+    nextA:
+      ' ': {R: eachA}
+      [a,x]: L
+      B: {write: b, L}
+    # Once all the 'a's are erased,
+    # all 'c' symbols should be crossed off.
+    scan:
+      [b,x]: R
+      ' ': accept
+    accept:
+positions:
+  eachA: {x: 378.63, y: 125.55}
+  eachB: {x: 379.99, y: 278.79}
+  markC: {x: 381.14, y: 417.07}
+  nextB: {x: 546.07, y: 417.78}
+  nextA: {x: 549.2, y: 279.15}
+  scan: {x: 234.16, y: 123.89}
+  accept: {x: 235.66, y: 211.49}

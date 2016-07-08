@@ -1,0 +1,6 @@
+input: '${2}'
+blank: '${3: }'
+start state: ${4:start}
+table:
+  ${4}:
+    ${5}

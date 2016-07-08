@@ -44,15 +44,6 @@ const commonConfig = {
   ],
   module: {
     loaders: [
-      // ./examples.js uses ES6 template literals for multiline strings
-      { test: /\/examples\.js$/,
-        exclude: /(node_modules|bower_components)/,
-        loader: 'babel-loader',
-        query: {
-          plugins: ['babel-plugin-transform-es2015-template-literals', 'transform-strict-mode']
-        },
-        cacheDirectory: true
-      },
       // copy files verbatim
       { test: /\.css$/,
         loader: 'file',

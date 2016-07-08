@@ -1,0 +1,60 @@
+name: unary multiplication
+source code: |
+  # Multiplies together two unary numbers separated by a '*'.
+  # (Unary is like tallying. Here '||*|||' means 2 times 3.)
+  # input: '||*|||' # try '*', '|*|||', '||||*||'
+  input: '||*|||' # try '*', '|*|||', '||||*||'
+  blank: ' '
+
+  # The idea:
+  #   multiply(0, b) = 0
+  #   multiply(a, b) = b + multiply(a-1, b)   when a > 0
+  start state: eachA
+  table:
+    # Erase one symbol from the first number.
+    eachA:
+      '|': {write: ' ', R: sep}  # Inductive case: a > 0.
+      '*': {R: tidy} # Base case:      a = 0.
+    sep:
+      '|': R
+      '*': {R: eachB}
+    # For each symbol erased from the first number,
+    # add the second number to the result
+    # by marking and copying each symbol.
+    eachB:
+      '|': {write: ' ', R: skip}
+      ' ': {L: nextA}
+    skip:
+      '|': R
+      ' ': {R: mark}
+    mark:
+      '|': R
+      ' ': {write: '|', L: skipL}
+    skipL:
+      '|': L
+      ' ': {L: nextB}
+    nextB:
+      '|': L
+      ' ': {write: '|', R: eachB}
+    # Restore the marked symbols.
+    nextA:
+      '|': L
+      # '*': {L: nextA}
+      '*': L
+      ' ': {write: '|', R: eachA}
+    # Clean up: erase the input.
+    tidy:
+      '|': R
+      ' ': {R: done}
+    done:
+positions:
+  eachA: {x: 378.77, y: 60.94}
+  sep: {x: 381.62, y: 167.01}
+  eachB: {x: 382.07, y: 267.7}
+  skip: {x: 383.24, y: 368.29}
+  mark: {x: 383.4, y: 469.17}
+  skipL: {x: 259.78, y: 375.96}
+  nextB: {x: 257.99, y: 267}
+  nextA: {x: 249.23, y: 95.56}
+  tidy: {x: 508.78, y: 109.53}
+  done: {x: 510.76, y: 205.84}

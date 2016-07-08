@@ -1,0 +1,48 @@
+name: three equal lengths
+source code: |
+  # Decides the language { aⁿbⁿcⁿ | n ≥ 0 }, that is,
+  # accepts a's followed by b's then c's of the same length.
+  input: aabbcc # try bac, aabc, aabcc, aabcbc
+  blank: ' '
+  # Cross off the first a, b, and c on each pass.
+  # All a's must precede all b's, which must precede all c's.
+  # When there are no more a's,
+  # all input symbols should have been crossed off.
+  start state: A
+  table:
+    A:
+      a: {write: ., R: B}
+      .: R
+      ' ': {R: accept}
+    B:
+      [a,.]: R
+      b: {write: ., R: C}
+    C:
+      [b,.]: R
+      c: {write: ., R: Cs}
+    Cs:
+      c: R
+      ' ': {L: back}
+    back:
+      [b,c,.]: L
+      ' ': {R: A}
+      a: {L: A}
+    accept:
+
+
+  # Exercises:
+
+  # • Suppose a ledger starts from 0 and gains one dollar for each +
+  #   and loses one for each -. Reading left to right,
+  #   check that the account never goes into the negative.
+  #   Examples: accept '+-++' and '++-+--', reject '-++' and '++---+'.
+
+  # • Check parentheses for proper nesting,
+  #   e.g. accept '()(()()())' but reject '(()))(' and '(()('.
+positions:
+  A: {x: 174.85, y: 183.54}
+  B: {x: 337.69, y: 185.14}
+  C: {x: 499.5, y: 186.54}
+  Cs: {x: 666.75, y: 185.94}
+  back: {x: 416, y: 267.66}
+  accept: {x: 175.09, y: 279.92}
