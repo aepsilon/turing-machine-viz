@@ -44,12 +44,18 @@ crossorigin="anonymous" integrity="sha256-Le1IgolgSvP12m4TUXOD6vm//7SRvuVr/+Z0uG
   body {
     font-variant-ligatures: contextual;
   }
-  .navbar-brand {
-    font-variant: small-caps;
-  }
   nav .navbar-right {
     margin-right: 0; /* override negative margin  */
   }
+  .navbar-brand {
+    font-variant: small-caps;
+    letter-spacing: .03em; /* for caps */
+    font-family: 'Avenir Next', 'Avenir', 'Lucida Grande',
+      'Source Sans Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+  .kern { letter-spacing: -.1em; }
+  .navbar-brand .kern-Ma { letter-spacing: 0em }
+  .navbar-brand .kern-Vi { letter-spacing: -.02em }
   pre {
     background-color: hsl(0, 0%, 98%);
   }
@@ -173,7 +179,9 @@ crossorigin="anonymous" integrity="sha256-Le1IgolgSvP12m4TUXOD6vm//7SRvuVr/+Z0uG
 <nav class="navbar navbar-default">
   <div class="container-fluid">
     <div class="navbar-header">
-      <span class="navbar-brand">Turing Machine Visualization</span>
+      <span class="navbar-brand">
+        <span class="kern">T</span>uring <span class="kern-Ma">M</span>achine <span class="kern-Vi">V</span>isualization
+      </span>
     </div>
 
     <div class="navbar-form navbar-left">
