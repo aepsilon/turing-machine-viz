@@ -5,6 +5,7 @@
 
 .tape-cell > text {
   stroke: black;
+  stroke-width: 0.5;
   pointer-events: none;
   text-anchor: middle;
   font-family: "Source Code Pro", "Consolas", "Menlo", "DejaVu Sans Mono", "Courier", monospace;

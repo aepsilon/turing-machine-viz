@@ -28,6 +28,7 @@ text {
 .nodelabel {
   font-size: 15px;
   stroke: black;
+  stroke-width: 0.6;
 }
 
 .edgelabel {
