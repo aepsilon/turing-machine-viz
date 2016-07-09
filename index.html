@@ -76,6 +76,10 @@ crossorigin="anonymous" integrity="sha256-Le1IgolgSvP12m4TUXOD6vm//7SRvuVr/+Z0uG
     padding: .1em .6em;
     text-shadow: 0 1px 0 #fff;
   }
+  @media (min-width: 992px) { /* when diagram and editor are side by side */
+    /* Visually center diagram horiz. (match left and right negative space) */
+    #diagram-column { padding-right: 0; }
+  }
   /* Editor */
   #editor-wrapper {
     position: relative;
