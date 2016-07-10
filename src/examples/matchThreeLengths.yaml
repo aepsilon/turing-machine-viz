@@ -1,32 +1,30 @@
 name: three equal lengths
 source code: |
-  # Decides the language { aⁿbⁿcⁿ | n ≥ 0 }, that is,
+  # Decides the language { aⁿbⁿcⁿ | n ≥ 1 }, that is,
   # accepts a's followed by b's then c's of the same length.
   input: aabbcc # try bac, aabc, aabcc, aabcbc
   blank: ' '
-  # Cross off the first a, b, and c on each pass.
+  # Mark the first a, b, and c on each pass (by capitalizing them).
   # All a's must precede all b's, which must precede all c's.
   # When there are no more a's,
-  # all input symbols should have been crossed off.
-  start state: A
+  # all input symbols should have been marked.
+  start state: qA
   table:
-    A:
-      a: {write: ., R: B}
-      .: R
-      ' ': {R: accept}
-    B:
-      [a,.]: R
-      b: {write: ., R: C}
-    C:
-      [b,.]: R
-      c: {write: ., R: Cs}
-    Cs:
-      c: R
-      ' ': {L: back}
+    qA:
+      a: {write: A, R: qB}
+      B: {R: scan}
+    qB:
+      [a,B]: R
+      b: {write: B, R: qC}
+    qC:
+      [b,C]: R
+      c: {write: C, L: back}
     back:
-      [b,c,.]: L
-      ' ': {R: A}
-      a: {L: A}
+      [a,B,b,C]: L
+      A: {R: qA}
+    scan:
+      [B,C]: R
+      ' ': {R: accept}
     accept:
 
 
@@ -40,9 +38,9 @@ source code: |
   # • Check parentheses for proper nesting,
   #   e.g. accept '()(()()())' but reject '(()))(' and '(()('.
 positions:
-  A:      {x: 160, y: 250}
-  B:      {x: 320, y: 250}
-  C:      {x: 480, y: 250}
-  Cs:     {x: 640, y: 250}
-  back:   {x: 400, y: 330}
-  accept: {x: 160.01, y: 350}
+  qA: {x: 240, y: 250}
+  qB: {x: 400, y: 250}
+  qC: {x: 560, y: 250}
+  back:   {x: 400, y: 370}
+  scan:   {x: 320, y: 150}
+  accept: {x: 480, y: 150}
