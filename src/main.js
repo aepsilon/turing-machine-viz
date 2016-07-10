@@ -133,7 +133,8 @@ var menu = (function () {
   return new DocumentMenu({
     menu: select,
     group: docGroup,
-    storagePrefix: 'tm.docs'
+    storagePrefix: 'tm.docs',
+    firsttimeDocID: examples.firsttimeDocID
   });
 })();
 

@@ -18,11 +18,13 @@ var defaults = require('lodash/fp').defaults; // NB. 2nd arg takes precedence
  * @param {string}  args.storagePrefix
  * @param {?(TMDocument -> HTMLOptionElement)}
  *                  args.makeOption       Customize rendering for each document entry.
+ * @param {?string} args.firsttimeDocID   Document to open on the first visit.
  */
 function DocumentMenu(args) {
   var menu = args.menu,
       group = args.group || menu,
-      storagePrefix = args.storagePrefix;
+      storagePrefix = args.storagePrefix,
+      firsttimeDocID = args.firsttimeDocID;
 
   if (!menu) {
     throw new TypeError('DocumentMenu: missing parameter: menu element');
@@ -41,7 +43,7 @@ function DocumentMenu(args) {
   this.doclist = new DocumentList(storagePrefix + '.list');
   this.render();
   // Re-open last-opened document
-  this.selectSavedCurrentDocID();
+  this.selectDocID(this.getSavedCurrentDocID() || firsttimeDocID);
 
   // Listen for selection changes
   var self = this;
@@ -104,7 +106,7 @@ DocumentMenu.prototype.render = function () {
   // If current document was deleted, switch to another document
   if (this.currentOption.value !== currentDocID) {
     // fallback 1: saved current docID
-    if (!this.selectSavedCurrentDocID({type: 'delete'})) {
+    if (!this.selectDocID(this.getSavedCurrentDocID(), {type: 'delete'})) {
       // fallback 2: whatever is now selected
       this.onChange(this.currentDocument, {type: 'delete'});
     }
@@ -116,10 +118,10 @@ DocumentMenu.prototype.findOptionByDocID = function (docID) {
   return this.menu.querySelector('option[value="' + docID.replace(/"/g, '\\"') + '"]');
 };
 
-// Select the saved current docID. Returns true on success.
-DocumentMenu.prototype.selectSavedCurrentDocID = function (opts) {
+// Selects (switches the active item to) the given docID. Returns true on success.
+DocumentMenu.prototype.selectDocID = function (docID, opts) {
   try {
-    this.findOptionByDocID(this.getSavedCurrentDocID()).selected = true;
+    this.findOptionByDocID(docID).selected = true;
   } catch (e) {
     return false;
   }

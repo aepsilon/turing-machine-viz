@@ -48,4 +48,5 @@ var list = examplePairs.map(function (pair) { return pair[1]; });
 exports.hasID = isExampleID;
 exports.get = get;
 exports.list = list;
+exports.firsttimeDocID = 'binaryIncrement';
 exports.blankTemplate = requireExample('_template');
