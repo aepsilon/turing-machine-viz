@@ -2,7 +2,6 @@ name: unary multiplication
 source code: |
   # Multiplies together two unary numbers separated by a '*'.
   # (Unary is like tallying. Here '||*|||' means 2 times 3.)
-  # input: '||*|||' # try '*', '|*|||', '||||*||'
   input: '||*|||' # try '*', '|*|||', '||||*||'
   blank: ' '
 
@@ -11,52 +10,49 @@ source code: |
   #   multiply(a, b) = b + multiply(a-1, b)   when a > 0
   start state: eachA
   table:
-    # Erase one symbol from the first number.
+    # For each 1 in a, add a copy of b.
     eachA:
-      '|': {write: ' ', R: sep}  # Inductive case: a > 0.
-      '*': {R: tidy} # Base case:      a = 0.
-    sep:
+      '|': {write: ' ', R: toB}  # Inductive case: a > 0.
+      '*': {R: skip}             # Base case:      a = 0.
+    toB:
       '|': R
-      '*': {R: eachB}
-    # For each symbol erased from the first number,
-    # add the second number to the result
-    # by marking and copying each symbol.
-    eachB:
-      '|': {write: ' ', R: skip}
-      ' ': {L: nextA}
-    skip:
-      '|': R
-      ' ': {R: mark}
-    mark:
-      '|': R
-      ' ': {write: '|', L: skipL}
-    skipL:
-      '|': L
-      ' ': {L: nextB}
-    nextB:
-      '|': L
-      ' ': {write: '|', R: eachB}
-    # Restore the marked symbols.
-    nextA:
-      '|': L
-      # '*': {L: nextA}
-      '*': L
+      '*': {R: eachB} # enter copier
+    nextA: # return from copier
       ' ': {write: '|', R: eachA}
-    # Clean up: erase the input.
-    tidy:
+      ['|','*']: L
+
+    skip:
       '|': R
       ' ': {R: done}
     done:
+
+    # This is the 'copy 1s' machine, with ' ' as 0 and '|' as 1.
+    eachB:
+      ' ': {L: nextA}
+      '|': {write: ' ', R: sep}
+    sep:
+      ' ': {R: add}
+      '|': R
+    add:
+      ' ': {write: '|', L: sepL}
+      '|': R
+    sepL:
+      ' ': {L: nextB}
+      '|': L
+    nextB:
+      ' ': {write: '|', R: eachB}
+      '|': L
+
 positions:
   eachA:  {x: 400, y:  50}
-  sep:    {x: 400, y: 150}
+  toB:    {x: 400, y: 150}
   eachB:  {x: 400, y: 250}
-  skip:   {x: 400, y: 350}
-  mark:   {x: 400, y: 450}
+  sep:   {x: 400, y: 350}
+  add:   {x: 400, y: 450}
 
-  skipL:  {x: 280, y: 350}
+  sepL:  {x: 280, y: 350}
   nextB:  {x: 280, y: 250}
 
   nextA:  {x: 280, y: 90}
-  tidy:   {x: 520, y: 90}
+  skip:   {x: 520, y: 90}
   done:   {x: 520, y: 190}
