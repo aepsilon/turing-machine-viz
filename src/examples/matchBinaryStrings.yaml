@@ -46,11 +46,12 @@ source code: |
   # • Check if two strings are different.
   #   Example: accept '00#001' and '0101#0111', but reject '1001#1001'.
 positions:
-  start: {x: 308.89, y: 220.03}
-  have0: {x: 359.42, y: 350.96}
-  have1: {x: 357.51, y: 96.03}
-  match0: {x: 494.75, y: 352.18}
-  match1: {x: 498.7, y: 97.9}
-  back: {x: 554.93, y: 222.53}
-  check: {x: 192.08, y: 219.39}
-  accept: {x: 85.47, y: 220.29}
+  accept: {x: 80 , y: 250}
+  check:  {x: 190, y: 250}
+  # regular hexagon with side length 150
+  start:  {x: 300, y: 250}
+  back:   {x: 600, y: 250}
+  have1:  {x: 375, y: 120.10}
+  match1: {x: 525, y: 120.10}
+  have0:  {x: 375, y: 379.90}
+  match0: {x: 525, y: 379.90}

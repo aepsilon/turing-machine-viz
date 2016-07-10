@@ -38,8 +38,10 @@ source code: |
   # • "Who Can Name the Bigger Number?"
   #   http://www.scottaaronson.com/writings/bignumbers.html
 positions:
-  A: {x: 330.68, y: 136.58}
-  B: {x: 484.22, y: 138.76}
-  C: {x: 482.68, y: 286.21}
-  D: {x: 330.45, y: 285.54}
-  H: {x: 612.17, y: 287.43}
+  # square with side length 160
+  A: {x: 320, y: 170}
+  B: {x: 480, y: 170}
+
+  C: {x: 480, y: 330}
+  D: {x: 320, y: 330}
+  H: {x: 620, y: 330}

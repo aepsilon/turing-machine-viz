@@ -40,9 +40,9 @@ source code: |
   # • Check parentheses for proper nesting,
   #   e.g. accept '()(()()())' but reject '(()))(' and '(()('.
 positions:
-  A: {x: 174.85, y: 183.54}
-  B: {x: 337.69, y: 185.14}
-  C: {x: 499.5, y: 186.54}
-  Cs: {x: 666.75, y: 185.94}
-  back: {x: 416, y: 267.66}
-  accept: {x: 175.09, y: 279.92}
+  A:      {x: 160, y: 250}
+  B:      {x: 320, y: 250}
+  C:      {x: 480, y: 250}
+  Cs:     {x: 640, y: 250}
+  back:   {x: 400, y: 330}
+  accept: {x: 160.01, y: 350}

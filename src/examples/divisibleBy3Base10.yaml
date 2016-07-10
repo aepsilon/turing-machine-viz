@@ -40,7 +40,8 @@ source code: |
   # • Check for divisibility by 4.
   #   Hint: use 4 states (besides accept).
 positions:
-  q0: {x: 291.69, y: 318.1}
-  q1: {x: 411.08, y: 127.58}
-  q2: {x: 528.86, y: 319.74}
-  accept: {x: 291.77, y: 416.2}
+  # centered equilateral triangle with side length 250
+  q0: {x: 275, y: 322.1688}
+  q1: {x: 400, y: 105.6624}
+  q2: {x: 525, y: 322.1688}
+  accept: {x: 275.01, y: 430}

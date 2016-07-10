@@ -41,10 +41,12 @@ source code: |
       ' ': accept
     accept:
 positions:
-  eachA: {x: 378.63, y: 125.55}
-  eachB: {x: 379.99, y: 278.79}
-  markC: {x: 381.14, y: 417.07}
-  nextB: {x: 546.07, y: 417.78}
-  nextA: {x: 549.2, y: 279.15}
-  scan: {x: 234.16, y: 123.89}
-  accept: {x: 235.66, y: 211.49}
+  eachA: {x: 400, y:  90}
+  eachB: {x: 400, y: 250}
+  markC: {x: 400, y: 410}
+
+  nextA: {x: 550, y: 250}
+  nextB: {x: 550, y: 410}
+
+  scan:   {x: 250, y:  90}
+  accept: {x: 250, y: 180}

@@ -48,13 +48,15 @@ source code: |
       ' ': {R: done}
     done:
 positions:
-  eachA: {x: 378.77, y: 60.94}
-  sep: {x: 381.62, y: 167.01}
-  eachB: {x: 382.07, y: 267.7}
-  skip: {x: 383.24, y: 368.29}
-  mark: {x: 383.4, y: 469.17}
-  skipL: {x: 259.78, y: 375.96}
-  nextB: {x: 257.99, y: 267}
-  nextA: {x: 249.23, y: 95.56}
-  tidy: {x: 508.78, y: 109.53}
-  done: {x: 510.76, y: 205.84}
+  eachA:  {x: 400, y:  50}
+  sep:    {x: 400, y: 150}
+  eachB:  {x: 400, y: 250}
+  skip:   {x: 400, y: 350}
+  mark:   {x: 400, y: 450}
+
+  skipL:  {x: 280, y: 350}
+  nextB:  {x: 280, y: 250}
+
+  nextA:  {x: 280, y: 90}
+  tidy:   {x: 520, y: 90}
+  done:   {x: 520, y: 190}

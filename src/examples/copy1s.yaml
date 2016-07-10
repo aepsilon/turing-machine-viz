@@ -36,9 +36,9 @@ source code: |
 
   # • Make a machine to output the endless sequence 1011011101111011111...
 positions:
-  each: {x: 400, y: 137}
-  sep: {x: 400, y: 259.1}
-  add: {x: 400, y: 379.83}
-  sepL: {x: 250.01, y: 258.85}
-  next: {x: 250, y: 134.72}
-  H: {x: 550, y: 136.86}
+  each: {x: 400   , y: 100}
+  sep:  {x: 400.01, y: 250}
+  add:  {x: 400.02, y: 400}
+  sepL: {x: 250   , y: 250}
+  next: {x: 250.01, y: 100}
+  H:    {x: 550   , y: 100}

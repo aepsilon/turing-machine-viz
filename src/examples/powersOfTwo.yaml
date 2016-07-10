@@ -46,10 +46,11 @@ source code: |
     accept:
     reject:
 positions:
-  zero: {x: 65.99, y: 178.12}
-  one: {x: 237.83, y: 177.95}
-  even: {x: 456.77, y: 181.02}
-  odd: {x: 457.95, y: 351.94}
-  back: {x: 358.96, y: 80.63}
-  accept: {x: 239.47, y: 278}
-  reject: {x: 66.51, y: 351.01}
+  zero:   {x: 200, y: 200}
+  one:    {x: 400, y: 200}
+  even:   {x: 600, y: 200}
+
+  odd:    {x: 600, y: 385}
+  back:   {x: 500, y: 125}
+  accept: {x: 400, y: 300}
+  reject: {x: 200, y: 385}

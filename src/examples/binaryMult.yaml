@@ -101,24 +101,29 @@ source code: |
   # so mult is guaranteed to halt.
   # Eventually b reaches 0 and the result is simply the accumulator.
 positions:
-  start: {x: 81.34, y: 59.53}
-  init: {x: 200.29, y: 58.84}
-  right: {x: 302.5, y: 110.28}
-  readB: {x: 305.13, y: 213.4}
-  addA: {x: 171.33, y: 215.41}
-  doubleL: {x: 556.79, y: 213.42}
-  double: {x: 652.72, y: 300.52}
-  shift: {x: 604.81, y: 110.53}
-  shift0: {x: 459.4, y: 166.92}
-  shift1: {x: 458.56, y: 68.2}
-  tidy: {x: 728.16, y: 68.67}
-  done: {x: 730.41, y: 176.88}
-  read: {x: 302.85, y: 372.66}
-  have0: {x: 231.04, y: 474.94}
-  have1: {x: 384.26, y: 470.77}
-  add0: {x: 95.42, y: 473.75}
-  add1: {x: 560.78, y: 474.14}
-  carry: {x: 561.54, y: 370.64}
-  back0: {x: 166.99, y: 367.74}
-  back1: {x: 457.69, y: 371.05}
-  rewrite: {x: 381.21, y: 299.97}
+  start:  {x: 80 , y: 70}
+  init:   {x: 190, y: 70}
+  tidy:   {x: 730, y: 70}
+  done:   {x: 730, y: 180}
+
+  right:  {x: 300, y: 115}
+  shift:  {x: 600, y: 115}
+  shift1: {x: 450, y: 70}
+  shift0: {x: 450, y: 160}
+
+  readB:  {x: 300, y: 215}
+  addA:   {x: 160, y: 215}
+  doubleL: {x: 550, y: 215}
+
+  rewrite: {x: 363, y: 300}
+  double: {x: 650, y: 300}
+
+  back0:  {x: 160, y: 370}
+  read:   {x: 300, y: 370}
+  back1:  {x: 440, y: 370}
+  carry:  {x: 540, y: 370}
+
+  add0:   {x:  60, y: 470}
+  have0:  {x: 200, y: 470}
+  have1:  {x: 400, y: 470}
+  add1:   {x: 540, y: 470}
