@@ -1,52 +1,62 @@
 name: multiplied lengths
 source code: |
-  # Decides the language { a^(i)b^(j)c^(k) | i*j = k and i,j,k ≥ 0 }.
+  # Decides the language { a^(i)b^(j)c^(k) | i*j = k and i,j,k ≥ 1 }.
   # (a's followed by b's then c's,
   # where the number of a's multiplied by the number of b's
   # equals the number of c's.)
-  input: aabbbcccccc # try ab, abc, bbb, aabbbbcccccccc
+  input: aabbbcccccc # try abc, b, aabcbc, aabcc, aabbbbcccccccc
   blank: ' '
-  start state: eachA
-  synonyms:
-    accept: {R: accept}
-  # The approach is two nested loops:
-  # For each 'a':
-  #   For each 'b':
-  #     Cross off a 'c'
-  # At the end, check that all c's are crossed off.
+  start state: start
+
   table:
+    # Check for the form a^(i)b^(j)c^(k) where i,j,k ≥ 1.
+    start:  {        a: {R: a+}}
+    a+:     {a: R,   b: {R: b+}}
+    b+:     {b: R,   c: {R: c+}}
+    c+:     {c: R, ' ': {L: left}}
+    left:
+      [a,b,c]: L
+      ' ': {R: eachA}
+    # Then check that i*j = k.
+    #   The approach is two nested loops:
+    #   For each 'a':
+    #     For each 'b':
+    #       Mark one 'c'
+    #   At the end, check that all c's are marked.
     eachA:
       a: {write: ' ', R: eachB}
       b: {R: scan}
-      ' ': accept
     eachB:
       a: R
       b: {write: B, R: markC}
-      ' ': accept
-      x: {L: nextA}
+      C: {L: nextA}
     markC:
-      [b,x]: R
-      c: {write: x, L: nextB}
+      [b,C]: R
+      c: {write: C, L: nextB}
     nextB:
-      [b,x]: L
+      [b,C]: L
       B: {R: eachB}
     nextA:
-      ' ': {R: eachA}
-      [a,x]: L
+      a: L
       B: {write: b, L}
-    # Once all the 'a's are erased,
-    # all 'c' symbols should be crossed off.
+      ' ': {R: eachA}
+
     scan:
-      [b,x]: R
-      ' ': accept
+      [b,C]: R
+      ' ': {R: accept}
     accept:
 positions:
-  eachA: {x: 400, y:  90}
-  eachB: {x: 400, y: 250}
-  markC: {x: 400, y: 410}
+  start:  {x: 180, y: 40}
+  a+:     {x: 180, y: 180}
+  b+:     {x: 180, y: 320}
+  c+:     {x: 180, y: 460}
+  left:   {x: 290, y: 320}
 
-  nextA: {x: 550, y: 250}
-  nextB: {x: 550, y: 410}
+  accept: {x: 400, y: 40}
+  eachA:  {x: 400, y: 180}
+  eachB:  {x: 400, y: 320}
+  markC:  {x: 400, y: 460}
 
-  scan:   {x: 250, y:  90}
-  accept: {x: 250, y: 180}
+  scan:   {x: 560, y: 180}
+  nextA:  {x: 560, y: 320}
+  nextB:  {x: 560, y: 460}
