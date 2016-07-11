@@ -81,6 +81,9 @@ function importDocument(obj) {
 }
 
 $(function () {
+  // Enable buttons now that handlers are ready
+  $('.tm-needsready').prop('disabled', false);
+
   // Run import from URL query (if any)
   var importArgs = {
     dialogNode: getId('importDialog'),
