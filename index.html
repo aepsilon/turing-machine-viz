@@ -271,8 +271,8 @@ crossorigin="anonymous" integrity="sha256-Le1IgolgSvP12m4TUXOD6vm//7SRvuVr/+Z0uG
         <h4 class="modal-title" id="resetExampleDialogHeader">Save a copy of your changes?</h4>
       </div>
       <div class="modal-body">
-        <p>Resetting this example will erase any changes.</p>
-        You can save your changes into a duplicate document, or simply discard them.
+        <p>Resetting this example will erase any changes made to it.</p>
+        You have the option to save your changes as a new document, or simply discard them.
         You can’t undo this action.
       </div>
       <div class="modal-footer">
@@ -424,10 +424,7 @@ aria-labelledby="importPanelHeader">
             class="form-control" rows="8" cols="40" readonly></textarea>
           </div>
         </div>
-        <!-- XXX: notify about unloaded changes -->
       </div>
-      <!-- <div class="modal-footer">
-      </div> -->
     </div>
   </div>
 </div>
@@ -595,8 +592,8 @@ aria-labelledby="importPanelHeader">
                 <br>&delta;(carry, 0)   = (1, L, done)
                 <br>&delta;(carry, ' ') = (1, L, done)
               </p>
-              <p>For simplicity this simulator does not require or enforce definitions for the input and tape alphabets.
-              Naturally you can still define these in comments and check them by hand.</p>
+              <p>Note that for simplicity, the simulator limits each symbol to one character.
+                Furthermore, input is not checked for conformance with an input alphabet, in exchange for not having to define input and tape alphabets.</p>
               <p>(The behavior of a Turing machine can also be described in mathematical terms if desired.
                 Without going into too much detail, this involves defining how a <em>configuration</em>
                 of a machine—its state, tape contents, and tape head position (current cell)—leads to the next configuration, based on the transition function.
@@ -645,16 +642,19 @@ aria-labelledby="importPanelHeader">
       </div>
     </section>
     <p>
-      For a very readable introduction to Turing machines, including a discussion of their significance and interesting implications,
+      For a very readable introduction to Turing machines, including their significance and interesting implications,
       see the excellent <a href="http://plato.stanford.edu/entries/turing-machine" target="_blank">entry in the Stanford Encyclopedia of Philosophy</a>.
     </p>
   </section>
 
+
+
   <section class="col-md-4 col-sm-6">
     <h3>Make your own</h3>
-    Make spinoffs from the examples or your own creations by choosing Edit &gt; Duplicate document.
-    You can also start from scratch with "New blank document".
-
+    <p>Make spinoffs from the examples or your own creations by using
+      <i>Edit</i> &gt; <i>Duplicate document</i>.
+    You can also start from scratch with a new blank document.</p>
+    <p>All it takes to describe a Turing machine is a start state, blank symbol, and transition table.</p>
     <h4>Example</h4>
     <pre>
 # Adds 1 to a binary number.
@@ -664,18 +664,18 @@ start state: right
 table:
   # scan to the rightmost digit
   right:
-    1  : R
-    0  : R
+    1: R
+    0: R
     ' ': {L: carry}
   # then carry the 1
   carry:
-    1  : {write: 0, L}
-    0  : {write: 1, L: done}
+    1: {write: 0, L}
+    0: {write: 1, L: done}
     ' ': {write: 1, L: done}
   done:
 </pre>
     <p>
-      Here the states are <code>right</code>, <code>carry</code>, and <code>done</code>. <br>
+      Here the states are <code>right</code>, <code>carry</code>, and <code>done</code>.<br>
       The symbols are '<code>1</code>', '<code>0</code>', and '<code> </code>'.
     </p>
     <p>
@@ -684,10 +684,11 @@ table:
     </p>
     <p>
       A state and a symbol together map to an instruction.
+      In the <code>carry</code> state, for instance, the symbol <code>1</code> maps to the instruction <code>{write: 0, L}</code>.
       When no instruction is defined, as in the <code>done</code> state, the machine halts.
     </p>
     <h4>Instruction format</h4>
-    An instruction’s general form has three parts:
+    The general form of an instruction has three parts:
     <pre>{write: <var>symbol</var>, <var>move</var>: <var>state</var>}</pre>
     <ul>
       <li><code>{write: 1, L: done}</code> writes the symbol <code>1</code>,
@@ -696,53 +697,52 @@ table:
     </ul>
     <p>For brevity, you can omit the symbol and state if they stay the same.</p>
     <ul>
-      <li>
-        <code>{L: carry}</code> writes the same symbol that was read, moves the tape head left, and goes to the <code>carry</code> state.
-      </li>
-      <li>
-        <code>R</code> (shorthand for {R}) simply moves the tape head right. It writes back the same symbol and stays in the same state.
-      </li>
+      <li><code>{L: carry}</code> writes the same symbol that was read,
+        moves the tape head left, and goes to the <code>carry</code> state.</li>
+      <li><code>R</code> (shorthand for {R}) simply moves the tape head right.
+        It writes back the same symbol and stays in the same state.</li>
     </ul>
   </section>
 
-  <div class="col-md-4 col-sm-6">
-    <!-- XXX: not a verbal phrase -->
-    <h3>Tips</h3>
-    <!-- <h4>Arrange the diagram</h4>
-    <p> <b>Drag</b> or click a state node to fix it in place. </p>
-    <p> <b>Double-click</b> a node to release it. </p> -->
-    <h4>Editor keyboard shortcuts</h4>
-    <table id="kbdShortcutTable" class="editor-shortcuts table">
-    </table>
-    <noscript>
-      <p>The code editor and keyboard shortcuts require that JavaScript be enabled.</p>
-    </noscript>
-    <p>
-    More keyboard shortcuts are available on the
-    <a href="https://github.com/ajaxorg/ace/wiki/Default-Keyboard-Shortcuts"
-    target="_blank">full list</a>.
-    </p>
 
-    <h4>Misc. tips</h4>
-    <ul id="misc-tips-list">
-      <li>Changes are autosaved.</li>
-      <!-- FIXME: edit, rephrase -->
-      <li>Don't hesitate to duplicate. Use “Edit &gt; Duplicate document” to create a snapshot before you start a variation or try something new.</li>
-      <li>Documents are saved in your browser’s local storage. They will stay there between sessions, but be careful when clearing browser data. You can create backups by downloading your documents.</li>
-      <li>Incognito / Private Browsing mode uses a separate temporary storage. This is useful for importing or editing documents that you want to try but don’t want to keep.</li>
-    </ul>
-    <a class="disclosure-triangle collapsed" role="button" data-toggle="collapse" href="#aboutSyntax">
-      More about the syntax
-    </a>
-    <div id="aboutSyntax" class="collapse">
-      <p>The code is written in <a href="https://en.wikipedia.org/wiki/YAML" target="_blank"><abbr>YAML</abbr></a> 1.2, a general-purpose data format.</p>
-      <p>
-      If you’re familiar with JSON, YAML is similar, but designed to be more readable.
-      Mappings can use indent instead of brackets <code>{}</code>, and strings can often be included directly without quotes.
-      </p>
-      <p>
-      Some strings need to be quoted: for example, those that start/end with a space, or include certain characters that have special meaning in YAML. If a string is causing problems, try putting quotes around it.
-      </p>
+
+  <div class="col-md-4 col-sm-12">
+    <h3>Tips</h3>
+    <div class="row">
+    <div class="col-sm-6 col-md-12">
+      <h4>Editor keyboard shortcuts</h4>
+      <table id="kbdShortcutTable" class="editor-shortcuts table">
+      </table>
+      <noscript>
+        <p>The code editor and keyboard shortcuts require that JavaScript be enabled.</p>
+      </noscript>
+      <p>More keyboard shortcuts are available on the <a href="https://github.com/ajaxorg/ace/wiki/Default-Keyboard-Shortcuts" target="_blank">full list</a>.</p>
+    </div>
+    <div class="col-sm-6 col-md-12">
+      <h4>Misc. tips</h4>
+      <ul id="misc-tips-list">
+        <li>Drag or click a state node to fix it in place; double-click to release it.</li>
+        <li>Don’t hesitate to duplicate.
+          Use <i>Edit</i> &gt; <i>Duplicate document</i> to create a snapshot of your current document whenever you’re about to make a larger edit.</li>
+        <li>Changes are autosaved to your browser’s local storage.
+          They will stay there between sessions, but be careful when clearing browser data. You can create backups by downloading your documents.</li>
+        <li>Incognito / Private Browsing mode uses a separate temporary storage. This is useful for importing or editing documents that you want to try but don’t want to keep.</li>
+      </ul>
+      <a class="disclosure-triangle collapsed" role="button" data-toggle="collapse" href="#aboutSyntax">
+        More about the syntax
+      </a>
+      <div id="aboutSyntax" class="collapse">
+        <p>The code is written in <a href="https://en.wikipedia.org/wiki/YAML" target="_blank"><abbr>YAML</abbr></a> 1.2, a general-purpose data format.</p>
+        <p>
+          If you’re familiar with JSON, YAML is similar, but designed to be more readable.
+          Mappings can use indent instead of brackets <code>{}</code>, and strings can often be included directly without quotes.
+        </p>
+        <p>
+          Some strings need to be quoted: for example, those that start/end with a space, or include certain characters that have special meaning in YAML.
+          If a string is causing problems, try putting quotes around it.
+        </p>
+      </div>
+    </div>
     </div>
   </div>
 </div>
