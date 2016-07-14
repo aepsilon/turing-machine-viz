@@ -1,14 +1,11 @@
 {
-  "name": "tm-viz",
+  "name": "turing-machine-viz",
   "version": "1.0.0",
-  "description": "Turing machine editor and visualization",
-  "main": "main.js",
-  "dependencies": {},
-  "devDependencies": {
-    "file-loader": "^0.8.5",
-    "raw-loader": "^0.5.1",
-    "webpack": "^1.12.9"
-  },
+  "description": "Turing machine visualization and simulator",
+  "homepage": "http://turingmachine.io",
+  "license": "BSD-3-Clause",
+  "author": "Andy Li <andy.srs.li@gmail.com>",
+  "repository": "aepsilon/turing-machine-viz",
   "scripts": {
     "clean": "trash build/ || rm -r build/",
     "depgraph": "mkdir -p build/ && (cd src/ && madge . --dot) > build/depgraph.gv",
@@ -18,6 +15,11 @@
     "server": "webpack-dev-server --progress --colors --display-error-details",
     "watch": "webpack --watch --progress --colors --display-error-details"
   },
-  "author": "Andy Li",
-  "license": "MIT"
+  "dependencies": {},
+  "devDependencies": {
+    "eslint": "^3.0.0",
+    "file-loader": "^0.8.5",
+    "raw-loader": "^0.5.1",
+    "webpack": "^1.12.9"
+  }
 }
