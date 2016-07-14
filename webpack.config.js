@@ -4,6 +4,34 @@ const path = require('path');
 const webpack = require('webpack');
 
 
+/////////////
+// Utility //
+/////////////
+
+/**
+ * Recursively merges two webpack configs.
+ * Concatenates arrays, and throws an error for other conflicting values.
+ */
+function merge(x, y) {
+  if (x == null) { return y; }
+  if (y == null) { return x; }
+
+  if (x instanceof Array && y instanceof Array) {
+    return x.concat(y);
+  } else if (Object.getPrototypeOf(x) === Object.prototype &&
+             Object.getPrototypeOf(y) === Object.prototype) {
+    // for safety, only plain objects are merged
+    let result = {};
+    (new Set(Object.keys(x).concat(Object.keys(y)))).forEach(function (key) {
+      result[key] = merge(x[key], y[key]);
+    });
+    return result;
+  } else {
+    throw new Error(`cannot merge conflicting values:\n\t${x}\n\t${y}`);
+  }
+}
+
+
 /////////////////
 // Base Config //
 /////////////////
@@ -72,28 +100,6 @@ const prodConfig = {
     new webpack.optimize.UglifyJsPlugin({compress: {warnings: false}})
   ]
 };
-
-
-// Recursively merges webpack configs.
-// Concatenates arrays, and throws an error for other conflicting values.
-function merge(x, y) {
-  if (x == null) { return y; }
-  if (y == null) { return x; }
-
-  if (x instanceof Array && y instanceof Array) {
-    return x.concat(y);
-  } else if (Object.getPrototypeOf(x) === Object.prototype &&
-             Object.getPrototypeOf(y) === Object.prototype) {
-    // for safety, only plain objects are merged
-    let result = {};
-    (new Set(Object.keys(x).concat(Object.keys(y)))).forEach(function (key) {
-      result[key] = merge(x[key], y[key]);
-    });
-    return result;
-  } else {
-    throw new Error(`cannot merge conflicting values:\n\t${x}\n\t${y}`);
-  }
-}
 
 const isProduction = (process.env.NODE_ENV === 'production');
 
