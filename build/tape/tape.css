@@ -1,0 +1,18 @@
+.tape-cell > rect {
+  fill: white;
+  stroke: gray;
+}
+
+.tape-cell > text {
+  stroke: black;
+  stroke-width: 0.5;
+  pointer-events: none;
+  text-anchor: middle;
+  font-family: "Source Code Pro", "Consolas", "Menlo", "DejaVu Sans Mono", "Courier", monospace;
+  font-size: 25px;
+}
+
+#tape-head {
+  fill: none;
+  stroke: gold;
+}
