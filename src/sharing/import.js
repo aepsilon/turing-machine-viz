@@ -508,15 +508,13 @@ function messageForError(reason) {
   }
 }
 
-// Import a gist given by ?import-gist=gistID and reset the URL.
+// Import a gist via ?import-gist=gistID and remove the query string from the URL.
 // Call this once the DOM is ready (document.readyState === 'interactive').
 // {dialogNode: Node, importDocument: TMData -> void} -> void
 function runImport(args) {
-  // TODO: test with dev server
-  function resetURL() {
+  function removeQuery() {
     try {
-      console.info('resetURL called'); // eslint-disable-line no-console
-      history.replaceState(null, null, '/');
+      history.replaceState(null, null, location.pathname);
     } catch (e) {
       // ignore
     }
@@ -526,7 +524,7 @@ function runImport(args) {
   var gistID = params['import-gist'];
   if (gistID) {
     importGist(_.assign({gistID: gistID}, args))
-    .finally(resetURL);
+    .finally(removeQuery);
   }
 }
 
