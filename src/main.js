@@ -16,25 +16,26 @@ ace.config.loadModule('ace/ext/language_tools');
 
 function getId(id) { return document.getElementById(id); }
 
+function addAlertPane(type, html) {
+  getId('diagram-column').insertAdjacentHTML('afterbegin',
+    '<div class="alert alert-'+type+' alert-dismissible" role="alert">' +
+    '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>' +
+    html +
+    '</div>');
+}
+
 
 //////////////////////////
 // Compatibility Checks //
 //////////////////////////
 
 (function () {
-  function addWarning(html) {
-    getId('diagram-column').insertAdjacentHTML('afterbegin', html);
-  }
-
   // Warn when falling back to RAM-only storage
   // NB. This mainly covers local storage errors and Safari's Private Browsing.
   if (!require('./storage').canUseLocalStorage) {
-    addWarning('<div class="alert alert-info alert-dismissible" role="alert">' +
-      '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>' +
-      '<p>Local storage is unavailable. ' +
+    addAlertPane('info', '<p>Local storage is unavailable. ' +
       'Your browser could be in Private Browsing mode, or it might not support <a href="http://caniuse.com/#feat=namevalue-storage" target="_blank">local storage</a>.</p>' +
-      '<strong>Any changes will be lost after leaving the webpage.</strong>' +
-      '</div>');
+      '<strong>Any changes will be lost after leaving the webpage.</strong>');
   }
 
   /*
@@ -48,12 +49,10 @@ function getId(id) { return document.getElementById(id); }
   // Detect IE 10 and under (http://stackoverflow.com/a/16135889)
   var isIEUnder11 = new Function('/*@cc_on return @_jscript_version; @*/')() < 11;
   if (isIEUnder11) {
-    addWarning('<div class="alert alert-warning alert-dismissible" role="alert">' +
-      '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>' +
+    addAlertPane('warning',
       '<p><strong>Your <a href="http://whatbrowser.org" target="_blank">web browser</a> is out of date</strong> and does not support some features used by this program.<br>' +
       '<em>The page may not work correctly, and data may be lost.</em></p>' +
-      'Please update your browser, or use another browser such as <a href="http://www.google.com/chrome/browser/" target="_blank">Chrome</a> or <a href="http://getfirefox.com" target="_blank">Firefox</a>.' +
-      '</div>');
+      'Please update your browser, or use another browser such as <a href="http://www.google.com/chrome/browser/" target="_blank">Chrome</a> or <a href="http://getfirefox.com" target="_blank">Firefox</a>.');
   }
 
   // Warn about iOS local storage volatility
@@ -329,10 +328,18 @@ $(function () {
   }
 });
 
-// XXX: confirm if save fails
-window.addEventListener('beforeunload', function () {
-  controller.save();
-  menu.saveCurrentDocID();
+window.addEventListener('beforeunload', function (ev) {
+  try {
+    controller.save();
+    menu.saveCurrentDocID();
+  } catch (error) {
+    addAlertPane('warning',
+      '<h4>The current document could not be saved.</h4>'+
+      '<p>It’s likely that the <a href="https://en.wikipedia.org/wiki/Web_storage#Storage_size" target="_blank">local storage quota</a> was exceeded. ' +
+      'Try downloading a copy of this document, then deleting other documents to make space.</p>');
+    return (ev || window.event).returnValue =
+      'There is not enough space left to save the current document.';
+  }
 });
 
 // Keep the current document in sync across tabs/windows
