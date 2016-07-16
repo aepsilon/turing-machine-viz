@@ -249,7 +249,6 @@ var menu = (function () {
     .on('hidden.bs.modal', function () {
       var newName = renameBox.value;
       if (menu.currentOption.text !== newName) {
-        // TODO: report errors
         menu.rename(newName);
       }
       renameBox.value = '';

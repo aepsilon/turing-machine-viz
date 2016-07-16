@@ -30,8 +30,6 @@ var UndoManager = ace.require('ace/undomanager').UndoManager;
  * @param {TMDocument} document The document to load from and save to.
  */
 function TMDocumentController(containers, buttons, document) {
-  // FIXME: check for every container and button and throw if any are missing
-  // TODO: check that document param is present
   this.simulator = new TMSimulator(containers.simulator, buttons.simulator);
 
   // Set up ace editor //

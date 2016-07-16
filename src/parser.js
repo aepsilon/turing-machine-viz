@@ -61,7 +61,7 @@ Object.defineProperty(TMSpecError.prototype, 'message', {
 // type TransitionTable = {[key: string]: ?{[key: string]: string} }
 // type TMSpec = {blank: string, start state: string, table: TransitionTable}
 
-// TODO: check with flow (flowtype.org)
+// IDEA: check with flow (flowtype.org)
 // throws YAMLException on YAML syntax error
 // throws TMSpecError for an invalid spec (eg. no start state, transitioning to an undefined state)
 // string -> TMSpec

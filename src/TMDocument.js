@@ -86,7 +86,7 @@ TMDocument.prototype.path = function (path) {
   TMDocument.prototype.dataKeys = Object.keys(propDescriptors);
 })();
 
-// TODO: bypass unnecessary parse & stringify cycle for positions
+// IDEA: bypass extra parse & stringify cycle for positions
 TMDocument.prototype.copyFrom = function (other) {
   this.dataKeys.forEach(function (key) {
     this[key] = other[key];

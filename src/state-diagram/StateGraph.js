@@ -98,7 +98,6 @@ function normalize(state, symbol, instruction) {
   return _.defaults({}, instruction, {state: state, symbol: symbol});
 }
 
-// TODO: allow custom function for showing spaces?
 function labelFor(symbols, action) {
   var rightSide = ((action.symbol == null) ? '' : (visibleSpace(String(action.symbol)) + ','))
     + String(action.move);
@@ -155,7 +154,6 @@ StateGraph.prototype.getVertex = function (state) {
   return this.__graph[state];
 };
 
-// TODO: incorporate multi-symbol left side matching
 StateGraph.prototype.getInstructionAndEdge = function (state, symbol) {
   var vertex = this.__graph[state];
   if (vertex === undefined) {

@@ -160,7 +160,6 @@ function listNondocuments(dialogBody, nondocs, disclosureTitle) {
         class: 'collapse'
       });
   // Errors by type, most important first
-  // TODO: auto-report unexpected errors
   appendTablePanel(container, {
     title: 'Unexpected error',
     headers: ['Filename', 'Error'],
@@ -183,7 +182,7 @@ function listNondocuments(dialogBody, nondocs, disclosureTitle) {
         function (td) { td.append('pre').text(d.error.message); } ];
     })
   });
-  // TODO: document largest allowed filesize
+  // TODO: document largest allowed filesize; limit export likewise
   appendListPanel(container, {
     title: 'File is too large',
     data: nondocs.tooLarge

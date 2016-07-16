@@ -116,7 +116,7 @@ function edgePathFor(nodeRadius, shape, d) {
       var sep = -Math.PI/2/2; // 90° separation, half on each side
       var source = addV(p1, vectorFromLengthAngle(nodeRadius, angle+sep));
       var target = addV(p2, vectorFromLengthAngle(nodeRadius, angle+Math.PI-sep));
-      // TODO: consider http://www.w3.org/TR/SVG/paths.html#PathDataCubicBezierCommands
+      // IDEA: consider http://www.w3.org/TR/SVG/paths.html#PathDataCubicBezierCommands
       return (p1[0] <= p2[0])
         ? 'M '+source[0]+' '+source[1]+' A '+radius+' '+radius+' 0 0,1 '+target[0]+' '+target[1]
         : 'M '+target[0]+' '+target[1]+' A '+radius+' '+radius+' 0 0,0 '+source[0]+' '+source[1];

@@ -208,7 +208,6 @@ DocumentMenu.prototype.delete = function (opts) {
 // (model/storage) //
 /////////////////////
 
-// TODO: impl. transactions
 
 // for custom documents.
 function DocumentList(storageKey) {

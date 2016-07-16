@@ -50,7 +50,6 @@ function TapeViz(svg, lookaround, blank, input) {
     enumerable: true
   });
 
-  // TODO: factor out hard-coded constants
   // width is before + head + after, trimming 2 off to show cut-off tape ends
   var width  = cellWidth * (lookaround+1+lookaround-2) + 2*10;
   var height = cellHeight + 2*10;
@@ -83,8 +82,7 @@ function TapeViz(svg, lookaround, blank, input) {
 TapeViz.prototype = Object.create(Tape.prototype);
 TapeViz.prototype.constructor = TapeViz;
 
-// TODO: concurrently fade out old value and fade in new value
-// TODO: chain headLeft/Right to wait for write()?
+// IDEA: chain headLeft/Right to wait for write()?
 TapeViz.prototype.write = function (symbol) {
   // don't animate if symbol stays the same
   if (Tape.prototype.read.call(this) === symbol) {
@@ -95,8 +93,6 @@ TapeViz.prototype.write = function (symbol) {
   // remove leftover .exiting in case animation was interrupted
   this.wrapper.selectAll('.exiting').remove();
 
-  // TODO: replace with .selectAll('.tape-cell:not(.exiting)'),
-  // to avoid need to remove .exiting ?
   d3.select(this.wrapper[0][0].childNodes[this.lookaround])
       .datum(symbol)
     .select('text')
