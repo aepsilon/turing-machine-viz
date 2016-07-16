@@ -53,6 +53,7 @@ Object.defineProperties(TMSimulator.prototype, {
     set: function (sourceCode) {
       if (this.machine) {
         this.machine.isRunning = false; // important
+        this.machine.stateviz.force.stop();
       }
       if (sourceCode == null) {
         // clear display
