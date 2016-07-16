@@ -64,10 +64,8 @@ function generateGist(container, button, filename, contents) {
 
   var payload = {
     files: {},
-    // TODO: set description & public
-    // description: 'Turing machine for turingmachine.io',
-    description: 'Sample document'
-    // public: true
+    description: 'Turing machine for http://turingmachine.io',
+    public: true
   };
   payload.files[filename] = {content: contents};
 
