@@ -58,7 +58,7 @@ integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7
     font-family: 'Avenir Next', 'Avenir', 'Lucida Grande',
       'Source Sans Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   }
-  .kern { letter-spacing: -.1em; }
+  .kern { letter-spacing: -.1em; font-kerning: none; /* kern manually */ }
   .navbar-brand .kern-Ma { letter-spacing: 0em }
   .navbar-brand .kern-Vi { letter-spacing: -.02em }
   pre {
@@ -146,8 +146,9 @@ integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7
     margin-top: 1em;
   }
   /* Page footer */
-  .octicon {
+  .octicon.octicon-mark-github {
     fill: currentColor;
+    overflow: visible;
   }
   .page-footer {
     margin: 2em 0 0 0;

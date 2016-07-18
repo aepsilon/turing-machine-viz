@@ -75,7 +75,7 @@ function addTape(div, spec) {
 function TMViz(div, spec, posTable) {
   div = d3.select(div);
   var graph = new StateGraph(spec.table);
-  this.__stateviz = new StateViz(div.append('svg'),
+  this.stateviz = new StateViz(div.append('svg'),
     graph.getVertexMap(),
     graph.getEdges()
   );
@@ -153,8 +153,8 @@ TMViz.prototype.reset = function () {
 };
 
 Object.defineProperty(TMViz.prototype, 'positionTable', {
-  get: function ()  { return this.__stateviz.positionTable; },
-  set: function (posTable) { this.__stateviz.positionTable = posTable; }
+  get: function ()  { return this.stateviz.positionTable; },
+  set: function (posTable) { this.stateviz.positionTable = posTable; }
 });
 
 module.exports = TMViz;

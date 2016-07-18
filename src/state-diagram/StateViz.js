@@ -348,6 +348,22 @@ function StateViz(svg, nodes, linkArray) {
       .attr('transform', function (d) {
         return (d.lastIndexOf('reversed-', 0) === 0) ? 'rotate(180 5 0)' : null;
       });
+  svg.append('style')
+    .html(
+    '.edgepath {' +
+    '  marker-end: url(#arrowhead);' +
+    '}' +
+    '.edgepath.active-edge {' +
+    '  marker-end: url(#active-arrowhead);' +
+    '}' +
+    '.edgepath.reversed-arc {' +
+    '  marker-start: url(#reversed-arrowhead);' +
+    '  marker-end: none;' +
+    '}' +
+    '.edgepath.active-edge.reversed-arc {' +
+    '  marker-start: url(#reversed-active-arrowhead);' +
+    '  marker-end: none;' +
+    '}');
 
   // Force Layout Update
   force.on('tick', function () {
