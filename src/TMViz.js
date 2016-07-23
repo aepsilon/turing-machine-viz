@@ -74,7 +74,8 @@ function addTape(div, spec) {
 function TMViz(div, spec, posTable) {
   div = d3.select(div);
   var graph = new StateGraph(spec.table);
-  this.stateviz = new StateViz(div.append('svg'),
+  this.stateviz = new StateViz(
+    div,
     graph.getVertexMap(),
     graph.getEdges()
   );

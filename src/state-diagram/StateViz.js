@@ -148,10 +148,29 @@ function limitRange(min, max, value) {
   return Math.max(min, Math.min(value, max));
 }
 
-// function rotateAroundCenter(angle, svglocatable) {
-//   var c = rectCenter(svglocatable.getBBox());
-//   svglocatable.setAttribute('transform', 'rotate('+angle+' '+c.x+' '+c.y+')');
-// }
+// http://stackoverflow.com/a/9851769
+var isBrowserIEorEdge = /*@cc_on!@*/false
+  || Boolean(document.documentMode) || Boolean(window.StyleMedia); // eslint-disable-line
+// IE padding hack so that SVG resizes properly.
+// This works across browsers but we only need it for IE.
+var appendSVGTo = !isBrowserIEorEdge
+  ? function (div) { return div.append('svg'); }
+  : function (div, hwRatio) {
+    return div
+      .append('div')
+        .style({
+          width: '100%',
+          height: '0',
+          'padding-bottom': (100 * hwRatio) + '%',
+          position: 'relative'
+        })
+      .append('svg')
+        .style({
+          position: 'absolute',
+          top: '0',
+          left: '0'
+        });
+  };
 
 // *** D3 diagram ***
 require('./StateViz.css');
@@ -166,13 +185,13 @@ require('./StateViz.css');
  *
  * Note: currently, element IDs (e.g. for textPath) will collide if multiple
  * diagrams are on the same document (HTML page).
- * @param  {D3Selection}      svg           SVG to take over and use.
+ * @param  {D3Selection}      container     Container to add the SVG to.
  * @param  {[LayoutNode] | StateMap} nodes  Parameter to D3's force.nodes.
  *   Important: passing a StateMap is recommended when using setPositionTable.
  *   Passing an array will key the state nodes by array index.
  * @param  {[LayoutEdge]}     linkArray     Parameter to D3's force.links.
  */
-function StateViz(svg, nodes, linkArray) {
+function StateViz(container, nodes, linkArray) {
   /* References:
     [Sticky Force Layout](http://bl.ocks.org/mbostock/3750558) demonstrates
     drag to position and double-click to release.
@@ -189,8 +208,8 @@ function StateViz(svg, nodes, linkArray) {
 
   var colors = d3.scale.category10();
 
+  var svg = appendSVGTo(container, h/w);
   svg.attr({
-    'width': '100%',
     'viewBox': [0, 0, w, h].join(' '),
     'version': '1.1',
     ':xmlns': 'http://www.w3.org/2000/svg',
