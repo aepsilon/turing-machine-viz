@@ -39,17 +39,12 @@ function animatedTransition(graph, animationCallback) {
  */
 function pulseEdge(edge) {
   var edgepath = d3.select(edge.domNode);
-  // workaround for https://github.com/d3/d3-transition/issues/11
-  var normalColor = edgepath.style('stroke');
-  var pulseColor = d3.select('#active-arrowhead').style('stroke');
   return edgepath
       .classed('active-edge', true)
     .transition()
-      .style('stroke', pulseColor)
-      .style('stroke-width', '3')
+      .style('stroke-width', '3px')
     .transition()
-      .style('stroke', normalColor)
-      .style('stroke-width', '1')
+      .style('stroke-width', '1px')
     .transition()
       .duration(0)
       .each('start', /* @this edge */ function () {
