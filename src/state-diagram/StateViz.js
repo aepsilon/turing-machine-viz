@@ -367,8 +367,8 @@ function StateViz(container, nodes, linkArray) {
       .attr('transform', function (d) {
         return (d.lastIndexOf('reversed-', 0) === 0) ? 'rotate(180 5 0)' : null;
       });
-  svg.append('style')
-    .html(
+
+  var svgCSS =
     '.edgepath {' +
     '  marker-end: url(#arrowhead);' +
     '}' +
@@ -382,7 +382,14 @@ function StateViz(container, nodes, linkArray) {
     '.edgepath.active-edge.reversed-arc {' +
     '  marker-start: url(#reversed-active-arrowhead);' +
     '  marker-end: none;' +
-    '}');
+    '}';
+  svg.append('style').each(function () {
+    if (this.styleSheet) {
+      this.styleSheet.cssText = svgCSS;
+    } else {
+      this.textContent = svgCSS;
+    }
+  });
 
   // Force Layout Update
   force.on('tick', function () {
