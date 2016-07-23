@@ -78,7 +78,9 @@ function DocumentMenu(args) {
 
 Object.defineProperties(DocumentMenu.prototype, {
   currentOption: {
-    get: function () { return this.menu.selectedOptions[0]; },
+    get: function () {
+      return this.menu.options[this.menu.selectedIndex];
+    },
     enumerable: true
   },
   currentDocument: {
