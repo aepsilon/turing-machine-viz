@@ -1,0 +1,75 @@
+name: binary addition
+source code: |
+  # Adds two binary numbers together.
+
+  # Format: Given input a+b where a and b are binary numbers,
+  # leaves c b on the tape, where c = a+b.
+  # Example: '11+1' => '100 1'.
+  input: '1011+11001'
+  blank: ' '
+  start state: right
+  table:
+    # Start at the second number's rightmost digit.
+    right:
+      [0,1,+]: R
+      ' ': {L: read}
+
+    # Add each digit from right to left:
+    # read the current digit of the second number,
+    read:
+      0: {write: c, L: have0}
+      1: {write: c, L: have1}
+      +: {write: ' ', L: rewrite}
+    # and add it to the next place of the first number,
+    # marking the place (using O or I) as already added.
+    have0: {[0,1]: L, +: {L: add0}}
+    have1: {[0,1]: L, +: {L: add1}}
+    add0:
+      [0,' ']: {write: O, R: back0}
+      1      : {write: I, R: back0}
+      [O,I]  : L
+    add1:
+      [0,' ']: {write: I, R: back1}
+      1      : {write: O, L: carry}
+      [O,I]  : L
+    carry:
+      [0,' ']: {write: 1, R: back1}
+      1      : {write: 0, L}
+    # Then, restore the current digit, and repeat with the next digit.
+    back0:
+      [0,1,O,I,+]: R
+      c: {write: 0, L: read}
+    back1:
+      [0,1,O,I,+]: R
+      c: {write: 1, L: read}
+
+    # Finish: rewrite place markers back to 0s and 1s.
+    rewrite:
+      O: {write: 0, L}
+      I: {write: 1, L}
+      [0,1]: L
+      ' ': {R: done}
+    done:
+
+
+  # Exercise:
+
+  # • Generate the Fibonacci sequence in binary, listed from right to left:
+  #   ...1101 1000 101 11 10 1 1 0
+  #   Hint: prefix the current number with a +, copy the previous number
+  #   and place it left of the +, run the adder, and repeat.
+  #   Example: '1 0' => '+1 0' => '0+1 0' => '1 1 0' => '+1 1 0' => ...
+positions:
+  right:   {x: 300, y: 130}
+  rewrite: {x: 500, y: 130}
+  done:    {x: 620, y: 130}
+
+  back0:  {x: 250, y: 250}
+  read:   {x: 400, y: 250}
+  back1:  {x: 550, y: 250}
+  carry:  {x: 650, y: 250}
+
+  add0:   {x: 150, y: 400}
+  have0:  {x: 300, y: 400}
+  have1:  {x: 500, y: 400}
+  add1:   {x: 650, y: 400}

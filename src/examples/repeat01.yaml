@@ -1,0 +1,27 @@
+name: repeat 0 1
+source code: |
+  # This is the first example machine given by Alan Turing in his 1936 paper
+  #   "On Computable Numbers, with an Application to
+  #    the Entscheidungsproblem".
+  # It simply writes the endless sequence 0 1 0 1 0 1...
+  blank: ' '
+  start state: b
+  table:
+    b:
+      ' ': {write: 0, R: c}
+    c:
+      ' ':           {R: e}
+    e:
+      ' ': {write: 1, R: f}
+    f:
+      ' ':           {R: b}
+
+
+  # (Turing uses the convention of leaving a gap after each output cell,
+  # reserving it for marking the cell. For instance, on a tape that
+  # contains '0 1x0 0 1 1y1y0y', x marks the leftmost 1 and y marks 110.)
+positions:
+  b: {x: 300, y: 200, fixed: false}
+  c: {x: 450, y: 150, fixed: false}
+  e: {x: 500, y: 300, fixed: false}
+  f: {x: 350, y: 350, fixed: false}

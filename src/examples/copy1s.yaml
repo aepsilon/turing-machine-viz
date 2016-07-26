@@ -1,0 +1,44 @@
+name: copy 1s
+source code: |
+  # Copies a string of consecutive 1s.
+  input: '111'
+  blank: 0
+  start state: each
+  table:
+    # mark the current 1 by erasing it
+    each:
+      0: {R: H}
+      1: {write: 0, R: sep}
+    # skip to the separator
+    sep:
+      0: {R: add}
+      1: R
+    # skip to the end of the copy and write a 1
+    add:
+      0: {write: 1, L: sepL}
+      1: R
+    # return to the separator
+    sepL:
+      0: {L: next}
+      1: L
+    # return to the erased 1, restore it, and then advance to the next 1
+    next:
+      0: {write: 1, R: each}
+      1: L
+    H:
+
+
+  # Exercises:
+
+  # • Edit the machine to copy the string indefinitely,
+  #   i.e. given the input '11', produce 11011011011...
+  #   Hint: this can be done by modifying only one transition.
+
+  # • Make a machine to output the endless sequence 1011011101111011111...
+positions:
+  each: {x: 400   , y: 100}
+  sep:  {x: 400.01, y: 250}
+  add:  {x: 400.02, y: 400}
+  sepL: {x: 250   , y: 250}
+  next: {x: 250.01, y: 100}
+  H:    {x: 550   , y: 100}

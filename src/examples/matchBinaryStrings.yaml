@@ -1,0 +1,57 @@
+name: equal strings
+source code: |
+  # Decides the language { w#w | w ∈ {0,1}* }
+  # (two equal binary strings separated by '#')
+  input: '01001#01001' # try '#', '1#10', '10#1', '10#10'
+  blank: ' '
+  # Two strings are equal if they are both the empty string,
+  # or they start with the same symbol and are equal thereafter.
+  start state: start
+  table:
+    start:
+      # Inductive case: start with the same symbol.
+      0: {write: ' ', R: have0}
+      1: {write: ' ', R: have1}
+      # Base case: empty string.
+      '#': {R: check}
+    have0:
+      [0,1]: R
+      '#': {R: match0}
+    have1:
+      [0,1]: R
+      '#': {R: match1}
+    match0:
+      x: R
+      0: {write: x, L: back}
+    match1:
+      x: R
+      1: {write: x, L: back}
+    back:
+      [0,1,'#',x]: L
+      ' ': {R: start}
+    check:
+      x: R
+      ' ': {R: accept}
+    accept:
+
+
+  # Exercises:
+
+  # • Accept if the second string is the bitwise complement
+  #   (1s and 0s swapped) of the first, e.g. accept '1101#0010'.
+
+  # • Check that a binary string has the same number of 0s and 1s;
+  #   eg., accept '001110' but reject '10010'.
+
+  # • Check if two strings are different.
+  #   Example: accept '00#001' and '0101#0111', but reject '1001#1001'.
+positions:
+  accept: {x: 80 , y: 250}
+  check:  {x: 190, y: 250}
+  # regular hexagon with side length 150
+  start:  {x: 300, y: 250}
+  back:   {x: 600, y: 250}
+  have1:  {x: 375, y: 120.10}
+  match1: {x: 525, y: 120.10}
+  have0:  {x: 375, y: 379.90}
+  match0: {x: 525, y: 379.90}

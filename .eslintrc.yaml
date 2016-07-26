@@ -1,0 +1,38 @@
+---
+rules:
+  ## Stylistic ##
+  indent:
+    - 1
+    - 2
+    - SwitchCase: 1
+      VariableDeclarator:
+        var: 2
+  quotes:
+    - 1
+    - single
+  linebreak-style:
+    - 2
+    - unix
+  semi:
+    - 1
+    - always
+  space-before-function-paren:
+    - 1
+    - anonymous: always
+      named: never
+  consistent-this:
+    - 1
+    - self
+  ## Semantic ##
+  no-invalid-this: 2  # prevent gotcha: closures inside methods don't inherit 'this'
+  no-shadow:
+    - 2
+    - builtinGlobals: true
+  no-shadow-restricted-names: 2
+  no-unexpected-multiline: 2
+  strict:
+    - 2
+    - global
+env:
+  commonjs: true
+extends: eslint:recommended

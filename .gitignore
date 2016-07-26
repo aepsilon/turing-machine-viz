@@ -1,0 +1,6 @@
+*.log
+node_modules/
+.eslintcache
+
+
+/build/

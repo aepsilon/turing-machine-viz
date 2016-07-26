@@ -1,0 +1,62 @@
+name: multiplied lengths
+source code: |
+  # Decides the language { a^(i)b^(j)c^(k) | i*j = k and i,j,k ≥ 1 }.
+  # (a's followed by b's then c's,
+  # where the number of a's multiplied by the number of b's
+  # equals the number of c's.)
+  input: aabbbcccccc # try abc, b, aabcbc, aabcc, aabbbbcccccccc
+  blank: ' '
+  start state: start
+
+  table:
+    # Check for the form a^(i)b^(j)c^(k) where i,j,k ≥ 1.
+    start:  {        a: {R: a+}}
+    a+:     {a: R,   b: {R: b+}}
+    b+:     {b: R,   c: {R: c+}}
+    c+:     {c: R, ' ': {L: left}}
+    left:
+      [a,b,c]: L
+      ' ': {R: eachA}
+    # Then check that i*j = k.
+    #   The approach is two nested loops:
+    #   For each 'a':
+    #     For each 'b':
+    #       Mark one 'c'
+    #   At the end, check that all c's are marked.
+    eachA:
+      a: {write: ' ', R: eachB}
+      b: {R: scan}
+    eachB:
+      a: R
+      b: {write: B, R: markC}
+      C: {L: nextA}
+    markC:
+      [b,C]: R
+      c: {write: C, L: nextB}
+    nextB:
+      [b,C]: L
+      B: {R: eachB}
+    nextA:
+      a: L
+      B: {write: b, L}
+      ' ': {R: eachA}
+
+    scan:
+      [b,C]: R
+      ' ': {R: accept}
+    accept:
+positions:
+  start:  {x: 180, y: 40}
+  a+:     {x: 180, y: 180}
+  b+:     {x: 180, y: 320}
+  c+:     {x: 180, y: 460}
+  left:   {x: 290, y: 320}
+
+  accept: {x: 400, y: 40}
+  eachA:  {x: 400, y: 180}
+  eachB:  {x: 400, y: 320}
+  markC:  {x: 400, y: 460}
+
+  scan:   {x: 560, y: 180}
+  nextA:  {x: 560, y: 320}
+  nextB:  {x: 560, y: 460}

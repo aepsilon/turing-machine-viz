@@ -1,0 +1,58 @@
+name: unary multiplication
+source code: |
+  # Multiplies together two unary numbers separated by a '*'.
+  # (Unary is like tallying. Here '||*|||' means 2 times 3.)
+  input: '||*|||' # try '*', '|*|||', '||||*||'
+  blank: ' '
+
+  # The idea:
+  #   multiply(0, b) = 0
+  #   multiply(a, b) = b + multiply(a-1, b)   when a > 0
+  start state: eachA
+  table:
+    # For each 1 in a, add a copy of b.
+    eachA:
+      '|': {write: ' ', R: toB}  # Inductive case: a > 0.
+      '*': {R: skip}             # Base case:      a = 0.
+    toB:
+      '|': R
+      '*': {R: eachB} # enter copier
+    nextA: # return from copier
+      ' ': {write: '|', R: eachA}
+      ['|','*']: L
+
+    skip:
+      '|': R
+      ' ': {R: done}
+    done:
+
+    # This is the 'copy 1s' machine, with ' ' as 0 and '|' as 1.
+    eachB:
+      ' ': {L: nextA}
+      '|': {write: ' ', R: sep}
+    sep:
+      ' ': {R: add}
+      '|': R
+    add:
+      ' ': {write: '|', L: sepL}
+      '|': R
+    sepL:
+      ' ': {L: nextB}
+      '|': L
+    nextB:
+      ' ': {write: '|', R: eachB}
+      '|': L
+
+positions:
+  eachA:  {x: 400, y:  50}
+  toB:    {x: 400, y: 150}
+  eachB:  {x: 400, y: 250}
+  sep:   {x: 400, y: 350}
+  add:   {x: 400, y: 450}
+
+  sepL:  {x: 280, y: 350}
+  nextB:  {x: 280, y: 250}
+
+  nextA:  {x: 280, y: 90}
+  skip:   {x: 520, y: 90}
+  done:   {x: 520, y: 190}

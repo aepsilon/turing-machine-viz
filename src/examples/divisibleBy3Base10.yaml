@@ -1,0 +1,47 @@
+name: divisible by 3 (base 10)
+source code: |
+  # Checks if a base 10 number is divisible by 3.
+  input: 4728 # try 42, 57, 1337, 5328, 7521, 314159265
+  blank: ' '
+  # This uses the same idea as the base 2 version.
+  #
+  # To make things more interesting, we derive the step relation:
+  # Let x be the number left of the tape head,
+  #     d the digit under the head, and
+  #     x' the number up to and including the head.
+  # Then
+  #   x' = 10x + d .
+  # Notice 10 ≡ 1 (mod 3). Therefore
+  #   x' ≡ x + d (mod 3) .
+  # Each step simply adds the new digit's remainder mod 3.
+  start state: q0
+  table:
+    q0:
+      [0,3,6,9]: R     # 0 + 0 ≡ 0 (mod 3)
+      [1,4,7]: {R: q1} # 0 + 1 ≡ 1
+      [2,5,8]: {R: q2} # 0 + 2 ≡ 2
+      ' ': {R: accept}
+    q1:
+      [0,3,6,9]: R     # 1 + 0 ≡ 1
+      [1,4,7]: {R: q2} # 1 + 1 ≡ 2
+      [2,5,8]: {R: q0} # 1 + 2 ≡ 0
+    q2:
+      [0,3,6,9]: R     # 2 + 0 ≡ 2
+      [1,4,7]: {R: q0} # 2 + 1 ≡ 0
+      [2,5,8]: {R: q1} # 2 + 2 ≡ 1
+    accept:
+
+
+  # Exercises:
+
+  # • Check for divisibility by 5.
+  #   Hint: only 2 states (besides accept) are required.
+
+  # • Check for divisibility by 4.
+  #   Hint: use 4 states (besides accept).
+positions:
+  # centered equilateral triangle with side length 250
+  q0: {x: 275, y: 322.1688}
+  q1: {x: 400, y: 105.6624}
+  q2: {x: 525, y: 322.1688}
+  accept: {x: 275.01, y: 430}

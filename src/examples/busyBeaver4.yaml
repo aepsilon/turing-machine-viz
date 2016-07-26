@@ -1,0 +1,47 @@
+name: 4-state busy beaver
+source code: |
+  # A 4-state 2-symbol busy beaver
+  # that halts after 107 steps, leaving 13 1's on the tape.
+  # It takes the most steps *and* prints the most 1's.
+  blank: 0
+  start state: A
+  table:
+    A: {0: {write: 1, R: B}, 1:           {L: B}}
+    B: {0: {write: 1, L: A}, 1: {write: 0, L: C}}
+    C: {0: {write: 1, R: H}, 1:           {L: D}}
+    D: {0: {write: 1, R   }, 1: {write: 0, R: A}}
+    H:
+
+
+  # Finding a busy beaver requires considering every n-state k-symbol
+  # machine and proving either that it halts with no more non-blank symbols
+  # or that it never halts at all.
+
+  # Even with strategies to reduce the search space—
+  # including normalization, accelerated simulation, and automated proofs—
+  # there are still machines that show surprising complexity
+  # and require individual analysis.
+
+  # This 4-state busy beaver was proven by Allen Brady in 1983.
+  # Busy beavers for 5 states and above are as yet unknown.
+  # At the time of writing, the current 5-state 2-symbol contender
+  # takes 47,176,870 steps to halt, and the 6-state contender
+  # takes over 7.4 * 10^36534 steps
+  # (http://www.logique.jussieu.fr/~michel/bbc.html).
+  # "Given that 5-state 2-symbol halting Turing machines can compute
+  # Collatz-like congruential functions, it may be very hard to find
+  # [the next busy beaver]" (https://oeis.org/A060843).
+
+
+  # An entertaining read on busy beavers and their profoundness:
+
+  # • "Who Can Name the Bigger Number?"
+  #   http://www.scottaaronson.com/writings/bignumbers.html
+positions:
+  # square with side length 160
+  A: {x: 320, y: 170}
+  B: {x: 480, y: 170}
+
+  C: {x: 480, y: 330}
+  D: {x: 320, y: 330}
+  H: {x: 620, y: 330}

@@ -1,0 +1,129 @@
+name: binary multiplication
+source code: |
+  # Multiplies two binary numbers together.
+
+  # Examples: '11*11' => '1001', '111*110' => '101010'.
+  input: '11*101' # 3*5 = 15 (1111 in binary)
+  blank: ' '
+  start state: start
+  table:
+    # Prefix the input with a '+', and go to the rightmost digit.
+    start:
+      [0,1]: {L: init}
+    init:
+      ' ': {write: '+', R: right}
+    right:
+      [0,1,'*']: R
+      ' ': {L: readB}
+
+    # Read and erase the last digit of the multiplier.
+    # If it's 1, add the current multiplicand.
+    # In any case, double the multiplicand afterwards.
+    readB:
+      0: {write: ' ', L: doubleL}
+      1: {write: ' ', L: addA}
+    addA:
+      [0,1]: L
+      '*': {L: read} # enter adder
+    # Double the multiplicand by appending a 0.
+    doubleL:
+      [0,1]: L
+      '*': {write: 0, R: shift}
+    double: # return from adder
+      [0,1,+]: R
+      '*': {write: 0, R: shift}
+    # Make room by shifting the multiplier right 1 cell.
+    shift:
+      0: {write: '*', R: shift0}
+      1: {write: '*', R: shift1}
+      ' ': {L: tidy} # base case: multiplier = 0
+    shift0:
+      0:   {R: shift0}
+      1:   {write: 0, R: shift1}
+      ' ': {write: 0, R: right}
+    shift1:
+      0:   {write: 1, R: shift0}
+      1:   {R: shift1}
+      ' ': {write: 1, R: right}
+
+    tidy:
+      [0,1]: {write: ' ', L}
+      +: {write: ' ', L: done}
+    done:
+
+  # This is the 'binary addition' machine almost verbatim.
+  # It's adjusted to keep the '+'
+  # and to lead to another state instead of halting.
+    read:
+      0: {write: c, L: have0}
+      1: {write: c, L: have1}
+      +: {L: rewrite} # keep the +
+    have0: {[0,1]: L, +: {L: add0}}
+    have1: {[0,1]: L, +: {L: add1}}
+    add0:
+      [0,' ']: {write: O, R: back0}
+      1      : {write: I, R: back0}
+      [O,I]  : L
+    add1:
+      [0,' ']: {write: I, R: back1}
+      1      : {write: O, L: carry}
+      [O,I]  : L
+    carry:
+      [0,' ']: {write: 1, R: back1}
+      1      : {write: 0, L}
+    back0:
+      [0,1,O,I,+]: R
+      c: {write: 0, L: read}
+    back1:
+      [0,1,O,I,+]: R
+      c: {write: 1, L: read}
+    rewrite:
+      O: {write: 0, L}
+      I: {write: 1, L}
+      [0,1]: L
+      ' ': {R: double} # when done, go to the 'double' state
+
+
+  # Remark:
+  # We can view the machine as expressing a recursive function:
+
+  #   multiply(a, b) = mult(0, a, b)
+
+  #   mult(acc, a, 0     ) = acc
+  #   mult(acc, a, 2k + 0) = mult(acc    , 2a, k)   where k ≠ 0
+  #   mult(acc, a, 2k + 1) = mult(acc + a, 2a, k)
+
+  # where a, b, and k are natural numbers.
+
+  # Each reduction maintains the invariant
+  #   mult(acc, a, b) = acc + a * b
+  # Note that mult's third argument (b) is always decreasing,
+  # so mult is guaranteed to halt.
+  # Eventually b reaches 0 and the result is simply the accumulator.
+positions:
+  start:  {x: 80 , y: 70}
+  init:   {x: 190, y: 70}
+  tidy:   {x: 730, y: 70}
+  done:   {x: 730, y: 180}
+
+  right:  {x: 300, y: 115}
+  shift:  {x: 600, y: 115}
+  shift1: {x: 450, y: 70}
+  shift0: {x: 450, y: 160}
+
+  readB:  {x: 300, y: 215}
+  addA:   {x: 160, y: 215}
+  doubleL: {x: 550, y: 215}
+
+  rewrite: {x: 363, y: 300}
+  double: {x: 650, y: 300}
+
+  back0:  {x: 160, y: 370}
+  read:   {x: 300, y: 370}
+  back1:  {x: 440, y: 370}
+  carry:  {x: 540, y: 370}
+
+  add0:   {x:  60, y: 470}
+  have0:  {x: 200, y: 470}
+  have1:  {x: 400, y: 470}
+  add1:   {x: 540, y: 470}

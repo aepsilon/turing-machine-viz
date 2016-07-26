@@ -1,0 +1,59 @@
+name: 3-state busy beaver
+source code: |
+  # A 3-state 2-symbol busy beaver for most non-blank symbols.
+  # It takes 13 steps and leaves 6 non-blank symbols on the tape.
+
+  # What's a "busy beaver"?
+  #   Suppose every possible Turing machine with n states and k symbols
+  #   (for instance, 3 states and 2 symbols) were started on
+  #   a blank tape with no input.
+  #   Some of the machines would never halt. Out of the ones that do halt,
+  #   a machine that leaves the most non-blank symbols on the tape
+  #   is called a busy beaver.
+  blank: '0'
+  start state: A
+  table:
+    A:
+      0: {write: 1, R: B}
+      1: {L: C}
+    B:
+      0: {write: 1, L: A}
+      1: R
+    C:
+      0: {write: 1, L: B}
+      1: {R: H}
+    H:
+
+  # An alternative criterion is halting after the most steps.
+  # This busy beaver takes the most steps (21) but only prints 5 1's:
+    # A:
+    #   0: {write: 1, R: B}
+    #   1: {R: H}
+    # B:
+    #   0: {write: 1, L: B}
+    #   1: {write: 0, R: C}
+    # C:
+    #   0: {write: 1, L}
+    #   1: {L: A}
+    # H:
+
+
+  # Exercise:
+
+  # • Consider Turing machines that have n states and k symbols.
+  #   Instead of a missing instruction, halting is denoted by
+  #   a transition to a special "halt" state (for a total of n+1 states).
+  #   How many different transition functions are possible?
+
+  #   Hint: Each instruction writes a symbol, moves left or right,
+  #   and goes to a state.
+  #   There is one instruction per combination of non-halt state & symbol.
+
+
+
+  #   Answer: (2k(n+1))^(nk)
+positions:
+  A: {x: 320, y: 296.188}
+  B: {x: 400, y: 157.624}
+  C: {x: 480, y: 296.188}
+  H: {x: 400, y: 376.188}
