@@ -11,10 +11,6 @@
   cursor: move;
 }
 
-circle.node {
-  /*fill-opacity: 20%;*/
-}
-
 .current-state {
   stroke: gold;
   stroke-width: 5px;
@@ -40,22 +36,11 @@ text {
 .edgepath {
   stroke: #ccc;
   fill: none;
-  marker-end: url(#arrowhead);
   pointer-events: none;
 }
 
-.edgepath.reversed-arc {
-  marker-start: url(#reversed-arrowhead);
-  marker-end: none;
-}
-
 .edgepath.active-edge {
-  marker-end: url(#active-arrowhead);
-}
-
-.edgepath.active-edge.reversed-arc {
-  marker-start: url(#reversed-active-arrowhead);
-  marker-end: none;
+  stroke: lightskyblue;
 }
 
 #arrowhead, #reversed-arrowhead {
