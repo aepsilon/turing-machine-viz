@@ -55,9 +55,20 @@ function toDocFragment(array) {
   return result;
 }
 
+///////////////////////
+// IE/Edge detection //
+///////////////////////
+
+// http://stackoverflow.com/a/9851769
+var isBrowserIEorEdge = /*@cc_on!@*/false
+  || Boolean(document.documentMode) || Boolean(window.StyleMedia); // eslint-disable-line
+
+
 exports.nonNull = nonNull;
 exports.coalesce = coalesce;
 exports.applyMaybe = applyMaybe;
 exports.getFirst = getFirst;
 
 exports.toDocFragment = toDocFragment;
+
+exports.isBrowserIEorEdge = isBrowserIEorEdge;

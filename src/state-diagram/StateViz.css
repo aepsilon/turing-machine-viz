@@ -39,6 +39,10 @@ text {
   pointer-events: none;
 }
 
+.edgepath.active-edge {
+  stroke: lightskyblue;
+}
+
 #arrowhead, #reversed-arrowhead {
   stroke: #ccc;
   fill: #ccc;

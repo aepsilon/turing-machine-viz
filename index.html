@@ -495,6 +495,10 @@ aria-labelledby="importPanelHeader">
     $(function () {
       $('[data-has-tooltip]').tooltip()
     });
+    // Polyfill for IE
+    if (!('remove' in Element.prototype)) {
+      Element.prototype.remove = function () { if (this.parentNode) { this.parentNode.removeChild(this); } };
+    }
   </script>
   <!-- Entry point -->
   <script src="build/TMViz.bundle.js" charset="utf-8"></script>

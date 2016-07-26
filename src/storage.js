@@ -1,5 +1,6 @@
 'use strict';
 
+var isBrowserIEorEdge = require('./util').isBrowserIEorEdge;
 /* global localStorage:false, window:false */
 
 ///////////////////////
@@ -34,6 +35,11 @@ var RAMStorage = (function () {
 var KeyValueStorage = (function () {
   var s = canUseLocalStorage ? localStorage : RAMStorage;
 
+  // workaround IE/Edge firing events on its own window
+  var fromOwnWindow = isBrowserIEorEdge
+    ? function () { return window.document.hasFocus(); }
+    : function () { return false; };
+
   return {
     read  : s.getItem.bind(s),
     write : s.setItem.bind(s),
@@ -42,6 +48,9 @@ var KeyValueStorage = (function () {
     addStorageListener: canUseLocalStorage
       ? function (listener) {
         window.addEventListener('storage', function (e) {
+          if (fromOwnWindow()) {
+            return;
+          }
           if (e.storageArea === localStorage) {
             listener(e);
           }

@@ -78,7 +78,9 @@ function DocumentMenu(args) {
 
 Object.defineProperties(DocumentMenu.prototype, {
   currentOption: {
-    get: function () { return this.menu.selectedOptions[0]; },
+    get: function () {
+      return this.menu.options[this.menu.selectedIndex];
+    },
     enumerable: true
   },
   currentDocument: {
@@ -166,7 +168,7 @@ DocumentMenu.prototype.__prepend = function (doc, opts) {
   var option = this.optionFromDocument(doc);
   this.group.insertBefore(option, this.group.firstChild);
   if (opts && opts.select) {
-    option.selected = true;
+    this.menu.selectedIndex = option.index;
     this.onChange(doc, opts);
   }
   return doc;
