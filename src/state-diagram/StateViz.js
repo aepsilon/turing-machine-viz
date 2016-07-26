@@ -1,4 +1,6 @@
 'use strict';
+
+var isBrowserIEorEdge = require('../util').isBrowserIEorEdge;
 var d3 = require('d3');
 var _ = require('lodash/fp');
 var assign = require('lodash').assign; // need mutable assign()
@@ -148,9 +150,6 @@ function limitRange(min, max, value) {
   return Math.max(min, Math.min(value, max));
 }
 
-// http://stackoverflow.com/a/9851769
-var isBrowserIEorEdge = /*@cc_on!@*/false
-  || Boolean(document.documentMode) || Boolean(window.StyleMedia); // eslint-disable-line
 // IE padding hack so that SVG resizes properly.
 // This works across browsers but we only need it for IE.
 var appendSVGTo = !isBrowserIEorEdge
