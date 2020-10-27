@@ -11,9 +11,9 @@
     "depgraph": "mkdir -p build/ && (cd src/ && madge . --dot) > build/depgraph.gv",
     "depgraph-noext": "mkdir -p build/ && (cd src/ && madge . --dot -x \"`node -e \"console.log(Object.keys(require('../webpack.config').externals).map(s => '^'+s+'$').join('|'))\"`\") > build/depgraph-noext.gv",
     "lint": "eslint --cache webpack.config.js src/",
-    "prod": "export NODE_ENV=production; npm run lint && webpack --progress --colors --display-error-details",
-    "start": "webpack-dev-server --progress --colors --display-error-details --host=0.0.0.0",
-    "watch": "webpack --watch --progress --colors --display-error-details"
+    "prod": "export NODE_ENV=production; npm run lint && webpack --progress",
+    "start": "webpack serve --progress --host=0.0.0.0",
+    "watch": "webpack --watch --progress"
   },
   "devDependencies": {
     "eslint": "^7.26.0",
