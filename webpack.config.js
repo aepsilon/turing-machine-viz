@@ -90,6 +90,7 @@ const commonConfig = {
 //////////////////////
 
 const devConfig = {
+  mode: 'development',
   output: {pathinfo: true}
 };
 
