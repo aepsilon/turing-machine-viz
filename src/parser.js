@@ -1,8 +1,8 @@
 'use strict';
 
 var TM = require('./TuringMachine'),
-    jsyaml = require('js-yaml'),
-    _ = require('lodash');
+  jsyaml = require('js-yaml'),
+  _ = require('lodash');
 
 /**
  * Thrown when parsing a string that is valid as YAML but invalid
@@ -69,11 +69,17 @@ function parseSpec(str) {
   var obj = jsyaml.safeLoad(str);
   // check for required object properties.
   // auto-convert .blank and 'start state' to string, for convenience.
-  if (obj == null) { throw new TMSpecError('The document is empty',
-    {info: 'Every Turing machine requires a <code>blank</code> tape symbol,' +
-    ' a <code>start state</code>, and a transition <code>table</code>'}); }
-  var detailsForBlank = {suggestion:
-    'Examples: <code>blank: \' \'</code>, <code>blank: \'0\'</code>'};
+  if (obj == null) {
+    throw new TMSpecError('The document is empty',
+      {
+        info: 'Every Turing machine requires a <code>blank</code> tape symbol,' +
+          ' a <code>start state</code>, and a transition <code>table</code>'
+      });
+  }
+  var detailsForBlank = {
+    suggestion:
+      'Examples: <code>blank: \' \'</code>, <code>blank: \'0\'</code>'
+  };
   if (obj.blank == null) {
     throw new TMSpecError('No blank symbol was specified', detailsForBlank);
   }
@@ -85,7 +91,7 @@ function parseSpec(str) {
   delete obj['start state'];
   if (obj.startState == null) {
     throw new TMSpecError('No start state was specified',
-    {suggestion: 'Assign one using <code>start state: </code>'});
+      { suggestion: 'Assign one using <code>start state: </code>' });
   }
   obj.startState = String(obj.startState);
   // parse synonyms and transition table
@@ -103,12 +109,14 @@ function parseSpec(str) {
 function checkTableType(val) {
   if (val == null) {
     throw new TMSpecError('Missing transition table',
-    {suggestion: 'Specify one using <code>table:</code>'});
+      { suggestion: 'Specify one using <code>table:</code>' });
   }
   if (typeof val !== 'object') {
     throw new TMSpecError('Transition table has an invalid type',
-    {problemValue: typeof val,
-    info: 'The transition table should be a nested mapping from states to symbols to instructions'});
+      {
+        problemValue: typeof val,
+        info: 'The transition table should be a nested mapping from states to symbols to instructions'
+      });
   }
 }
 
@@ -119,9 +127,11 @@ function parseSynonyms(val, table) {
   }
   if (typeof val !== 'object') {
     throw new TMSpecError('Synonyms table has an invalid type',
-      {problemValue: typeof val,
-      info: 'Synonyms should be a mapping from string abbreviations to instructions'
-        + ' (e.g. <code>accept: {R: accept}</code>)'});
+      {
+        problemValue: typeof val,
+        info: 'Synonyms should be a mapping from string abbreviations to instructions'
+          + ' (e.g. <code>accept: {R: accept}</code>)'
+      });
   }
   return _.mapValues(val, function (actionVal, key) {
     try {
@@ -147,8 +157,10 @@ function parseTable(synonyms, val) {
     }
     if (typeof stateObj !== 'object') {
       throw new TMSpecError('State entry has an invalid type',
-      {problemValue: typeof stateObj, state: state,
-      info: 'Each state should map symbols to instructions. An empty map signifies a halting state.'});
+        {
+          problemValue: typeof stateObj, state: state,
+          info: 'Each state should map symbols to instructions. An empty map signifies a halting state.'
+        });
     }
     return _.mapValues(stateObj, function (actionVal, symbol) {
       try {
@@ -167,14 +179,16 @@ function parseTable(synonyms, val) {
 // omits null/undefined properties
 // (?string, direction, ?string) -> {symbol?: string, move: direction, state?: string}
 function makeInstruction(symbol, move, state) {
-  return Object.freeze(_.omitBy({symbol: symbol, move: move, state: state},
+  return Object.freeze(_.omitBy({ symbol: symbol, move: move, state: state },
     function (x) { return x == null; }));
 }
 
 function checkTarget(table, instruct) {
   if (instruct.state != null && !(instruct.state in table)) {
-    throw new TMSpecError('Undeclared state', {problemValue: instruct.state,
-    suggestion: 'Make sure to list all states in the transition table and define their transitions (if any)'});
+    throw new TMSpecError('Undeclared state', {
+      problemValue: instruct.state,
+      suggestion: 'Make sure to list all states in the transition table and define their transitions (if any)'
+    });
   }
   return instruct;
 }
@@ -188,32 +202,39 @@ function parseInstruction(synonyms, table, val) {
       case 'string': return parseInstructionString(synonyms, val);
       case 'object': return parseInstructionObject(val);
       default: throw new TMSpecError('Invalid instruction type',
-        {problemValue: typeof val,
-          info: 'An instruction can be a string (a direction <code>L</code>/<code>R</code> or a synonym)'
-            + ' or a mapping (examples: <code>{R: accept}</code>, <code>{write: \' \', L: start}</code>)'});
+        {
+          problemValue: typeof val,
+          info: 'An instruction can be a string (a direction <code>L</code>/<code>N</code>/<code>R</code> or a synonym)'
+            + ' or a mapping (examples: <code>{R: accept}</code>, <code>{write: \' \', L: start}</code>)'
+        });
     }
   }());
 }
 
-var moveLeft = Object.freeze({move: TM.MoveHead.left});
-var moveRight = Object.freeze({move: TM.MoveHead.right});
+var moveLeft = Object.freeze({ move: TM.MoveHead.left });
+var moveRight = Object.freeze({ move: TM.MoveHead.right });
+var moveNeutral = Object.freeze({ move: TM.MoveHead.neutral });
 
 // case: direction or synonym
 function parseInstructionString(synonyms, val) {
   if (val === 'L') {
     return moveLeft;
+  } else if (val === 'N') {
+    return moveNeutral;
   } else if (val === 'R') {
     return moveRight;
   }
-  // note: this order prevents overriding L/R in synonyms, as that would
+  // note: this order prevents overriding L/N/R in synonyms, as that would
   // allow inconsistent notation, e.g. 'R' and {R: ..} being different.
   if (synonyms && synonyms[val]) { return synonyms[val]; }
   throw new TMSpecError('Unrecognized string',
-    {problemValue: val,
-    info: 'An instruction can be a string if it\'s a synonym or a direction'});
+    {
+      problemValue: val,
+      info: 'An instruction can be a string if it\'s a synonym or a direction'
+    });
 }
 
-// type ActionObj = {write?: any, L: ?string} | {write?: any, R: ?string}
+// type ActionObj = {write?: any, L: ?string} | {write?: any, N: ?string} | {write?: any, R: ?string}
 // case: ActionObj
 function parseInstructionObject(val) {
   var symbol, move, state;
@@ -223,22 +244,27 @@ function parseInstructionObject(val) {
     var badKey;
     if (!Object.keys(val).every(function (key) {
       badKey = key;
-      return key === 'L' || key === 'R' || key === 'write';
+      return key === 'L' || key === 'N' || key === 'R' || key === 'write';
     })) {
       throw new TMSpecError('Unrecognized key',
-      {problemValue: badKey,
-      info: 'An instruction always has a tape movement <code>L</code> or <code>R</code>, '
-        + 'and optionally can <code>write</code> a symbol'});
+        {
+          problemValue: badKey,
+          info: 'An instruction always has a tape movement <code>L</code> or <code>R</code>, '
+            + 'and optionally can <code>write</code> a symbol'
+        });
     }
   })();
-  // one L/R key is required, with optional state value
-  if ('L' in val && 'R' in val) {
+  // one L/N/R key is required, with optional state value
+  if ('L' in val && 'N' in val || 'L' in val && 'R' in val || 'N' in val && 'R' in val) {
     throw new TMSpecError('Conflicting tape movements',
-    {info: 'Each instruction needs exactly one movement direction, but two were found'});
+      { info: 'Each instruction needs exactly one movement direction, but two were found' });
   }
   if ('L' in val) {
     move = TM.MoveHead.left;
     state = val.L;
+  } else if ('N' in val) {
+    move = TM.MoveHead.neutral;
+    state = val.N;
   } else if ('R' in val) {
     move = TM.MoveHead.right;
     state = val.R;
