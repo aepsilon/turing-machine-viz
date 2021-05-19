@@ -51,14 +51,16 @@ function move(tape, direction) {
   switch (direction) {
     case MoveHead.right: tape.headRight(); break;
     case MoveHead.left:  tape.headLeft();  break;
+    case MoveHead.none:  tape.headNone();  break;
     default: throw new TypeError('not a valid tape movement: ' + String(direction));
   }
 }
 var MoveHead = Object.freeze({
-  left:  {toString: function () { return 'L'; } },
-  right: {toString: function () { return 'R'; } }
+  left : {toString: function () { return 'L'; } },
+  right: {toString: function () { return 'R'; } },
+  none : {toString: function () { return 'N'; } }
 });
-var MoveTape = Object.freeze({left: MoveHead.right, right: MoveHead.left});
+var MoveTape = Object.freeze({left: MoveHead.right, right: MoveHead.left, none: MoveHead.none});
 
 exports.MoveHead = MoveHead;
 exports.MoveTape = MoveTape;

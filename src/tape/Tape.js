@@ -45,6 +45,8 @@ Tape.prototype.headLeft = function () {
   }
   after.push(before.pop());
 };
+Tape.prototype.headNone = function () {
+};
 
 Tape.prototype.toString = function () {
   return this.tape.toString();
