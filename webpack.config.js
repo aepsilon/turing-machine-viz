@@ -1,8 +1,6 @@
 'use strict';
 /* eslint-env node, es6 */
 const path = require('path');
-const webpack = require('webpack');
-
 
 /////////////
 // Utility //
@@ -60,27 +58,25 @@ const commonConfig = {
     'lodash': 'lodash',
     'lodash/fp': '_'
   },
-  plugins: [
-    new webpack.optimize.CommonsChunkPlugin({
-      // Note on ordering:
-      // Each "commons chunk" takes modules shared with any previous chunks,
-      // including other commons. Later commons therefore contain the fewest dependencies.
-      // For clarity, reverse this to be consistent with browser include order.
-      // names: ['util', 'TuringMachine', 'TapeViz', 'StateViz'].reverse()
-      names: ['TMViz'].reverse()
-    })
-  ],
   module: {
-    loaders: [
+    rules: [{
       // copy files verbatim
-      { test: /\.css$/,
-        loader: 'file',
-        query: {
-          name: '[path][name].[ext]',
-          context: srcRoot
-        }
+      test: /\.css$/,
+      loader: 'file-loader',
+      options: {
+        name: '[path][name].[ext]',
+        context: srcRoot
       }
-    ]
+    }, {
+      test: /\.yaml$/,
+      loader: 'raw-loader',
+      options: {
+        esModule: false
+      }
+    }]
+  },
+  stats: {
+    errorDetails: true
   }
 };
 
@@ -90,15 +86,13 @@ const commonConfig = {
 //////////////////////
 
 const devConfig = {
+  mode: 'development',
   output: {pathinfo: true}
 };
 
 const prodConfig = {
-  devtool: 'source-map', // for the curious
-  plugins: [
-    new webpack.optimize.OccurrenceOrderPlugin(true),
-    new webpack.optimize.UglifyJsPlugin({compress: {warnings: false}})
-  ]
+  mode: 'production',
+  devtool: 'source-map' // for the curious
 };
 
 const isProduction = (process.env.NODE_ENV === 'production');
