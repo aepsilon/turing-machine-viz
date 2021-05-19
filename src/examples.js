@@ -5,7 +5,7 @@ var fromPairs = require('lodash/fp').fromPairs;
 
 
 function requireExample(name) {
-  return require('raw!./examples/' + name + '.yaml');
+  return require('./examples/' + name + '.yaml');
 }
 
 var examplePairs = [
